@@ -1,3 +1,6 @@
-include_directories(${PROJECT_BINARY_DIR}/include)
+add_executable(Summoner app.cpp)
 
-add_executable(main main.c)
+if(SFML_FOUND)
+  include_directories(${SFML_INCLUDE_DIR})
+  target_link_libraries(${EXECUTABLE_NAME} ${SFML_LIBRARIES})
+endif()
