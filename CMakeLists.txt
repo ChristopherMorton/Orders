@@ -23,5 +23,5 @@ find_package(SFML 2 REQUIRED system window graphics network audio)
 
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/build)
-set(CMAKE_CXX_FLAGS "-Wall")
+set(CMAKE_CXX_FLAGS "-g -Wall")
 add_subdirectory(src)

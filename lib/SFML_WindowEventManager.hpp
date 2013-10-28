@@ -5,7 +5,6 @@
 #include <set>
 
 #include "SFML_Listeners.hpp"
-#include "SFML_WindowEventManager.hpp"
 
 #include <SFML/Window/Event.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
