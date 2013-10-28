@@ -1,7 +1,5 @@
-set(LIBS ../lib/SFML_WindowEventManager.cpp)
-add_executable(Summoner app.cpp listeners.cpp shutdown.cpp ${LIBS})
+set(APP_FILES app.cpp listeners.cpp shutdown.cpp)
 
-if(SFML_FOUND)
-  include_directories(${SFML_INCLUDE_DIR})
-  target_link_libraries(${EXECUTABLE_NAME} ${SFML_LIBRARIES})
-endif()
+add_executable(Summoner ${APP_FILES})
+
+target_link_libraries(${EXECUTABLE_NAME} ${LIBRARY_NAME} ${SFML_LIBRARIES})
