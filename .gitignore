@@ -4,6 +4,7 @@
 *.swp
 *.out
 *~
+tags
 
 ## Build files
 build/*
