@@ -168,7 +168,7 @@ int runApp()
 {
    // Setup the window
    shutdown(1,0);
-   sf::RenderWindow r_window(sf::VideoMode(800, 600), "Summoner");
+   sf::RenderWindow r_window(sf::VideoMode(800, 600, 32), "Summoner");
 
    // Setup various resource managers
    gui_manager = &IMGuiManager::getSingleton();
