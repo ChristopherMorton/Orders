@@ -4,7 +4,10 @@
 *.swp
 *.out
 *~
+
+## generated files
 tags
+.log
 
 ## Build files
 build/*
