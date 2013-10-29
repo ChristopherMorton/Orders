@@ -181,9 +181,6 @@ int runApp()
 
    texture_manager->addSearchDirectory( "res/" ); 
 
-   cursor_manager->createCursor( IMCursorManager::DEFAULT, texture_manager->getTexture( "FingerCursor.png" ), 0, 0, 40, 60);
-   cursor_manager->createCursor( IMCursorManager::CLICKING, texture_manager->getTexture( "FingerCursorClick.png" ), 0, 0, 40, 60);
-
    // Setup event listeners
    MainWindowListener w_listener;
    MainMouseListener m_listener;
@@ -199,38 +196,35 @@ int runApp()
    sf::Clock clock;
    unsigned int dt;
 
+   // Loading
+   preload();
+   while (progressiveLoad())
+      loadingAnimation(clock.getElapsedTime().asMilliseconds());
+   postload();
+
+   // Now setup some things using our new resources
+   cursor_manager->createCursor( IMCursorManager::DEFAULT, texture_manager->getTexture( "FingerCursor.png" ), 0, 0, 40, 60);
+   cursor_manager->createCursor( IMCursorManager::CLICKING, texture_manager->getTexture( "FingerCursorClick.png" ), 0, 0, 40, 60);
+
 //////////////////////////////////////////////////////////////////////
 // Main Loop
 //////////////////////////////////////////////////////////////////////
    log("Entering main loop");
    while (shutdown() == 0)
    {
-      dt = clock.getElapsedTime().asMilliseconds();
-      switch (menu_state)
-      {
-      case MENU_PRELOAD:
-         preload();
-      case MENU_LOADING:
-         loadingAnimation(dt);
-         if(progressiveLoad())
-            break; // not complete
-      case MENU_POSTLOAD:
-         postload();
-      default:
-         if (menu_state & MENU_MAIN) { 
+      if (menu_state & MENU_MAIN) { 
 
-            event_manager->handleEvents();
+         event_manager->handleEvents();
 
-            r_window.clear(sf::Color::Yellow);
+         r_window.clear(sf::Color::Yellow);
 
-            gui_manager->begin();
+         gui_manager->begin();
 
-            gui_manager->end();
+         gui_manager->end();
 
-            cursor_manager->drawCursor();
+         cursor_manager->drawCursor();
 
-            r_window.display();
-         }
+         r_window.display();
       }
    }
    log("End main loop");
