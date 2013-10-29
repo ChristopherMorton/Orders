@@ -1,4 +1,4 @@
-set(APP_FILES app.cpp listeners.cpp shutdown.cpp)
+set(APP_FILES app.cpp listeners.cpp shutdown.cpp log.cpp)
 
 add_executable(Summoner ${APP_FILES})
 
