@@ -41,12 +41,14 @@ bool MainMouseListener::mouseMoved( const sf::Event::MouseMoveEvent &mouse_move 
 bool MainMouseListener::mouseButtonPressed( const sf::Event::MouseButtonEvent &mouse_button_press )
 {
    log("Clicked");
+   IMCursorManager::getSingleton().setCursor( IMCursorManager::CLICKING );
    return true;
 }
 
 bool MainMouseListener::mouseButtonReleased( const sf::Event::MouseButtonEvent &mouse_button_release )
 {
    log("Un-Clicked");
+   IMCursorManager::getSingleton().setCursor( IMCursorManager::DEFAULT );
    return true;
 }
 

@@ -227,9 +227,6 @@ int runApp()
 
             gui_manager->end();
 
-            if (sf::Mouse::isButtonPressed( sf::Mouse::Left ))
-               IMCursorManager::getSingleton().setCursor( IMCursorManager::CLICKING );
-
             cursor_manager->drawCursor();
 
             r_window.display();
