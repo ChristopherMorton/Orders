@@ -1,5 +1,8 @@
 #include "listeners.h"
 #include "shutdown.h"
+#include "log.h"
+
+#include "IMCursorManager.hpp"
 
 namespace sum
 {
@@ -37,11 +40,13 @@ bool MainMouseListener::mouseMoved( const sf::Event::MouseMoveEvent &mouse_move 
 
 bool MainMouseListener::mouseButtonPressed( const sf::Event::MouseButtonEvent &mouse_button_press )
 {
+   log("Clicked");
    return true;
 }
 
 bool MainMouseListener::mouseButtonReleased( const sf::Event::MouseButtonEvent &mouse_button_release )
 {
+   log("Un-Clicked");
    return true;
 }
 

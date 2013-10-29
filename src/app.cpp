@@ -182,6 +182,7 @@ int runApp()
    texture_manager->addSearchDirectory( "res/" ); 
 
    cursor_manager->createCursor( IMCursorManager::DEFAULT, texture_manager->getTexture( "FingerCursor.png" ), 0, 0, 40, 60);
+   cursor_manager->createCursor( IMCursorManager::CLICKING, texture_manager->getTexture( "FingerCursorClick.png" ), 0, 0, 40, 60);
 
    // Setup event listeners
    MainWindowListener w_listener;
@@ -224,8 +225,10 @@ int runApp()
 
             gui_manager->begin();
 
-
             gui_manager->end();
+
+            if (sf::Mouse::isButtonPressed( sf::Mouse::Left ))
+               IMCursorManager::getSingleton().setCursor( IMCursorManager::CLICKING );
 
             cursor_manager->drawCursor();
 
