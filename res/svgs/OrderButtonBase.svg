@@ -14,7 +14,10 @@
    id="svg2816"
    version="1.1"
    inkscape:version="0.48.4 r9939"
-   sodipodi:docname="OrderButtonBase.svg">
+   sodipodi:docname="OrderButtonBase.svg"
+   inkscape:export-filename="/home/cg/programming/orders/orders/res/svgs/OrderButtonBase.png"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90">
   <defs
      id="defs2818">
     <inkscape:perspective
@@ -33,16 +36,16 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="3.8890873"
-     inkscape:cx="17.594648"
+     inkscape:cx="62.849482"
      inkscape:cy="27.409622"
      inkscape:current-layer="layer1"
      showgrid="true"
      inkscape:document-units="px"
      inkscape:grid-bbox="true"
      inkscape:window-width="1278"
-     inkscape:window-height="1004"
+     inkscape:window-height="501"
      inkscape:window-x="0"
-     inkscape:window-y="18"
+     inkscape:window-y="521"
      inkscape:window-maximized="0" />
   <metadata
      id="metadata2821">
@@ -52,7 +55,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
+        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>

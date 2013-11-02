@@ -21,6 +21,10 @@
 // C includes
 #include <stdio.h>
 
+// C++ includes
+#include <deque>
+#include <fstream>
+
 using namespace sf;
 
 namespace sum
@@ -54,6 +58,7 @@ MenuState menu_state;
 #define MENU_PRI_SPLASH 0x100
 #define MENU_PRI_MAP 0x200
 #define MENU_PRI_INGAME 0x400
+#define MENU_PRI_ANIMATION 0x800
 // which secondary windows are up?
 #define MENU_SEC_GAME_OPTIONS 0x10000
 #define MENU_SEC_AV_OPTIONS 0x20000
@@ -73,34 +78,48 @@ float mv_x_base, mv_y_base, mv_x_extent, mv_y_extent;
 
 #define ASSET_TYPE_END 0
 #define ASSET_TYPE_TEXTURE 1
+#define ASSET_TYPE_SOUND 2
 
 struct Asset
 {
    int type;
    string path;
+
+   Asset(int t, string& s) { type=t; path=s; }
 };
 
-Asset* asset_list;
+deque<Asset> asset_list;
 
 int loadAssetList()
 {
-   asset_list = new Asset[2];
-   
-   asset_list[0].type = ASSET_TYPE_TEXTURE;
-   asset_list[0].path = "FingerCursor.png";
+   /* Actually read AssetList.txt 
+    */ 
+   string type, path;
+   ifstream alist_in;
+   alist_in.open("res/AssetList.txt");
 
-   asset_list[1].type = ASSET_TYPE_END;
+   while (true) {
+      // Get next line
+      alist_in >> type >> path;
+      if (alist_in.eof())
+         break;
+
+      if (alist_in.bad()) {
+         log("Error in AssetList loading - alist_in is 'bad' - INVESTIGATE");
+         break;
+      }
+
+      if (type == "IMAGE")
+         asset_list.push_back( Asset( ASSET_TYPE_TEXTURE, path ) );
+   }
 
    return 0;
 }
 
-int loadAsset( Asset* asset )
+int loadAsset( Asset& asset )
 {
-   if (NULL == asset)
-      return -1;
-
-   if (asset->type == ASSET_TYPE_TEXTURE)
-      texture_manager->getTexture( asset->path );
+   if (asset.type == ASSET_TYPE_TEXTURE)
+      texture_manager->addTexture( asset.path );
 
    return 0;
 }
@@ -118,8 +137,6 @@ int preload()
 int progressiveLoad()
 {
    static int asset_segment = 0;
-   static Asset* next = 0;
-
    int progress = 0;
 
    if (asset_segment == 0)
@@ -127,14 +144,13 @@ int progressiveLoad()
       // Need to load asset list first
       loadAssetList();
       asset_segment = 1;
-      next = &asset_list[0];
       return -1;
    }
 
-   while (next->type != ASSET_TYPE_END)
+   while (!asset_list.empty())
    {
-      loadAsset( next );
-      next++;
+      loadAsset( asset_list.front() );
+      asset_list.pop_front();
       if (progress++ > PROGESS_CAP)
          return -1;
    }
@@ -219,6 +235,26 @@ int runApp()
          r_window.clear(sf::Color::Yellow);
 
          gui_manager->begin();
+
+         if (menu_state & MENU_PRI_SPLASH) {
+            Sprite *splash = new Sprite( *(texture_manager->getTexture("SplashScreen0.png") ));
+            r_window.draw(*splash);
+
+         } else if (menu_state & MENU_PRI_MAP) {
+
+         } else if (menu_state & MENU_PRI_INGAME) {
+
+         } else if (menu_state & MENU_PRI_ANIMATION) {
+
+         }
+
+         if (menu_state & MENU_SEC_GAME_OPTIONS) {
+
+         } else if (menu_state & MENU_SEC_GAME_OPTIONS) {
+
+         } else if (menu_state & MENU_SEC_GAME_OPTIONS) {
+
+         }
 
          gui_manager->end();
 

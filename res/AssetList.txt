@@ -1,0 +1,5 @@
+IMAGE FingerCursor.png
+IMAGE FingerCursorClick.png
+IMAGE TestCursor.png
+IMAGE OrderButtonBase.png
+IMAGE SplashScreen0.png
