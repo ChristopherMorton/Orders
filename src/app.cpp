@@ -17,6 +17,7 @@
 #include "SFML_TextureManager.hpp"
 #include "IMGuiManager.hpp"
 #include "IMCursorManager.hpp"
+#include "IMButton.hpp"
 
 // C includes
 #include <stdio.h>
@@ -31,6 +32,8 @@ namespace sum
 {
 
 // Global app-state variables
+
+sf::RenderWindow *r_window;
 
 // Managers
 IMGuiManager* gui_manager;
@@ -171,10 +174,50 @@ int postload()
 
 int loadingAnimation(int dt)
 {
-   sf::RenderWindow* r_window = SFML_GlobalRenderWindow::get();
    r_window->clear(sf::Color::Black);
    r_window->display();
    return 0;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Gui
+///////////////////////////////////////////////////////////////////////////////
+
+void loadTestLevel()
+{
+   menu_state = MENU_MAIN | MENU_PRI_INGAME;
+
+   // TODO
+}
+
+void splashMenuGui()
+{
+   static bool init = false;
+   static Sprite* splashScreen = NULL;
+   static IMButton* splashToTestLevel = NULL;
+
+   if (!init) {
+      splashScreen = new Sprite( *(texture_manager->getTexture("SplashScreen0.png") ));
+
+      splashToTestLevel = new IMButton();
+      splashToTestLevel->setPosition( 500, 300 );
+      splashToTestLevel->setSize( 200, 100 );
+      splashToTestLevel->setNormalTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
+      splashToTestLevel->setHoverTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
+      splashToTestLevel->setPressedTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
+      gui_manager->registerWidget( "splashToTestLevel", splashToTestLevel);
+      init = true;
+   }
+   else
+   {
+
+      // Draw
+      r_window->draw(*splashScreen);
+
+      if (splashToTestLevel->doWidget())
+         loadTestLevel();
+   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -184,7 +227,7 @@ int runApp()
 {
    // Setup the window
    shutdown(1,0);
-   sf::RenderWindow r_window(sf::VideoMode(800, 600, 32), "Summoner");
+   r_window = new RenderWindow(sf::VideoMode(800, 600, 32), "Summoner");
 
    // Setup various resource managers
    gui_manager = &IMGuiManager::getSingleton();
@@ -192,8 +235,8 @@ int runApp()
    texture_manager = &SFML_TextureManager::getSingleton();
    event_manager = &SFML_WindowEventManager::getSingleton();
 
-   SFML_GlobalRenderWindow::set( &r_window );
-   gui_manager->setRenderWindow( &r_window );
+   SFML_GlobalRenderWindow::set( r_window );
+   gui_manager->setRenderWindow( r_window );
 
    texture_manager->addSearchDirectory( "res/" ); 
 
@@ -222,6 +265,10 @@ int runApp()
    cursor_manager->createCursor( IMCursorManager::DEFAULT, texture_manager->getTexture( "FingerCursor.png" ), 0, 0, 40, 60);
    cursor_manager->createCursor( IMCursorManager::CLICKING, texture_manager->getTexture( "FingerCursorClick.png" ), 0, 0, 40, 60);
 
+   // Initialise some GUIs - first run-through is init
+   splashMenuGui();
+
+
 //////////////////////////////////////////////////////////////////////
 // Main Loop
 //////////////////////////////////////////////////////////////////////
@@ -232,13 +279,12 @@ int runApp()
 
          event_manager->handleEvents();
 
-         r_window.clear(sf::Color::Yellow);
+         r_window->clear(sf::Color::Yellow);
 
          gui_manager->begin();
 
          if (menu_state & MENU_PRI_SPLASH) {
-            Sprite *splash = new Sprite( *(texture_manager->getTexture("SplashScreen0.png") ));
-            r_window.draw(*splash);
+            splashMenuGui();
 
          } else if (menu_state & MENU_PRI_MAP) {
 
@@ -260,12 +306,12 @@ int runApp()
 
          cursor_manager->drawCursor();
 
-         r_window.display();
+         r_window->display();
       }
    }
    log("End main loop");
    
-   r_window.close();
+   r_window->close();
 
    return 0;
 }
