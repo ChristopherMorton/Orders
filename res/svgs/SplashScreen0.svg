@@ -68,7 +68,7 @@
      inkscape:zoom="0.84852813"
      inkscape:cx="406.62597"
      inkscape:cy="376.12768"
-     inkscape:current-layer="layer1"
+     inkscape:current-layer="layer2"
      inkscape:document-units="px"
      showgrid="false"
      showguides="true"
@@ -91,10 +91,14 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
+  <g
+     inkscape:groupmode="layer"
+     id="layer2"
+     inkscape:label="Far Scenery" />
   <g
      id="layer1"
      inkscape:label="Layer 1"

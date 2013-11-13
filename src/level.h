@@ -3,9 +3,11 @@
 
 namespace sum
 {
+   void setLevelListener( bool set = true );
 
-
-
+   int loadLevel( int level_id );
+   int updateLevel( int dt );
+   int drawLevel();
 };
 
 #endif

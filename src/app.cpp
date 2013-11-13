@@ -188,7 +188,8 @@ void loadTestLevel()
 {
    menu_state = MENU_MAIN | MENU_PRI_INGAME;
 
-   // TODO
+   loadLevel(-1);
+   setLevelListener(true);
 }
 
 void splashMenuGui()
@@ -268,7 +269,6 @@ int runApp()
    // Initialise some GUIs - first run-through is init
    splashMenuGui();
 
-
 //////////////////////////////////////////////////////////////////////
 // Main Loop
 //////////////////////////////////////////////////////////////////////
@@ -277,6 +277,7 @@ int runApp()
    {
       if (menu_state & MENU_MAIN) { 
 
+         dt = clock.getElapsedTime().asMicroseconds();
          event_manager->handleEvents();
 
          r_window->clear(sf::Color::Yellow);
@@ -289,6 +290,8 @@ int runApp()
          } else if (menu_state & MENU_PRI_MAP) {
 
          } else if (menu_state & MENU_PRI_INGAME) {
+            updateLevel(dt);
+            drawLevel();
 
          } else if (menu_state & MENU_PRI_ANIMATION) {
 

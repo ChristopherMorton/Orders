@@ -3,3 +3,5 @@ IMAGE FingerCursorClick.png
 IMAGE TestCursor.png
 IMAGE OrderButtonBase.png
 IMAGE SplashScreen0.png
+IMAGE GreenGrass.png
+IMAGE BrownRock.png
