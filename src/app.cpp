@@ -74,8 +74,7 @@ float mv_x_base, mv_y_base, mv_x_extent, mv_y_extent;
 
 void resetView()
 {
-   if (r_window)
-      r_window->setView( r_window->getDefaultView() );
+   r_window->setView( r_window->getDefaultView() );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -61,6 +61,12 @@ Building** building_grid;
 Unit** unit_grid;
 
 //////////////////////////////////////////////////////////////////////
+// UI Data
+//////////////////////////////////////////////////////////////////////
+
+int left_mouse_down = 0;
+
+//////////////////////////////////////////////////////////////////////
 // Utility
 //////////////////////////////////////////////////////////////////////
 
@@ -69,10 +75,21 @@ Unit** unit_grid;
 Vector2f coordsWindowToView( int window_x, int window_y )
 {
    // (win_size / view_size) + view_base
-   float view_x = ((float)(l_r_window->getSize().x) / (float)(level_view->getSize().x)) + ((level_view->getCenter().x) - (level_view->getSize().x / 2.0));
-   float view_y = ((float)(l_r_window->getSize().y) / (float)(level_view->getSize().y)) + ((level_view->getCenter().y) - (level_view->getSize().y / 2.0));
+   float view_x = (((float)(level_view->getSize().x) / (float)(l_r_window->getSize().x))*window_x) + ((level_view->getCenter().x) - (level_view->getSize().x / 2.0));
+   float view_y = (((float)(level_view->getSize().y) / (float)(l_r_window->getSize().y))*window_y) + ((level_view->getCenter().y) - (level_view->getSize().y / 2.0));
 
    return Vector2f( view_x, view_y );
+}
+
+Vector2u coordsWindowToLevel( int window_x, int window_y )
+{
+   Vector2f view_coords = coordsWindowToView( window_x, window_y );
+
+   int x = (int)view_coords.x,
+       y = (int)view_coords.y;
+   x /= TILE_SIZE;
+   y /= TILE_SIZE;
+   return Vector2u(x, y);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -105,12 +122,94 @@ int setView( float x_size, Vector2f center )
    return 0;
 }
 
+// Shifts in terms of view coords
+int shiftView( float x_shift, float y_shift )
+{
+   Vector2f old_center = level_view->getCenter(),
+            old_size = level_view->getSize();
+   Vector2f new_center (old_center.x + x_shift, old_center.y + y_shift);
+
+   float x_add = 0, y_add = 0;
+   float x_base = new_center.x - (old_size.x / 2.0);
+   float y_base = new_center.y - (old_size.y / 2.0);
+   float x_top = new_center.x + (old_size.x / 2.0);
+   float y_top = new_center.y + (old_size.y / 2.0);
+
+   // Don't need to check for: top AND bottom overlap -> failure
+   if (x_base < 0)
+      x_add = -x_base;
+
+   if (x_top > (level_dim_x * TILE_SIZE))
+      x_add = (level_dim_x * TILE_SIZE) - x_top;
+
+   if (y_base < 0)
+      y_add = -y_base;
+
+   if (y_top > (level_dim_y * TILE_SIZE))
+      y_add = (level_dim_y * TILE_SIZE) - y_top;
+
+   new_center.x += x_add;
+   new_center.y += y_add;
+   level_view->setCenter( new_center );
+
+   return 0;
+}
+
 // Positive is zoom ***, negative is zoom **
 int zoomView( int ticks, Vector2f zoom_around )
 {
    float zoom_val = pow(1.5, -ticks);
+   Vector2f old_center = level_view->getCenter(),
+            old_size = level_view->getSize();
+   Vector2f new_center ((old_center.x + zoom_around.x) / 2.0, (old_center.y + zoom_around.y) / 2.0);
 
-   level_view->zoom( zoom_val );
+   float x_add = 0, y_add = 0;
+   float x_base = new_center.x - (zoom_val * old_size.x / 2.0);
+   float y_base = new_center.y - (zoom_val * old_size.y / 2.0);
+   float x_top = new_center.x + (zoom_val * old_size.x / 2.0);
+   float y_top = new_center.y + (zoom_val * old_size.y / 2.0);
+
+   // Check each edge
+   if (x_base < 0) {
+      x_add = -x_base;
+      x_base = 0;
+      x_top -= x_base;
+   }
+
+   if (x_top > (level_dim_x * TILE_SIZE)) {
+      if (x_add != 0) // In other words, if can't zoom out that much
+         return -1;
+      else {
+         x_add = (level_dim_x * TILE_SIZE) - x_top;
+         x_top = (level_dim_x * TILE_SIZE);
+         x_base += x_add;
+         if (x_base < 0)
+            return -1;
+      }
+   }
+
+   if (y_base < 0) {
+      y_add = -y_base;
+      y_base = 0;
+      y_top -= y_base;
+   }
+
+   if (y_top > (level_dim_y * TILE_SIZE)) {
+      if (y_add != 0) // In other words, if can't zoom out that much
+         return -1;
+      else {
+         y_add = (level_dim_y * TILE_SIZE) - y_top;
+         y_top = (level_dim_y * TILE_SIZE);
+         y_base += y_add;
+         if (y_base < 0)
+            return -1;
+      }
+   }
+
+   level_view->setCenter( new_center.x + x_add, new_center.y + y_add ); 
+
+   level_view->setSize( x_top - x_base, y_top - y_base );
+   //level_view->zoom( zoom_val );
    
    return 0;
 }
@@ -237,16 +336,33 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
 
    virtual bool mouseMoved( const sf::Event::MouseMoveEvent &mouse_move )
    {
+      static int old_mouse_x, old_mouse_y;
+
+      if (left_mouse_down) {
+         Vector2f old_spot = coordsWindowToView( old_mouse_x, old_mouse_y );
+         Vector2f new_spot = coordsWindowToView( mouse_move.x, mouse_move.y );
+         shiftView( old_spot.x - new_spot.x, old_spot.y - new_spot.y );
+      }
+
+      old_mouse_x = mouse_move.x;
+      old_mouse_y = mouse_move.y;
+
       return true;
    }
 
-   virtual bool mouseButtonPressed( const sf::Event::MouseButtonEvent &mouse_button_press )
+   virtual bool mouseButtonPressed( const sf::Event::MouseButtonEvent &mbp )
    {
+      if (mbp.button == Mouse::Left)
+         left_mouse_down = 1;
+
       return true;
    }
 
-   virtual bool mouseButtonReleased( const sf::Event::MouseButtonEvent &mouse_button_release )
+   virtual bool mouseButtonReleased( const sf::Event::MouseButtonEvent &mbr )
    {
+      if (mbr.button == Mouse::Left)
+         left_mouse_down = 0;
+
       return true;
    }
 
