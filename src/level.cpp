@@ -326,6 +326,18 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
    {
       if (key_press.code == sf::Keyboard::Q)
          shutdown(1,1);
+      if (key_press.code == sf::Keyboard::Right)
+         shiftView( TILE_SIZE * 2, 0 );
+      if (key_press.code == sf::Keyboard::Left)
+         shiftView( -TILE_SIZE * 2, 0 );
+      if (key_press.code == sf::Keyboard::Down)
+         shiftView( 0, TILE_SIZE * 2 );
+      if (key_press.code == sf::Keyboard::Up)
+         shiftView( 0, -TILE_SIZE * 2 );
+      if (key_press.code == sf::Keyboard::Add)
+         zoomView( 1 , level_view->getCenter());
+      if (key_press.code == sf::Keyboard::Subtract)
+         zoomView( -1 , level_view->getCenter());
       return true;
    }
     
