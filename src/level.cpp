@@ -1,8 +1,8 @@
 #include "shutdown.h"
 #include "level.h"
-#include "building.h"
-#include "unit.h"
+#include "orders.h"
 #include "log.h"
+#include "types.h"
 
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
@@ -18,6 +18,8 @@
 #include "math.h"
 
 #define TILE_SIZE 8
+#define TURN_LENGTH 1000
+
 
 using namespace sf;
 
@@ -37,6 +39,19 @@ IMCursorManager* l_cursor_manager;
 SFML_TextureManager* l_texture_manager;
 SFML_WindowEventManager* l_event_manager;
 
+int turn, turn_progress;
+
+//////////////////////////////////////////////////////////////////////
+// Some includes
+//////////////////////////////////////////////////////////////////////
+
+#include "units.cpp"
+
+struct Building
+{
+
+};
+
 //////////////////////////////////////////////////////////////////////
 // Level Data
 //////////////////////////////////////////////////////////////////////
@@ -47,14 +62,12 @@ int level_num = -1;
 int level_dim_x = -1;
 int level_dim_y = -1;
 
-typedef enum {
-   TER_NONE,
-   TER_GRASS,
-   TER_ROCK,
-   NUM_TERRAINS
-} Terrain;
 Sprite **terrain_sprites;
 
+BaseTerrain base_terrain;
+Sprite *base_grass_sprite;
+Sprite *base_mountain_sprite;
+Sprite *base_underground_sprite;
 // Grids - row-major order, size = dim_x X dim_y
 Terrain* terrain_grid;
 Building** building_grid;
@@ -217,6 +230,21 @@ int zoomView( int ticks, Vector2f zoom_around )
 //////////////////////////////////////////////////////////////////////
 // Loading
 //////////////////////////////////////////////////////////////////////
+void initTextures()
+{
+   // Setup terrain
+   terrain_sprites = new Sprite*[NUM_TERRAINS];
+
+   terrain_sprites[TER_NONE] = NULL;
+   terrain_sprites[TER_TREE1] = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "BasicTree1.png" )));
+   terrain_sprites[TER_TREE2] = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "BasicTree2.png" )));
+         
+   
+   base_grass_sprite = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "GreenGrass.png" )));
+   base_mountain_sprite = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "BrownRock.png" )));
+   base_underground_sprite = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "BrownRock.png" )));
+
+}
 
 void init()
 {
@@ -231,12 +259,7 @@ void init()
    level_view = new View();
    view_rel_x_to_y = ((float)l_r_window->getSize().y) / ((float)l_r_window->getSize().x);
 
-   // Setup terrain
-   terrain_sprites = new Sprite*[NUM_TERRAINS];
-
-   terrain_sprites[TER_GRASS] = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "GreenGrass.png" )));
-   terrain_sprites[TER_ROCK] = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "BrownRock.png" )));
-         
+   initTextures();
 
    level_init = true;
 }
@@ -251,7 +274,7 @@ void clearGrids()
       delete building_grid; 
 }
 
-int initGrids(int x, int y, Terrain ter_default)
+int initGrids(int x, int y)
 {
    clearGrids();
 
@@ -261,7 +284,7 @@ int initGrids(int x, int y, Terrain ter_default)
    int dim = x * y;
 
    terrain_grid = new Terrain[dim];
-   for (int i = 0; i < dim; ++i) terrain_grid[i] = ter_default;
+   for (int i = 0; i < dim; ++i) terrain_grid[i] = TER_NONE;
 
    building_grid = new Building*[dim];
    unit_grid = new Unit*[dim];
@@ -279,38 +302,74 @@ int loadLevel( int level_id )
    // Currently only loads test level
    if (level_id == -1 || true)
    {
-      initGrids(10,5,TER_GRASS);
-      GRID_AT(terrain_grid,4,3) = TER_ROCK;
+      base_terrain = BASE_TER_GRASS;
+      initGrids(10,5);
+      GRID_AT(terrain_grid,4,3) = TER_TREE1;
+      GRID_AT(terrain_grid,1,1) = TER_TREE2;
       setView( 3.0, Vector2f( 2.0, 2.0 ) );
    }
 
    return 0;
 }
 
+//////////////////////////////////////////////////////////////////////
+// Core
+//////////////////////////////////////////////////////////////////////
+
 int updateLevel( int dt )
 {
+   turn_progress += dt;
+
+   if (turn_progress > TURN_LENGTH) {
+      turn_progress -= TURN_LENGTH;
+      //completeTurnAll();
+      turn++;
+      //updateAll( turn_progress );
+   } else {
+      //updateAll( dt );
+   }
    return 0;
+}
+
+void drawBaseTerrain()
+{
+   Sprite *s_ter;
+   if (base_terrain == BASE_TER_GRASS)
+         s_ter = base_grass_sprite;
+   if (base_terrain == BASE_TER_MOUNTAIN)
+         s_ter = base_mountain_sprite;
+   if (base_terrain == BASE_TER_UNDERGROUND)
+         s_ter = base_underground_sprite;
+   
+   s_ter->setPosition( 0, 0 );
+   s_ter->setScale( TILE_SIZE * level_dim_x, TILE_SIZE * level_dim_y ); 
+   l_r_window->draw( *s_ter );
 }
 
 int drawLevel()
 {
+   log("Enter drawLevel");
    l_r_window->setView(*level_view);
    // Level
+   drawBaseTerrain();
    int x, y;
    for (x = 0; x < level_dim_x; ++x) {
       for (y = 0; y < level_dim_y; ++y) {
 
+         int x_real = x*TILE_SIZE,
+             y_real = y*TILE_SIZE;
+
          Sprite *s_ter = terrain_sprites[GRID_AT(terrain_grid,x,y)];
       
          if (s_ter) {
-         s_ter->setPosition( x * TILE_SIZE, y * TILE_SIZE );
-         s_ter->setScale( 1, 1 );
-         l_r_window->draw( *s_ter );
+            s_ter->setPosition( x_real, y_real );
+            l_r_window->draw( *s_ter );
          }
 
       }
    }
 
+   log("Leave drawLevel");
    // Gui
 
    return 0;
