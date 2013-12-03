@@ -5,5 +5,6 @@ IMAGE OrderButtonBase.png
 IMAGE SplashScreen0.png
 IMAGE GreenGrass.png
 IMAGE BrownRock.png
+IMAGE GrayRock.png
 IMAGE BasicTree1.png
 IMAGE BasicTree2.png

@@ -1,8 +1,10 @@
 #include "shutdown.h"
 #include "level.h"
 #include "orders.h"
-#include "log.h"
 #include "types.h"
+#include "units.h"
+#include "util.h"
+#include "log.h"
 
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
@@ -16,12 +18,13 @@
 
 #include "stdio.h"
 #include "math.h"
+#include <list>
 
-#define TILE_SIZE 8
 #define TURN_LENGTH 1000
 
 
 using namespace sf;
+using namespace std;
 
 namespace sum {
 
@@ -42,12 +45,15 @@ SFML_WindowEventManager* l_event_manager;
 int turn, turn_progress;
 
 //////////////////////////////////////////////////////////////////////
-// Some includes
+// Some definitions
 //////////////////////////////////////////////////////////////////////
 
-#include "units.cpp"
-
 struct Building
+{
+
+};
+
+struct Effect
 {
 
 };
@@ -72,6 +78,10 @@ Sprite *base_underground_sprite;
 Terrain* terrain_grid;
 Building** building_grid;
 Unit** unit_grid;
+// Lists
+list<Unit*> unit_list;
+list<Building*> building_list;
+list<Effect*> effects_list;
 
 //////////////////////////////////////////////////////////////////////
 // UI Data
@@ -100,8 +110,6 @@ Vector2u coordsWindowToLevel( int window_x, int window_y )
 
    int x = (int)view_coords.x,
        y = (int)view_coords.y;
-   x /= TILE_SIZE;
-   y /= TILE_SIZE;
    return Vector2u(x, y);
 }
 
@@ -124,11 +132,6 @@ int setView( float x_size, Vector2f center )
       return -1;
    }
 
-   x_size *= TILE_SIZE;
-   y_size *= TILE_SIZE;
-   center.x *= TILE_SIZE;
-   center.y *= TILE_SIZE;
-   
    level_view->setSize( x_size, y_size );
    level_view->setCenter( center.x, center.y );
 
@@ -152,14 +155,14 @@ int shiftView( float x_shift, float y_shift )
    if (x_base < 0)
       x_add = -x_base;
 
-   if (x_top > (level_dim_x * TILE_SIZE))
-      x_add = (level_dim_x * TILE_SIZE) - x_top;
+   if (x_top > (level_dim_x ))
+      x_add = (level_dim_x ) - x_top;
 
    if (y_base < 0)
       y_add = -y_base;
 
-   if (y_top > (level_dim_y * TILE_SIZE))
-      y_add = (level_dim_y * TILE_SIZE) - y_top;
+   if (y_top > (level_dim_y ))
+      y_add = (level_dim_y ) - y_top;
 
    new_center.x += x_add;
    new_center.y += y_add;
@@ -189,12 +192,12 @@ int zoomView( int ticks, Vector2f zoom_around )
       x_top -= x_base;
    }
 
-   if (x_top > (level_dim_x * TILE_SIZE)) {
+   if (x_top > (level_dim_x )) {
       if (x_add != 0) // In other words, if can't zoom out that much
          return -1;
       else {
-         x_add = (level_dim_x * TILE_SIZE) - x_top;
-         x_top = (level_dim_x * TILE_SIZE);
+         x_add = (level_dim_x ) - x_top;
+         x_top = (level_dim_x );
          x_base += x_add;
          if (x_base < 0)
             return -1;
@@ -207,12 +210,12 @@ int zoomView( int ticks, Vector2f zoom_around )
       y_top -= y_base;
    }
 
-   if (y_top > (level_dim_y * TILE_SIZE)) {
+   if (y_top > (level_dim_y )) {
       if (y_add != 0) // In other words, if can't zoom out that much
          return -1;
       else {
-         y_add = (level_dim_y * TILE_SIZE) - y_top;
-         y_top = (level_dim_y * TILE_SIZE);
+         y_add = (level_dim_y ) - y_top;
+         y_top = (level_dim_y );
          y_base += y_add;
          if (y_base < 0)
             return -1;
@@ -239,9 +242,11 @@ void initTextures()
    terrain_sprites[TER_TREE1] = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "BasicTree1.png" )));
    terrain_sprites[TER_TREE2] = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "BasicTree2.png" )));
          
+   normalizeTo1x1( terrain_sprites[TER_TREE1] );
+   normalizeTo1x1( terrain_sprites[TER_TREE2] );
    
    base_grass_sprite = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "GreenGrass.png" )));
-   base_mountain_sprite = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "BrownRock.png" )));
+   base_mountain_sprite = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "GrayRock.png" )));
    base_underground_sprite = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "BrownRock.png" )));
 
 }
@@ -307,14 +312,23 @@ int loadLevel( int level_id )
       GRID_AT(terrain_grid,4,3) = TER_TREE1;
       GRID_AT(terrain_grid,1,1) = TER_TREE2;
       setView( 3.0, Vector2f( 2.0, 2.0 ) );
+
+      Unit *magician = new Magician( 6, 2, SOUTH );
+      unit_list.push_front( magician );
    }
 
    return 0;
 }
 
 //////////////////////////////////////////////////////////////////////
-// Core
+// Update
 //////////////////////////////////////////////////////////////////////
+
+int updateAll( int dt )
+{
+
+   return 0;
+}
 
 int updateLevel( int dt )
 {
@@ -331,6 +345,10 @@ int updateLevel( int dt )
    return 0;
 }
 
+//////////////////////////////////////////////////////////////////////
+// Draw
+//////////////////////////////////////////////////////////////////////
+
 void drawBaseTerrain()
 {
    Sprite *s_ter;
@@ -342,34 +360,46 @@ void drawBaseTerrain()
          s_ter = base_underground_sprite;
    
    s_ter->setPosition( 0, 0 );
-   s_ter->setScale( TILE_SIZE * level_dim_x, TILE_SIZE * level_dim_y ); 
+   s_ter->setScale( level_dim_x, level_dim_y ); 
    l_r_window->draw( *s_ter );
 }
 
-int drawLevel()
+void drawTerrain()
 {
-   log("Enter drawLevel");
-   l_r_window->setView(*level_view);
-   // Level
-   drawBaseTerrain();
    int x, y;
    for (x = 0; x < level_dim_x; ++x) {
       for (y = 0; y < level_dim_y; ++y) {
 
-         int x_real = x*TILE_SIZE,
-             y_real = y*TILE_SIZE;
-
          Sprite *s_ter = terrain_sprites[GRID_AT(terrain_grid,x,y)];
       
          if (s_ter) {
-            s_ter->setPosition( x_real, y_real );
+            s_ter->setPosition( x, y );
             l_r_window->draw( *s_ter );
          }
 
       }
    }
+}
 
-   log("Leave drawLevel");
+void drawUnits()
+{
+   for (list<Unit*>::iterator it=unit_list.begin(); it != unit_list.end(); ++it)
+   {
+      Unit* unit = (*it);
+      if (unit) {
+         unit->draw();
+      }
+   }
+}
+
+int drawLevel()
+{
+   l_r_window->setView(*level_view);
+   // Level
+   drawBaseTerrain();
+   drawTerrain();
+   drawUnits();
+
    // Gui
 
    return 0;
@@ -386,13 +416,13 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
       if (key_press.code == sf::Keyboard::Q)
          shutdown(1,1);
       if (key_press.code == sf::Keyboard::Right)
-         shiftView( TILE_SIZE * 2, 0 );
+         shiftView( 2, 0 );
       if (key_press.code == sf::Keyboard::Left)
-         shiftView( -TILE_SIZE * 2, 0 );
+         shiftView( -2, 0 );
       if (key_press.code == sf::Keyboard::Down)
-         shiftView( 0, TILE_SIZE * 2 );
+         shiftView( 0, 2 );
       if (key_press.code == sf::Keyboard::Up)
-         shiftView( 0, -TILE_SIZE * 2 );
+         shiftView( 0, -2 );
       if (key_press.code == sf::Keyboard::Add)
          zoomView( 1 , level_view->getCenter());
       if (key_press.code == sf::Keyboard::Subtract)

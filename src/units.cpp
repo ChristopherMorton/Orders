@@ -1,57 +1,113 @@
-// included into level.cpp
+#include "units.h"
+#include "focus.h"
+#include "util.h"
+#include "log.h"
 
-#define healthPercent() ((float)health/(float)max_health)
+#include "SFML_GlobalRenderWindow.hpp"
+#include "SFML_TextureManager.hpp"
 
-struct Unit
-{
-public:
-   int x_grid, y_grid, x_next, y_next;
-   float x_real, y_real;
-   Direction facing;
+#include <SFML/Graphics.hpp>
 
-   int team; // 0 = player
+//////////////////////////////////////////////////////////////////////
+// Definitions
+//////////////////////////////////////////////////////////////////////
 
-   int health, max_health;
+#define MAGICIAN_BASE_HEALTH 100
 
-   virtual int addOrder( Order o ) = 0;
+using namespace sf;
+using namespace std;
 
-   virtual int completeTurn() = 0;
-   virtual int update( int dt ) = 0;
-   virtual int draw() = 0;
-
-   virtual ~Unit();
-};
-
-
-struct Tank : public Unit
+namespace sum
 {
 
-};
+//////////////////////////////////////////////////////////////////////
+// Base Unit
+//////////////////////////////////////////////////////////////////////
 
-struct Warrior : public Unit
+int Unit::TurnTo( Direction face )
+{
+   facing = face;
+
+   if (face == NORTH) {
+      x_next = x_grid;
+      y_next = y_grid - 1;
+   } else if (face == SOUTH) {
+      x_next = x_grid;
+      y_next = y_grid + 1;
+   } else if (face == EAST) {
+      x_next = x_grid + 1;
+      y_next = y_grid;
+   } else if (face == WEST) {
+      x_next = x_grid - 1;
+      y_next = y_grid;
+   } 
+
+   return 0;
+}
+
+Unit::~Unit()
 {
 
-};
+}
 
-struct Scout : public Unit
+//////////////////////////////////////////////////////////////////////
+// Magician
+//////////////////////////////////////////////////////////////////////
+
+// *tors
+Magician::Magician()
+{
+   log("Creating empty Magician");
+   x_grid = -1;
+   y_grid = -1;
+}
+
+Magician::Magician( int x, int y, Direction face )
+{
+   log("Creating Magician");
+   x_grid = x_real = x;
+   y_grid = y_real = y;
+   TurnTo(face);
+
+   health = max_health = MAGICIAN_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
+
+   team = 0;
+}
+
+Magician::~Magician()
 {
 
-};
+}
 
-struct Leiutenant : public Unit
+// Virtual methods
+
+int Magician::addOrder( Order o )
 {
 
-};
+   return 0;
+}
 
-struct Magician : public Unit
+int Magician::completeTurn()
 {
-private:
-   Magician(); // Disallowed
 
-public:
-   Magician( int grid_x, int grid_y, Direction face );
+   return 0;
+}
 
-   virtual ~Magician();
+int Magician::update()
+{
 
+   return 0;
+}
+
+int Magician::draw()
+{
+   Sprite *mag = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "Magician1.png" )));
+
+   normalizeTo1x1( mag );
+   mag->setPosition( x_real, y_real );
+   SFML_GlobalRenderWindow::get()->draw( *mag );
+
+   return 0;
+}
 
 };
