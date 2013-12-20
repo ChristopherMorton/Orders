@@ -258,7 +258,9 @@ int runApp()
 
    // Timing!
    sf::Clock clock;
-   unsigned int dt;
+   unsigned int old_time, new_time, dt;
+   old_time = 0;
+   new_time = 0;
 
    // Loading
    preload();
@@ -281,7 +283,10 @@ int runApp()
    {
       if (menu_state & MENU_MAIN) { 
 
-         dt = clock.getElapsedTime().asMicroseconds();
+         new_time = clock.getElapsedTime().asMilliseconds();
+         dt = new_time - old_time;
+         old_time = new_time;
+
          event_manager->handleEvents();
 
          r_window->clear(sf::Color::Yellow);

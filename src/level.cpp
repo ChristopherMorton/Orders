@@ -18,7 +18,7 @@
 
 #include "stdio.h"
 #include "math.h"
-#include <list>
+#include <deque>
 
 #define TURN_LENGTH 1000
 
@@ -79,9 +79,9 @@ Terrain* terrain_grid;
 Building** building_grid;
 Unit** unit_grid;
 // Lists
-list<Unit*> unit_list;
-list<Building*> building_list;
-list<Effect*> effects_list;
+deque<Unit*> unit_list;
+deque<Building*> building_list;
+deque<Effect*> effects_list;
 
 //////////////////////////////////////////////////////////////////////
 // UI Data
@@ -313,8 +313,10 @@ int loadLevel( int level_id )
       GRID_AT(terrain_grid,1,1) = TER_TREE2;
       setView( 3.0, Vector2f( 2.0, 2.0 ) );
 
-      Unit *magician = new Magician( 6, 2, SOUTH );
+      Unit *magician = new Magician( 2, 2, SOUTH );
       unit_list.push_front( magician );
+      //Order o( MOVE_FORWARD );
+      //magician->addOrder( o );
    }
 
    return 0;
@@ -324,23 +326,63 @@ int loadLevel( int level_id )
 // Update
 //////////////////////////////////////////////////////////////////////
 
+int startTurnAll( )
+{
+   for (deque<Unit*>::iterator it=unit_list.begin(); it != unit_list.end(); ++it)
+   {
+      Unit* unit = (*it);
+      if (unit) {
+         unit->startTurn();
+      }
+   }
+
+   return 0;
+}
+
 int updateAll( int dt )
 {
+   float dtf = (float)dt / (float)TURN_LENGTH;
+   for (deque<Unit*>::iterator it=unit_list.begin(); it != unit_list.end(); ++it)
+   {
+      Unit* unit = (*it);
+      if (unit) {
+         unit->update( dt, dtf );
+      }
+   }
+
+   return 0;
+}
+
+int completeTurnAll( )
+{
+   for (deque<Unit*>::iterator it=unit_list.begin(); it != unit_list.end(); ++it)
+   {
+      Unit* unit = (*it);
+      if (unit) {
+         unit->completeTurn();
+      }
+   }
 
    return 0;
 }
 
 int updateLevel( int dt )
 {
+   int til_end = TURN_LENGTH - turn_progress;
    turn_progress += dt;
 
    if (turn_progress > TURN_LENGTH) {
       turn_progress -= TURN_LENGTH;
-      //completeTurnAll();
+
+      updateAll( til_end );
+
+      completeTurnAll();
       turn++;
-      //updateAll( turn_progress );
+      startTurnAll();
+
+      updateAll( turn_progress );
    } else {
-      //updateAll( dt );
+      updateAll( dt );
    }
    return 0;
 }
@@ -383,7 +425,7 @@ void drawTerrain()
 
 void drawUnits()
 {
-   for (list<Unit*>::iterator it=unit_list.begin(); it != unit_list.end(); ++it)
+   for (deque<Unit*>::iterator it=unit_list.begin(); it != unit_list.end(); ++it)
    {
       Unit* unit = (*it);
       if (unit) {
@@ -427,6 +469,24 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
          zoomView( 1 , level_view->getCenter());
       if (key_press.code == sf::Keyboard::Subtract)
          zoomView( -1 , level_view->getCenter());
+
+      if (key_press.code == sf::Keyboard::W) {
+         unit_list.front()->addOrder( Order( TURN_NORTH, TRUE, 1 ) );
+         unit_list.front()->addOrder( Order( MOVE_FORWARD, TRUE, 1 ) ); 
+      }
+      if (key_press.code == sf::Keyboard::A) {
+         unit_list.front()->addOrder( Order( TURN_WEST, TRUE, 1 ) );
+         unit_list.front()->addOrder( Order( MOVE_FORWARD, TRUE, 1 ) ); 
+      }
+      if (key_press.code == sf::Keyboard::R) {
+         unit_list.front()->addOrder( Order( TURN_SOUTH, TRUE, 1 ) );
+         unit_list.front()->addOrder( Order( MOVE_FORWARD, TRUE, 1 ) ); 
+      }
+      if (key_press.code == sf::Keyboard::S) {
+         unit_list.front()->addOrder( Order( TURN_EAST, TRUE, 1 ) );
+         unit_list.front()->addOrder( Order( MOVE_FORWARD, TRUE, 1 ) ); 
+      }
+
       return true;
    }
     

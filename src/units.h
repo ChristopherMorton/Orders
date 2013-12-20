@@ -17,13 +17,28 @@ public:
    int team; // 0 = player
 
    float health, max_health;
+   int speed; // out of 1000 - when do moves complete?
+
+   int progress;
+
+   Order *order_queue;
+   int current_order, max_orders, order_count;
 
    int TurnTo( Direction face );
 
-   virtual int addOrder( Order o ) = 0;
+   int startBasicOrder( Order o );
+   int updateBasicOrder( int dt, float dtf, Order o );
+   int completeBasicOrder( Order o );
 
-   virtual int completeTurn() = 0;
-   virtual int update() = 0;
+   void clearOrders();
+
+   virtual int addOrder( Order o );
+
+   virtual int doAttack( Order o ) = 0;
+
+   virtual int startTurn();
+   virtual int completeTurn();
+   virtual int update( int dt, float dtf );
    virtual int draw() = 0;
 
    virtual ~Unit();
@@ -60,8 +75,11 @@ public:
 
    virtual int addOrder( Order o );
 
-   virtual int completeTurn();
-   virtual int update();
+   virtual int doAttack( Order o );
+
+   //virtual int startTurn();
+   //virtual int completeTurn();
+   //virtual int update( int dt, float dtf );
    virtual int draw();
 
    virtual ~Magician();
