@@ -308,12 +308,13 @@ int loadLevel( int level_id )
    if (level_id == -1 || true)
    {
       base_terrain = BASE_TER_GRASS;
-      initGrids(10,5);
-      GRID_AT(terrain_grid,4,3) = TER_TREE1;
-      GRID_AT(terrain_grid,1,1) = TER_TREE2;
-      setView( 3.0, Vector2f( 2.0, 2.0 ) );
+      initGrids(20,15);
+      GRID_AT(terrain_grid,6,5) = TER_TREE1;
+      GRID_AT(terrain_grid,2,2) = TER_TREE2;
+      GRID_AT(terrain_grid,11,11) = TER_TREE2;
+      setView( 11.9, Vector2f( 6.0, 6.0 ) );
 
-      Unit *magician = new Magician( 2, 2, SOUTH );
+      Unit *magician = new Magician( 4, 4, SOUTH );
       unit_list.push_front( magician );
       //Order o( MOVE_FORWARD );
       //magician->addOrder( o );
@@ -471,20 +472,46 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
          zoomView( -1 , level_view->getCenter());
 
       if (key_press.code == sf::Keyboard::W) {
+         log("Pressed W");
          unit_list.front()->addOrder( Order( TURN_NORTH, TRUE, 1 ) );
          unit_list.front()->addOrder( Order( MOVE_FORWARD, TRUE, 1 ) ); 
       }
       if (key_press.code == sf::Keyboard::A) {
+         log("Pressed A");
          unit_list.front()->addOrder( Order( TURN_WEST, TRUE, 1 ) );
          unit_list.front()->addOrder( Order( MOVE_FORWARD, TRUE, 1 ) ); 
       }
       if (key_press.code == sf::Keyboard::R) {
+         log("Pressed R");
          unit_list.front()->addOrder( Order( TURN_SOUTH, TRUE, 1 ) );
          unit_list.front()->addOrder( Order( MOVE_FORWARD, TRUE, 1 ) ); 
       }
       if (key_press.code == sf::Keyboard::S) {
+         log("Pressed S");
          unit_list.front()->addOrder( Order( TURN_EAST, TRUE, 1 ) );
          unit_list.front()->addOrder( Order( MOVE_FORWARD, TRUE, 1 ) ); 
+      }
+      if (key_press.code == sf::Keyboard::Space) {
+         unit_list.front()->activate();
+      }
+      if (key_press.code == sf::Keyboard::D) {
+         unit_list.front()->clearOrders();
+         unit_list.front()->active = 0;
+      }
+      if (key_press.code == sf::Keyboard::P) {
+         unit_list.front()->logOrders();
+      }
+      if (key_press.code == sf::Keyboard::LBracket) {
+         log("Pressed LBracket");
+         unit_list.front()->addOrder( Order( START_BLOCK, TRUE, 2 ) );
+      }
+      if (key_press.code == sf::Keyboard::RBracket) {
+         log("Pressed RBracket");
+         unit_list.front()->addOrder( Order( END_BLOCK ) );
+      }
+      if (key_press.code == sf::Keyboard::O) {
+         log("Pressed O");
+         unit_list.front()->addOrder( Order( REPEAT, TRUE, -1 ) );
       }
 
       return true;

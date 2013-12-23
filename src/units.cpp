@@ -25,26 +25,110 @@ namespace sum
 // Base Unit
 //////////////////////////////////////////////////////////////////////
 
-int Unit::startBasicOrder( Order o )
+int Unit::startBasicOrder( Order &o, bool cond_result )
 {
+   int nest;
+
    if (o.action <= WAIT) {
       switch (o.action) {
          case MOVE_BACK:
          case MOVE_FORWARD:
-
-            return 1;
+            if (cond_result == 1) {
+               log("MOVE");
+               return 1;
+            } else {
+               log("MOVE SKIPPED");
+               return 0;
+            }
          case TURN_NORTH:
-            TurnTo(NORTH);
+            if (cond_result == 1) {
+               TurnTo(NORTH);
+               log("Turn NORTH");
+            } else {
+               log("Turn NORTH SKIPPED"); 
+            }
             return 0;
          case TURN_EAST:
-            TurnTo(EAST);
+            if (cond_result == 1) {
+               TurnTo(EAST);
+               log("Turn EAST");
+            } else {
+               log("Turn NORTH SKIPPED"); 
+            }
             return 0;
          case TURN_SOUTH:
-            TurnTo(SOUTH);
+            if (cond_result == 1) {
+               TurnTo(SOUTH);
+               log("Turn SOUTH");
+            } else {
+               log("Turn NORTH SKIPPED"); 
+            }
             return 0;
          case TURN_WEST:
-            TurnTo(WEST);
+            if (cond_result == 1) {
+               TurnTo(WEST);
+               log("Turn WEST");
+            } else {
+               log("Turn NORTH SKIPPED"); 
+            }
             return 0;
+         case START_BLOCK:
+            if (cond_result == 1 && o.iteration < o.count) {
+               log("Block START");
+               o.iteration++;
+               return 0;
+            } else {
+               log("Block SKIPPED");
+               o.iteration = 0;
+               nest = 1;
+               for (int i = current_order + 1; i < order_count; ++i) {
+                  if (order_queue[i].action == START_BLOCK)
+                     nest++;
+
+                  if (order_queue[i].action == END_BLOCK) {
+                     nest--;
+                     if (nest == 0) { // Found matching end block - go to it, then skip
+                        current_order = i;
+                        return 0;
+                     }
+                  }
+               }
+               // Should only reach here if the block isn't closed...
+               log("Skipped a START_BLOCK with no matching END_BLOCK");   
+               current_order = order_count;
+               active = 0;
+               return 1;
+            }
+         case END_BLOCK:
+            // Find matching start block, and go to it - that's it
+            nest = 1;
+            for (int i = current_order - 1; i >= 0; --i) {
+               if (order_queue[i].action == END_BLOCK)
+                  nest++;
+
+               if (order_queue[i].action == START_BLOCK) {
+                  nest--;
+                  if (nest == 0) { // Found matching start block - go 1 before it, and skip
+                     current_order = i-1;
+                     return 0;
+                  }
+               }
+            }
+            log("Found an END_BLOCK with no matching START_BLOCK - skipping");
+            // Ignore it
+            return 0;
+         case REPEAT:
+            if (cond_result == 1 && o.iteration < o.count) {
+               o.iteration++;
+               log("REPEAT");
+               current_order = -1; // Goto 0
+               return 0;
+            } else {
+               o.iteration = 0;
+               log("REPEAT skipped");
+               return 0;
+            }
+         case WAIT:
          default:
             return 1;
       }
@@ -98,7 +182,7 @@ int Unit::updateBasicOrder( int dt, float dtf, Order o )
    else return -1;
 }
 
-int Unit::completeBasicOrder( Order o )
+int Unit::completeBasicOrder( Order &o )
 {
    if (o.action <= WAIT) {
       switch (o.action) {
@@ -114,10 +198,28 @@ int Unit::completeBasicOrder( Order o )
    else return -1;
 }
 
+bool Unit::evaluateConditional( Order o )
+{
+   switch (o.condition) {
+      case TRUE:
+         return true;
+      case FALSE:
+         return false;
+      default:
+         return true;
+   }
+}
+
+void Unit::activate()
+{
+   active = 1;
+}
+
 void Unit::clearOrders()
 {
    order_count = 0;
    current_order = -1;
+   log("Cleared orders");
 }
 
 int Unit::TurnTo( Direction face )
@@ -148,6 +250,15 @@ Unit::~Unit()
 
 }
 
+void Unit::logOrders()
+{
+   log("Unit printOrders:");
+   for( int i = 0; i < order_count; i ++ )
+   {
+      order_queue[i].logSelf();
+   }
+}
+
 int Unit::addOrder( Order o )
 {
    if (o.action <= WAIT) {
@@ -163,14 +274,13 @@ int Unit::addOrder( Order o )
 
 int Unit::startTurn()
 {
-   if (current_order == -1 && order_count > 0)
-      current_order = 0; // Start following orders
-
-   while (current_order < order_count && current_order >= 0) {
-      Order o = order_queue[current_order];
-      int r = startBasicOrder(o);
+   while (active && current_order < order_count && current_order >= 0) {
+      Order &o = order_queue[current_order];
+      bool decision = evaluateConditional(o);
+      int r = startBasicOrder(o, decision);
       // if startBasicOrder returns 0, it's a 0-length instruction (e.g. turn)
       if (r == 0) {
+         log("->Order skipped ahead!");
          current_order++;
          continue;
       }
@@ -182,20 +292,30 @@ int Unit::startTurn()
 
 int Unit::update( int dt, float dtf )
 {
-   if (current_order < order_count && current_order >= 0) {
-      Order o = order_queue[current_order];
+   if (active && current_order < order_count && current_order >= 0) {
+      Order &o = order_queue[current_order];
       return updateBasicOrder( dt, dtf, o );
    }
    return 0;
 }
 
+// Run completeBasicOrder, update iterations, select next order
 int Unit::completeTurn()
 {
-   if (current_order < order_count && current_order >= 0) {
-      Order o = order_queue[current_order];
+   if (active && current_order < order_count && current_order >= 0) {
+      Order &o = order_queue[current_order];
       int r = completeBasicOrder(o);
-      current_order++;
+      o.iteration++;
+      if (o.iteration >= o.count && o.count != -1) { 
+         current_order++;
+         o.iteration = 0;
+      }
       return r;
+   }
+
+   // Prepare to start
+   if (current_order == -1 && active && order_count > 0) {
+      current_order = 0;
    }
 
    return 0;
@@ -225,6 +345,7 @@ Magician::Magician( int x, int y, Direction face )
    order_queue = new Order[max_orders];
    clearOrders();
 
+   active = 0;
    team = 0;
 }
 

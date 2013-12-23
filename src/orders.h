@@ -47,8 +47,10 @@ namespace sum
       Order_Action action;
       Order_Conditional condition; // Generally only attached to control flow
       int count; // How many times to repeat/sustain action
+      int iteration; // Local iteration count - needed for loops
 
       void initOrder( Order_Action, Order_Conditional, int );
+      void logSelf();
 
       Order( Order_Action, Order_Conditional, int );
       Order( Order_Action, Order_Conditional );

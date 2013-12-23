@@ -23,15 +23,21 @@ public:
 
    Order *order_queue;
    int current_order, max_orders, order_count;
+   int current_iteration;
+   int active;
 
    int TurnTo( Direction face );
 
-   int startBasicOrder( Order o );
+   int startBasicOrder( Order &o, bool cond );
    int updateBasicOrder( int dt, float dtf, Order o );
-   int completeBasicOrder( Order o );
+   int completeBasicOrder( Order &o );
 
+   bool evaluateConditional( Order o );
+
+   void activate();
    void clearOrders();
 
+   void logOrders();
    virtual int addOrder( Order o );
 
    virtual int doAttack( Order o ) = 0;
