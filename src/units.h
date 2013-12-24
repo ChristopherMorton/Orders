@@ -17,7 +17,8 @@ public:
    int team; // 0 = player
 
    float health, max_health;
-   int speed; // out of 1000 - when do moves complete?
+   float speed; // 0.0-1.0 = when do moves complete?
+   float attack_range;
 
    int progress;
 

@@ -231,8 +231,78 @@ int zoomView( int ticks, Vector2f zoom_around )
 }
 
 //////////////////////////////////////////////////////////////////////
+// Targetting
+//////////////////////////////////////////////////////////////////////
+
+Unit* getEnemy( int x, int y, float range, Direction dir, int selector)
+{
+   // First, get search box
+   int int_range = (int) range + 1;
+   int min_x, max_x, min_y, max_y;
+   min_x = x - int_range;
+   max_x = x + int_range;
+   min_y = y - int_range;
+   max_y = y + int_range;
+   switch (dir) {
+      case NORTH:
+         max_x = x;
+         break;
+      case SOUTH:
+         min_x = x;
+         break;
+      case WEST:
+         max_y = y;
+         break;
+      case EAST:
+         min_y = y;
+         break;
+   }
+   if (min_x < 0) min_x = 0;
+   if (min_x >= level_dim_x) min_x = level_dim_x - 1;
+   if (min_y < 0) min_y = 0;
+   if (min_y >= level_dim_y) min_y = level_dim_y - 1;
+
+   float range_squared = range * range;
+
+   Unit *result = NULL;
+   float result_r_squared = 0;
+   for (int i = min_x; i <= max_x; ++i) {
+      for (int j = min_y; j <= max_y; ++j) {
+         Unit *u = GRID_AT(unit_grid,i,j);
+         if (u) {
+            // Is it really in range?
+            float u_x = u->x_real - x, u_y = u->y_real - y;
+            float u_squared = (u_x * u_x) + (u_y * u_y);
+            if (u_squared <= range_squared) {
+
+               // Compare based on selector
+               if (NULL == result) {
+                  result = u;
+               } else if (selector == SELECT_CLOSEST) {
+                  if (u_squared < result_r_squared)
+                     result = u;
+               } else if (selector == SELECT_FARTHEST) {
+                  if (u_squared > result_r_squared)
+                     result = u;
+               } else if (selector == SELECT_SMALLEST) {
+                  if (u->health < result->health)
+                     result = u;
+               } else if (selector == SELECT_BIGGEST) {
+                  if (u->health > result->health)
+                     result = u;
+               }
+            }
+         }
+      }
+   }
+
+   return result;
+}
+
+//////////////////////////////////////////////////////////////////////
 // Loading
 //////////////////////////////////////////////////////////////////////
+
 void initTextures()
 {
    // Setup terrain

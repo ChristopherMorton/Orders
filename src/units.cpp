@@ -1,4 +1,5 @@
 #include "units.h"
+#include "level.h"
 #include "focus.h"
 #include "util.h"
 #include "log.h"
@@ -14,6 +15,7 @@
 
 #define MAGICIAN_BASE_HEALTH 100
 #define MAGICIAN_BASE_MEMORY 14
+#define MAGICIAN_BASE_VISION 5.0
 
 using namespace sf;
 using namespace std;
@@ -31,6 +33,9 @@ int Unit::startBasicOrder( Order &o, bool cond_result )
 
    if (o.action <= WAIT) {
       switch (o.action) {
+
+         // MOVEMENT
+
          case MOVE_BACK:
          case MOVE_FORWARD:
             if (cond_result == 1) {
@@ -72,6 +77,21 @@ int Unit::startBasicOrder( Order &o, bool cond_result )
                log("Turn NORTH SKIPPED"); 
             }
             return 0;
+
+         // ATTACKING
+
+         case ATTACK_CLOSEST:
+         case ATTACK_FARTHEST:
+         case ATTACK_SMALLEST:
+         case ATTACK_BIGGEST:
+            if (cond_result == 1) {
+               return 1;
+            } else {
+               return 0;
+            }
+
+         // CONTROL
+
          case START_BLOCK:
             if (cond_result == 1 && o.iteration < o.count) {
                log("Block START");
@@ -128,6 +148,7 @@ int Unit::startBasicOrder( Order &o, bool cond_result )
                log("REPEAT skipped");
                return 0;
             }
+
          case WAIT:
          default:
             return 1;
@@ -152,26 +173,27 @@ int Unit::updateBasicOrder( int dt, float dtf, Order o )
             else if (facing == EAST)
                x_real += dtf;
             return 0;
-            
-         case ATTACK_CLOSEST:
-         case ATTACK_FURTHEST:
-         case ATTACK_BIGGEST:
-         case ATTACK_SMALLEST:
-            progress += dt;
-            if (progress >= speed)
-               doAttack( o );
-            return 0;
 
          case TURN_NORTH:
          case TURN_EAST:
          case TURN_SOUTH:
          case TURN_WEST:
-            log("ERROR: update on TURN_* order");
+            log("ERROR: update on turn order");
             return -2;
+            
+         case ATTACK_CLOSEST:
+         case ATTACK_FARTHEST:
+         case ATTACK_SMALLEST:
+         case ATTACK_BIGGEST:
+            progress += dt;
+            if (progress >= speed)
+               doAttack( o );
+            return 0;
+
          case START_BLOCK:
          case END_BLOCK:
          case REPEAT:
-            log("ERROR: update on control block order");
+            log("ERROR: update on control order");
             return -2;
 
          case WAIT:
@@ -205,6 +227,8 @@ bool Unit::evaluateConditional( Order o )
          return true;
       case FALSE:
          return false;
+      case ENEMY_IN_RANGE:
+         return getEnemy( x_grid, y_grid, attack_range, facing, SELECT_CLOSEST ) != NULL;
       default:
          return true;
    }
@@ -340,6 +364,8 @@ Magician::Magician( int x, int y, Direction face )
    TurnTo(face);
 
    health = max_health = MAGICIAN_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
+
+   attack_range = MAGICIAN_BASE_VISION;
 
    max_orders = MAGICIAN_BASE_MEMORY * ( 1.0 + ( focus_memory * 0.08 ) );
    order_queue = new Order[max_orders];

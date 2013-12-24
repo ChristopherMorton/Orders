@@ -72,8 +72,8 @@ void Order::logSelf()
       case ATTACK_CLOSEST:
          s << "ATTACK_CLOSEST";
          break;
-      case ATTACK_FURTHEST:
-         s << "ATTACK_FURTHEST";
+      case ATTACK_FARTHEST:
+         s << "ATTACK_FARTHEST";
          break;
       case ATTACK_BIGGEST:
          s << "ATTACK_BIGGEST";
@@ -107,6 +107,9 @@ void Order::logSelf()
          break;
       case FALSE:
          s << "FALSE";
+         break;
+      case ENEMY_IN_RANGE:
+         s << "ENEMY_IN_RANGE";
          break;
       case NUM_CONDITIONALS:
          s << "NUM_CONDITIONALS";

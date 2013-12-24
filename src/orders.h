@@ -15,7 +15,7 @@ namespace sum
 
       // Basic Fighting
       ATTACK_CLOSEST,
-      ATTACK_FURTHEST,
+      ATTACK_FARTHEST,
       ATTACK_BIGGEST,
       ATTACK_SMALLEST,
 
@@ -38,6 +38,7 @@ namespace sum
    {
       TRUE,
       FALSE,
+      ENEMY_IN_RANGE,
 
       NUM_CONDITIONALS
    };
