@@ -20,7 +20,8 @@ public:
    float speed; // 0.0-1.0 = when do moves complete?
    float attack_range;
 
-   int progress;
+   float progress;
+   int done_attack; // One attack per turn!
 
    Order *order_queue;
    int current_order, max_orders, order_count;
@@ -30,7 +31,7 @@ public:
    int TurnTo( Direction face );
 
    int startBasicOrder( Order &o, bool cond );
-   int updateBasicOrder( int dt, float dtf, Order o );
+   int updateBasicOrder( float dtf, Order o );
    int completeBasicOrder( Order &o );
 
    bool evaluateConditional( Order o );
@@ -45,7 +46,7 @@ public:
 
    virtual int startTurn();
    virtual int completeTurn();
-   virtual int update( int dt, float dtf );
+   virtual int update( float dtf );
    virtual int draw() = 0;
 
    virtual ~Unit();
@@ -86,7 +87,7 @@ public:
 
    //virtual int startTurn();
    //virtual int completeTurn();
-   //virtual int update( int dt, float dtf );
+   //virtual int update( float dtf );
    virtual int draw();
 
    virtual ~Magician();

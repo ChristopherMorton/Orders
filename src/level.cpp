@@ -234,7 +234,7 @@ int zoomView( int ticks, Vector2f zoom_around )
 // Targetting
 //////////////////////////////////////////////////////////////////////
 
-Unit* getEnemy( int x, int y, float range, Direction dir, int selector)
+Unit* getEnemy( int x, int y, float range, Direction dir, int my_team, int selector)
 {
    // First, get search box
    int int_range = (int) range + 1;
@@ -269,10 +269,10 @@ Unit* getEnemy( int x, int y, float range, Direction dir, int selector)
    for (int i = min_x; i <= max_x; ++i) {
       for (int j = min_y; j <= max_y; ++j) {
          Unit *u = GRID_AT(unit_grid,i,j);
-         if (u) {
-            // Is it really in range?
+         if (u && u->team != my_team) {
             float u_x = u->x_real - x, u_y = u->y_real - y;
             float u_squared = (u_x * u_x) + (u_y * u_y);
+            // Is it really in range?
             if (u_squared <= range_squared) {
 
                // Compare based on selector
@@ -417,7 +417,7 @@ int updateAll( int dt )
    {
       Unit* unit = (*it);
       if (unit) {
-         unit->update( dt, dtf );
+         unit->update( dtf );
       }
    }
 
@@ -571,6 +571,7 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
       if (key_press.code == sf::Keyboard::P) {
          unit_list.front()->logOrders();
       }
+
       if (key_press.code == sf::Keyboard::LBracket) {
          log("Pressed LBracket");
          unit_list.front()->addOrder( Order( START_BLOCK, TRUE, 2 ) );

@@ -85,6 +85,7 @@ int Unit::startBasicOrder( Order &o, bool cond_result )
          case ATTACK_SMALLEST:
          case ATTACK_BIGGEST:
             if (cond_result == 1) {
+               done_attack = 0;
                return 1;
             } else {
                return 0;
@@ -93,7 +94,7 @@ int Unit::startBasicOrder( Order &o, bool cond_result )
          // CONTROL
 
          case START_BLOCK:
-            if (cond_result == 1 && o.iteration < o.count) {
+            if (cond_result == 1 && (o.iteration < o.count || o.count == -1)) {
                log("Block START");
                o.iteration++;
                return 0;
@@ -138,7 +139,7 @@ int Unit::startBasicOrder( Order &o, bool cond_result )
             // Ignore it
             return 0;
          case REPEAT:
-            if (cond_result == 1 && o.iteration < o.count) {
+            if (cond_result == 1 && (o.iteration < o.count || o.count == -1)) {
                o.iteration++;
                log("REPEAT");
                current_order = -1; // Goto 0
@@ -158,7 +159,7 @@ int Unit::startBasicOrder( Order &o, bool cond_result )
    else return -1;
 }
 
-int Unit::updateBasicOrder( int dt, float dtf, Order o )
+int Unit::updateBasicOrder( float dtf, Order o )
 {
    if (o.action <= WAIT) { 
       switch(o.action) {
@@ -185,9 +186,11 @@ int Unit::updateBasicOrder( int dt, float dtf, Order o )
          case ATTACK_FARTHEST:
          case ATTACK_SMALLEST:
          case ATTACK_BIGGEST:
-            progress += dt;
-            if (progress >= speed)
-               doAttack( o );
+            if (!done_attack) {
+               if (progress >= speed) {
+                  doAttack( o );
+               }
+            }
             return 0;
 
          case START_BLOCK:
@@ -228,7 +231,7 @@ bool Unit::evaluateConditional( Order o )
       case FALSE:
          return false;
       case ENEMY_IN_RANGE:
-         return getEnemy( x_grid, y_grid, attack_range, facing, SELECT_CLOSEST ) != NULL;
+         return getEnemy( x_grid, y_grid, attack_range, facing, team, SELECT_CLOSEST ) != NULL;
       default:
          return true;
    }
@@ -311,14 +314,16 @@ int Unit::startTurn()
       else break;
    }
 
+   progress = 0;
    return 0;
 }
 
-int Unit::update( int dt, float dtf )
+int Unit::update( float dtf )
 {
+   progress += dtf;
    if (active && current_order < order_count && current_order >= 0) {
       Order &o = order_queue[current_order];
-      return updateBasicOrder( dt, dtf, o );
+      return updateBasicOrder( dtf, o );
    }
    return 0;
 }
@@ -399,6 +404,7 @@ int Magician::addOrder( Order o )
 
 int Magician::doAttack( Order o )
 {
+   done_attack = 1;
 
    return 0;
 }
@@ -420,7 +426,7 @@ int Magician::completeTurn()
    return 0;
 }
 
-int Magician::update( int dt, float dtf )
+int Magician::update( float dtf )
 {
 
    return 0;

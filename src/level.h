@@ -16,7 +16,7 @@ namespace sum
 #define SELECT_BIGGEST 3
 #define SELECT_SMALLEST 4
    class Unit;
-   Unit* getEnemy( int x, int y, float range, Direction dir, int selector);
+   Unit* getEnemy( int x, int y, float range, Direction dir, int team, int selector);
 };
 
 #endif
