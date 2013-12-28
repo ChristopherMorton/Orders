@@ -76,7 +76,9 @@ class Leiutenant : public Unit
 class Magician : public Unit
 {
 private:
-   Magician(); // Disallowed
+   Magician(); // Disallowed 
+
+   float orb_speed;
 
 public:
    Magician( int grid_x, int grid_y, Direction face );

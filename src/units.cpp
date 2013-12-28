@@ -2,6 +2,7 @@
 #include "level.h"
 #include "focus.h"
 #include "util.h"
+#include "projectile.h"
 #include "log.h"
 
 #include "SFML_GlobalRenderWindow.hpp"
@@ -16,6 +17,8 @@
 #define MAGICIAN_BASE_HEALTH 100
 #define MAGICIAN_BASE_MEMORY 14
 #define MAGICIAN_BASE_VISION 5.0
+#define MAGICIAN_BASE_SPEED 0.9
+#define MAGICIAN_ORB_SPEED 3.0
 
 using namespace sf;
 using namespace std;
@@ -39,42 +42,32 @@ int Unit::startBasicOrder( Order &o, bool cond_result )
          case MOVE_BACK:
          case MOVE_FORWARD:
             if (cond_result == 1) {
-               log("MOVE");
                return 1;
             } else {
-               log("MOVE SKIPPED");
                return 0;
             }
          case TURN_NORTH:
             if (cond_result == 1) {
                TurnTo(NORTH);
-               log("Turn NORTH");
             } else {
-               log("Turn NORTH SKIPPED"); 
             }
             return 0;
          case TURN_EAST:
             if (cond_result == 1) {
                TurnTo(EAST);
-               log("Turn EAST");
             } else {
-               log("Turn NORTH SKIPPED"); 
             }
             return 0;
          case TURN_SOUTH:
             if (cond_result == 1) {
                TurnTo(SOUTH);
-               log("Turn SOUTH");
             } else {
-               log("Turn NORTH SKIPPED"); 
             }
             return 0;
          case TURN_WEST:
             if (cond_result == 1) {
                TurnTo(WEST);
-               log("Turn WEST");
             } else {
-               log("Turn NORTH SKIPPED"); 
             }
             return 0;
 
@@ -95,11 +88,9 @@ int Unit::startBasicOrder( Order &o, bool cond_result )
 
          case START_BLOCK:
             if (cond_result == 1 && (o.iteration < o.count || o.count == -1)) {
-               log("Block START");
                o.iteration++;
                return 0;
             } else {
-               log("Block SKIPPED");
                o.iteration = 0;
                nest = 1;
                for (int i = current_order + 1; i < order_count; ++i) {
@@ -141,12 +132,10 @@ int Unit::startBasicOrder( Order &o, bool cond_result )
          case REPEAT:
             if (cond_result == 1 && (o.iteration < o.count || o.count == -1)) {
                o.iteration++;
-               log("REPEAT");
                current_order = -1; // Goto 0
                return 0;
             } else {
                o.iteration = 0;
-               log("REPEAT skipped");
                return 0;
             }
 
@@ -307,7 +296,6 @@ int Unit::startTurn()
       int r = startBasicOrder(o, decision);
       // if startBasicOrder returns 0, it's a 0-length instruction (e.g. turn)
       if (r == 0) {
-         log("->Order skipped ahead!");
          current_order++;
          continue;
       }
@@ -371,6 +359,9 @@ Magician::Magician( int x, int y, Direction face )
    health = max_health = MAGICIAN_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
 
    attack_range = MAGICIAN_BASE_VISION;
+   orb_speed = MAGICIAN_ORB_SPEED * ( 1.0 + ( focus_speed * 0.01) );
+
+   speed = MAGICIAN_BASE_SPEED * ( 1.0 - ( focus_speed * 0.02 ) );
 
    max_orders = MAGICIAN_BASE_MEMORY * ( 1.0 + ( focus_memory * 0.08 ) );
    order_queue = new Order[max_orders];
@@ -390,7 +381,6 @@ Magician::~Magician()
 
 int Magician::addOrder( Order o )
 {
-   log("Magician add order");
    if (o.action <= WAIT || (o.action >= MAG_MEDITATE)) {
       if (order_count >= max_orders) // No more memory
          return -2;
@@ -404,8 +394,33 @@ int Magician::addOrder( Order o )
 
 int Magician::doAttack( Order o )
 {
-   done_attack = 1;
+   int selector = SELECT_CLOSEST;
+   Unit *target = NULL;
+   switch(o.action) {
+      case ATTACK_CLOSEST:
+         selector = SELECT_CLOSEST;
+         break;
+      case ATTACK_FARTHEST:
+         selector = SELECT_FARTHEST;
+         break;
+      case ATTACK_SMALLEST:
+         selector = SELECT_SMALLEST;
+         break;
+      case ATTACK_BIGGEST:
+         selector = SELECT_BIGGEST;
+         break;
+      default:
+         log("ERROR: doAttack called on non-attack order");
+         return -1;
+   }
 
+   target = getEnemy( x_grid, y_grid, attack_range, facing, team, selector );
+
+   if (target) {
+      generateProjectile( HOMING_ORB, team, x_real, y_real, orb_speed, target );
+   }
+
+   done_attack = 1;
    return 0;
 }
 

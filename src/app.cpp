@@ -3,6 +3,7 @@
 #include "config.h"
 #include "savestate.h" 
 #include "level.h"
+#include "projectile.h"
 #include "listeners.h"
 #include "log.h"
 
@@ -161,6 +162,9 @@ int progressiveLoad()
       if (progress++ > PROGESS_CAP)
          return -1;
    }
+
+   if (loadProjectiles() == 1)
+      return -1;
 
    menu_state = MENU_POSTLOAD;
    return 0;
