@@ -459,4 +459,57 @@ int Magician::draw()
    return 0;
 }
 
+//////////////////////////////////////////////////////////////////////
+// TargetPractice
+//////////////////////////////////////////////////////////////////////
+
+TargetPractice::TargetPractice( int x, int y, Direction face )
+{
+   x_grid = x_real = x;
+   y_grid = y_real = y;
+   TurnTo( face );
+
+   health = max_health = 1000;
+
+   attack_range = 0;
+
+   speed = 0.5;
+
+   max_orders = 1;
+   order_queue = NULL;
+   clearOrders();
+
+   active = 0;
+   team = 99;
+}
+
+int TargetPractice::addOrder( Order o )
+{
+   // Does no orders
+   return 0;
+}
+
+int TargetPractice::doAttack( Order o )
+{
+   // Does no attacks
+   return 0;
+}
+
+int TargetPractice::draw()
+{
+   Sprite *targ = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "TargetPractice.png" )));
+
+   normalizeTo1x1( targ );
+   targ->setPosition( x_real, y_real );
+   SFML_GlobalRenderWindow::get()->draw( *targ );
+
+   return 0;
+
+}
+
+TargetPractice::~TargetPractice()
+{
+
+}
+
 };

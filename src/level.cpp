@@ -388,6 +388,9 @@ int loadLevel( int level_id )
       unit_list.push_front( magician );
       //Order o( MOVE_FORWARD );
       //magician->addOrder( o );
+
+      Unit *targetpractice = new TargetPractice( 4, 7, SOUTH );
+      unit_list.push_front( targetpractice );
    }
 
    return 0;

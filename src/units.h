@@ -95,6 +95,19 @@ public:
    virtual ~Magician();
 };
 
-}
+class TargetPractice : public Unit
+{
+private:
+   TargetPractice();
+public:
+   TargetPractice( int grid_x, int grid_y, Direction face );
+
+   virtual int addOrder( Order o );
+   virtual int doAttack( Order o );
+   virtual int draw();
+   virtual ~TargetPractice();
+};
+
+};
 
 #endif
