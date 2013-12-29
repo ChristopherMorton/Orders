@@ -30,7 +30,7 @@ namespace sum
    };
 
    // Speed means units travelled per turn
-   Projectile *generateProjectile( Projectile_Type t, int team, float x, float y, float speed, Unit* target );
+   Projectile *genProjectile( Projectile_Type t, int team, float x, float y, float speed, Unit* target );
 
 
    int loadProjectiles();

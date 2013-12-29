@@ -53,11 +53,6 @@ struct Building
 
 };
 
-struct Effect
-{
-
-};
-
 //////////////////////////////////////////////////////////////////////
 // Level Data
 //////////////////////////////////////////////////////////////////////
@@ -81,7 +76,7 @@ Unit** unit_grid;
 // Lists
 deque<Unit*> unit_list;
 deque<Building*> building_list;
-deque<Effect*> effects_list;
+deque<Projectile*> projectile_list;
 
 //////////////////////////////////////////////////////////////////////
 // UI Data
@@ -231,6 +226,21 @@ int zoomView( int ticks, Vector2f zoom_around )
 }
 
 //////////////////////////////////////////////////////////////////////
+// Adding stuff
+//////////////////////////////////////////////////////////////////////
+
+int addProjectile( Projectile_Type t, int team, float x, float y, float speed, Unit* target )
+{
+   Projectile *p = genProjectile( t, team, x, y, speed, target );
+
+   if (p) {
+      projectile_list.push_back(p);
+      return 0;
+   }
+   return -1;
+}
+
+//////////////////////////////////////////////////////////////////////
 // Targetting
 //////////////////////////////////////////////////////////////////////
 
@@ -245,16 +255,16 @@ Unit* getEnemy( int x, int y, float range, Direction dir, int my_team, int selec
    max_y = y + int_range;
    switch (dir) {
       case NORTH:
-         max_x = x;
-         break;
-      case SOUTH:
-         min_x = x;
-         break;
-      case WEST:
          max_y = y;
          break;
-      case EAST:
+      case SOUTH:
          min_y = y;
+         break;
+      case WEST:
+         max_x = x;
+         break;
+      case EAST:
+         min_x = x;
          break;
    }
    if (min_x < 0) min_x = 0;
@@ -266,8 +276,8 @@ Unit* getEnemy( int x, int y, float range, Direction dir, int my_team, int selec
 
    Unit *result = NULL;
    float result_r_squared = 0;
-   for (int i = min_x; i <= max_x; ++i) {
-      for (int j = min_y; j <= max_y; ++j) {
+   for (int j = min_y; j <= max_y; ++j) {
+      for (int i = min_x; i <= max_x; ++i) {
          Unit *u = GRID_AT(unit_grid,i,j);
          if (u && u->team != my_team) {
             float u_x = u->x_real - x, u_y = u->y_real - y;
@@ -362,7 +372,9 @@ int initGrids(int x, int y)
    for (int i = 0; i < dim; ++i) terrain_grid[i] = TER_NONE;
 
    building_grid = new Building*[dim];
+   for (int i = 0; i < dim; ++i) building_grid[i] = NULL;
    unit_grid = new Unit*[dim];
+   for (int i = 0; i < dim; ++i) unit_grid[i] = NULL;
 
    log("initGrids succeeded");
 
@@ -391,6 +403,7 @@ int loadLevel( int level_id )
 
       Unit *targetpractice = new TargetPractice( 4, 7, SOUTH );
       unit_list.push_front( targetpractice );
+      GRID_AT(unit_grid, 4, 7) = targetpractice;
    }
 
    return 0;
@@ -421,6 +434,13 @@ int updateAll( int dt )
       Unit* unit = (*it);
       if (unit) {
          unit->update( dtf );
+      }
+   }
+   for (deque<Projectile*>::iterator it=projectile_list.begin(); it != projectile_list.end(); ++it)
+   {
+      Projectile* proj = (*it);
+      if (proj) {
+         proj->update( dtf );
       }
    }
 
@@ -508,6 +528,17 @@ void drawUnits()
    }
 }
 
+void drawProjectiles()
+{
+   for (deque<Projectile*>::iterator it=projectile_list.begin(); it != projectile_list.end(); ++it)
+   {
+      Projectile* proj = (*it);
+      if (proj) {
+         proj->draw();
+      }
+   }
+}
+
 int drawLevel()
 {
    l_r_window->setView(*level_view);
@@ -515,6 +546,7 @@ int drawLevel()
    drawBaseTerrain();
    drawTerrain();
    drawUnits();
+   drawProjectiles();
 
    // Gui
 
@@ -546,46 +578,50 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
 
       if (key_press.code == sf::Keyboard::W) {
          log("Pressed W");
-         unit_list.front()->addOrder( Order( TURN_NORTH, TRUE, 1 ) );
-         unit_list.front()->addOrder( Order( MOVE_FORWARD, TRUE, 1 ) ); 
+         unit_list.back()->addOrder( Order( TURN_NORTH, TRUE, 1 ) );
+         unit_list.back()->addOrder( Order( MOVE_FORWARD, TRUE, 1 ) ); 
       }
       if (key_press.code == sf::Keyboard::A) {
          log("Pressed A");
-         unit_list.front()->addOrder( Order( TURN_WEST, TRUE, 1 ) );
-         unit_list.front()->addOrder( Order( MOVE_FORWARD, TRUE, 1 ) ); 
+         unit_list.back()->addOrder( Order( TURN_WEST, TRUE, 1 ) );
+         unit_list.back()->addOrder( Order( MOVE_FORWARD, TRUE, 1 ) ); 
       }
       if (key_press.code == sf::Keyboard::R) {
          log("Pressed R");
-         unit_list.front()->addOrder( Order( TURN_SOUTH, TRUE, 1 ) );
-         unit_list.front()->addOrder( Order( MOVE_FORWARD, TRUE, 1 ) ); 
+         unit_list.back()->addOrder( Order( TURN_SOUTH, TRUE, 1 ) );
+         unit_list.back()->addOrder( Order( MOVE_FORWARD, TRUE, 1 ) ); 
       }
       if (key_press.code == sf::Keyboard::S) {
          log("Pressed S");
-         unit_list.front()->addOrder( Order( TURN_EAST, TRUE, 1 ) );
-         unit_list.front()->addOrder( Order( MOVE_FORWARD, TRUE, 1 ) ); 
+         unit_list.back()->addOrder( Order( TURN_EAST, TRUE, 1 ) );
+         unit_list.back()->addOrder( Order( MOVE_FORWARD, TRUE, 1 ) ); 
       }
       if (key_press.code == sf::Keyboard::Space) {
-         unit_list.front()->activate();
+         unit_list.back()->activate();
       }
       if (key_press.code == sf::Keyboard::D) {
-         unit_list.front()->clearOrders();
-         unit_list.front()->active = 0;
+         unit_list.back()->clearOrders();
+         unit_list.back()->active = 0;
       }
       if (key_press.code == sf::Keyboard::P) {
-         unit_list.front()->logOrders();
+         unit_list.back()->logOrders();
       }
 
       if (key_press.code == sf::Keyboard::LBracket) {
          log("Pressed LBracket");
-         unit_list.front()->addOrder( Order( START_BLOCK, TRUE, 2 ) );
+         unit_list.back()->addOrder( Order( START_BLOCK, TRUE, 2 ) );
       }
       if (key_press.code == sf::Keyboard::RBracket) {
          log("Pressed RBracket");
-         unit_list.front()->addOrder( Order( END_BLOCK ) );
+         unit_list.back()->addOrder( Order( END_BLOCK ) );
       }
       if (key_press.code == sf::Keyboard::O) {
          log("Pressed O");
-         unit_list.front()->addOrder( Order( REPEAT, TRUE, -1 ) );
+         unit_list.back()->addOrder( Order( REPEAT, TRUE, -1 ) );
+      }
+      if (key_press.code == sf::Keyboard::M) {
+         log("Pressed M");
+         unit_list.back()->addOrder( Order( ATTACK_CLOSEST, TRUE, 1 ) );
       }
 
       return true;

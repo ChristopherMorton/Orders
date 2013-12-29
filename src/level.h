@@ -2,6 +2,8 @@
 #define LEVEL_H__
 
 #include "types.h"
+#include "units.h"
+#include "projectile.h"
 
 namespace sum
 {
@@ -17,6 +19,8 @@ namespace sum
 #define SELECT_SMALLEST 4
    class Unit;
    Unit* getEnemy( int x, int y, float range, Direction dir, int team, int selector);
+
+   int addProjectile( Projectile_Type t, int team, float x, float y, float speed, Unit* target );
 };
 
 #endif

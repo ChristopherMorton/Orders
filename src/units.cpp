@@ -394,6 +394,7 @@ int Magician::addOrder( Order o )
 
 int Magician::doAttack( Order o )
 {
+   log("Magician doAttack");
    int selector = SELECT_CLOSEST;
    Unit *target = NULL;
    switch(o.action) {
@@ -417,8 +418,11 @@ int Magician::doAttack( Order o )
    target = getEnemy( x_grid, y_grid, attack_range, facing, team, selector );
 
    if (target) {
-      generateProjectile( HOMING_ORB, team, x_real, y_real, orb_speed, target );
+      log("Magician pre-generate");
+      addProjectile( HOMING_ORB, team, x_real, y_real, orb_speed, target );
    }
+
+   log("Magician finishing attack");
 
    done_attack = 1;
    return 0;

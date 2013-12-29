@@ -31,7 +31,7 @@ int Projectile::draw( )
 {
    // Need ROTATION
 
-   Sprite *sprite = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "Magician1.png" )));
+   Sprite *sprite = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "orb0.png" )));
 
    normalizeTo1x1( sprite );
    sprite->setPosition( pos );
@@ -66,8 +66,9 @@ int loadProjectiles()
    return 0;
 }
 
-Projectile *generateProjectile( Projectile_Type t, int tm, float x, float y, float speed, Unit* target )
+Projectile *genProjectile( Projectile_Type t, int tm, float x, float y, float speed, Unit* target )
 {
+   log("Generating projectile");
    Projectile *result = NULL;
    if (target && t < NUM_PROJECTILES)
       result = new Projectile( t, tm, x, y, speed, target );
