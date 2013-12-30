@@ -21,8 +21,14 @@ int Projectile::update( float dtf )
    pos.x += (dtf * vel.x);
    pos.y += (dtf * vel.y);
 
-   // Calculate collisions TODO
+   // Calculate collisions
+   Unit *nearest = getEnemy( pos.x, pos.y, radius, ALL_DIR, -1, SELECT_CLOSEST );
 
+   if (nearest != NULL) {
+      // Collide!! It will hit anything
+      nearest->takeDamage( damage );
+      return 1;
+   }
 
    return 0;
 }
@@ -56,6 +62,17 @@ Projectile::Projectile( Projectile_Type t, int tm, float x, float y, float speed
    norm = speed / norm;
    vel.x *= norm;
    vel.y *= norm;
+
+   switch (t) {
+      case ARROW:
+         radius = 0.1;
+         damage = 20.0;
+         break;
+      case HOMING_ORB:
+         radius = 0.3;
+         damage = 30.0;
+         break;
+   }
 }
 
 int loadProjectiles()

@@ -18,7 +18,7 @@
 
 #include "stdio.h"
 #include "math.h"
-#include <deque>
+#include <list>
 
 #define TURN_LENGTH 1000
 
@@ -74,9 +74,9 @@ Terrain* terrain_grid;
 Building** building_grid;
 Unit** unit_grid;
 // Lists
-deque<Unit*> unit_list;
-deque<Building*> building_list;
-deque<Projectile*> projectile_list;
+list<Unit*> unit_list;
+list<Building*> building_list;
+list<Projectile*> projectile_list;
 
 //////////////////////////////////////////////////////////////////////
 // UI Data
@@ -228,6 +228,15 @@ int zoomView( int ticks, Vector2f zoom_around )
 //////////////////////////////////////////////////////////////////////
 // Adding stuff
 //////////////////////////////////////////////////////////////////////
+
+int removeProjectile( Projectile *p )
+{
+   if (p) {
+      projectile_list.push_back(p);
+      return 0;
+   }
+   return -1;
+}
 
 int addProjectile( Projectile_Type t, int team, float x, float y, float speed, Unit* target )
 {
@@ -415,7 +424,7 @@ int loadLevel( int level_id )
 
 int startTurnAll( )
 {
-   for (deque<Unit*>::iterator it=unit_list.begin(); it != unit_list.end(); ++it)
+   for (list<Unit*>::iterator it=unit_list.begin(); it != unit_list.end(); ++it)
    {
       Unit* unit = (*it);
       if (unit) {
@@ -429,18 +438,23 @@ int startTurnAll( )
 int updateAll( int dt )
 {
    float dtf = (float)dt / (float)TURN_LENGTH;
-   for (deque<Unit*>::iterator it=unit_list.begin(); it != unit_list.end(); ++it)
+   for (list<Unit*>::iterator it=unit_list.begin(); it != unit_list.end(); ++it)
    {
       Unit* unit = (*it);
       if (unit) {
          unit->update( dtf );
       }
    }
-   for (deque<Projectile*>::iterator it=projectile_list.begin(); it != projectile_list.end(); ++it)
+   for (list<Projectile*>::iterator it=projectile_list.begin(); it != projectile_list.end(); ++it)
    {
       Projectile* proj = (*it);
       if (proj) {
-         proj->update( dtf );
+         int r = proj->update( dtf );
+         if (r == 1) {
+            // Delete the projectile
+            delete proj;
+            (*it) = NULL;
+         }
       }
    }
 
@@ -449,7 +463,7 @@ int updateAll( int dt )
 
 int completeTurnAll( )
 {
-   for (deque<Unit*>::iterator it=unit_list.begin(); it != unit_list.end(); ++it)
+   for (list<Unit*>::iterator it=unit_list.begin(); it != unit_list.end(); ++it)
    {
       Unit* unit = (*it);
       if (unit) {
@@ -519,7 +533,7 @@ void drawTerrain()
 
 void drawUnits()
 {
-   for (deque<Unit*>::iterator it=unit_list.begin(); it != unit_list.end(); ++it)
+   for (list<Unit*>::iterator it=unit_list.begin(); it != unit_list.end(); ++it)
    {
       Unit* unit = (*it);
       if (unit) {
@@ -530,7 +544,7 @@ void drawUnits()
 
 void drawProjectiles()
 {
-   for (deque<Projectile*>::iterator it=projectile_list.begin(); it != projectile_list.end(); ++it)
+   for (list<Projectile*>::iterator it=projectile_list.begin(); it != projectile_list.end(); ++it)
    {
       Projectile* proj = (*it);
       if (proj) {

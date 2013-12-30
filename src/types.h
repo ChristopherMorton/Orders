@@ -9,7 +9,8 @@ typedef enum
    NORTH,
    EAST,
    SOUTH,
-   WEST
+   WEST,
+   ALL_DIR
 } Direction;
 
 typedef enum {

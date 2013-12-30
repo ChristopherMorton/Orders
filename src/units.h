@@ -16,6 +16,8 @@ public:
 
    int team; // 0 = player
 
+   bool alive;
+
    float health, max_health;
    float speed; // 0.0-1.0 = when do moves complete?
    float attack_range;
@@ -43,6 +45,8 @@ public:
    virtual int addOrder( Order o );
 
    virtual int doAttack( Order o ) = 0;
+
+   virtual int takeDamage( float damage );
 
    virtual int startTurn();
    virtual int completeTurn();

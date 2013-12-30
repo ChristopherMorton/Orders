@@ -254,7 +254,9 @@ int Unit::TurnTo( Direction face )
    } else if (face == WEST) {
       x_next = x_grid - 1;
       y_next = y_grid;
-   } 
+   } else if (face == ALL_DIR) {
+      return -1;
+   }
 
    return 0;
 }
@@ -338,6 +340,17 @@ int Unit::completeTurn()
    return 0;
 }
 
+int Unit::takeDamage( float damage )
+{
+   health -= damage;
+   if (health <= 0) {
+      // Dead!
+      alive = false;
+      return -1;
+   }
+
+   return 0;
+}
 
 //////////////////////////////////////////////////////////////////////
 // Magician
@@ -352,6 +365,9 @@ Magician::Magician()
 Magician::Magician( int x, int y, Direction face )
 {
    log("Creating Magician");
+
+   alive = true;
+
    x_grid = x_real = x;
    y_grid = y_real = y;
    TurnTo(face);

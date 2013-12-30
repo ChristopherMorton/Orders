@@ -17,7 +17,7 @@ namespace sum
    struct Projectile
    {
       Projectile_Type type;
-      float radius;
+      float radius, damage;
       sf::Vector2f pos, vel;
       int team;
       Unit *target;
