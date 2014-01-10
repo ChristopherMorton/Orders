@@ -202,6 +202,7 @@ int Unit::completeBasicOrder( Order &o )
       switch (o.action) {
          case MOVE_BACK:
          case MOVE_FORWARD:
+            moveUnit( this, x_next, y_next );
             x_grid = x_next;
             y_grid = y_next;
             TurnTo(facing); 
@@ -368,6 +369,8 @@ Magician::Magician( int x, int y, Direction face )
 
    alive = true;
 
+   radius = 0.4;
+
    x_grid = x_real = x;
    y_grid = y_real = y;
    TurnTo(face);
@@ -468,10 +471,15 @@ int Magician::update( float dtf )
 }
 */
 
+sf::Texture* Magician::getTexture()
+{
+   return SFML_TextureManager::getSingleton().getTexture( "Magician1.png" );
+}
+
 int Magician::draw()
 {
-   Sprite *mag = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "Magician1.png" )));
-
+   Sprite *mag = new Sprite(*getTexture());
+ 
    normalizeTo1x1( mag );
    mag->setPosition( x_real, y_real );
    SFML_GlobalRenderWindow::get()->draw( *mag );
@@ -492,6 +500,8 @@ TargetPractice::TargetPractice( int x, int y, Direction face )
    health = max_health = 1000;
 
    attack_range = 0;
+
+   radius = 0.45;
 
    speed = 0.5;
 
@@ -515,9 +525,14 @@ int TargetPractice::doAttack( Order o )
    return 0;
 }
 
+sf::Texture* TargetPractice::getTexture()
+{
+   return SFML_TextureManager::getSingleton().getTexture( "TargetPractice.png" );
+}
+
 int TargetPractice::draw()
 {
-   Sprite *targ = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "TargetPractice.png" )));
+   Sprite *targ = new Sprite(*getTexture());
 
    normalizeTo1x1( targ );
    targ->setPosition( x_real, y_real );

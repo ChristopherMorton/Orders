@@ -33,7 +33,7 @@ namespace sum
    Projectile *genProjectile( Projectile_Type t, int team, float x, float y, float speed, Unit* target );
 
 
-   int loadProjectiles();
+   int initProjectiles();
 };
 
 #endif

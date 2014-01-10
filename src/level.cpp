@@ -3,6 +3,7 @@
 #include "orders.h"
 #include "types.h"
 #include "units.h"
+#include "gui.h"
 #include "util.h"
 #include "log.h"
 
@@ -18,6 +19,7 @@
 
 #include "stdio.h"
 #include "math.h"
+#include <sstream>
 #include <list>
 
 #define TURN_LENGTH 1000
@@ -59,6 +61,8 @@ struct Building
 
 int level_init = 0;
 
+bool between_turns = false;
+
 int level_num = -1;
 int level_dim_x = -1;
 int level_dim_y = -1;
@@ -83,6 +87,7 @@ list<Projectile*> projectile_list;
 //////////////////////////////////////////////////////////////////////
 
 int left_mouse_down = 0;
+int moved_since_click = 1;
 
 //////////////////////////////////////////////////////////////////////
 // Utility
@@ -229,10 +234,54 @@ int zoomView( int ticks, Vector2f zoom_around )
 // Adding stuff
 //////////////////////////////////////////////////////////////////////
 
+int removeUnit( Unit *u )
+{
+   if (u) {
+      list<Unit*>::iterator it= find( unit_list.begin(), unit_list.end(), u );
+      unit_list.erase( it );
+
+      if (GRID_AT(unit_grid, u->x_grid, u->y_grid) == u)
+         GRID_AT(unit_grid, u->x_grid, u->y_grid) = NULL;
+
+      return 0;
+   }
+   return -1;
+}
+
+int addUnit( Unit *u )
+{
+   if (u) {
+      int cx = u->x_grid, cy = u->y_grid;
+      if (GRID_AT(unit_grid, cx, cy) != NULL) {
+         log("Can't add a unit where one already is");
+         return -2;
+      }
+
+      // Otherwise, we should be good
+      GRID_AT(unit_grid, cx, cy) = u;
+      unit_list.push_front( u );
+
+      return 0;
+   }
+   return -1;
+}
+
+int moveUnit( Unit *u, int new_x, int new_y )
+{
+   if (between_turns && u) {
+      if (GRID_AT(unit_grid, u->x_grid, u->y_grid) == u)
+         GRID_AT(unit_grid, u->x_grid, u->y_grid) = NULL;
+
+      GRID_AT(unit_grid, new_x, new_y) = u;
+   }
+   return -1;
+}
+
 int removeProjectile( Projectile *p )
 {
    if (p) {
-      projectile_list.push_back(p);
+      list<Projectile*>::iterator it= find( projectile_list.begin(), projectile_list.end(), p );
+      projectile_list.erase( it );
       return 0;
    }
    return -1;
@@ -252,6 +301,26 @@ int addProjectile( Projectile_Type t, int team, float x, float y, float speed, U
 //////////////////////////////////////////////////////////////////////
 // Targetting
 //////////////////////////////////////////////////////////////////////
+
+int selectUnit( Vector2f coords )
+{
+   int cx = (int)coords.x,
+       cy = (int)coords.y;
+
+   std::stringstream ls;
+   ls << "Selecting a unit at x=" << cx << ", y=" << cy;
+   log(ls.str());
+   Unit *u = GRID_AT(unit_grid, (int)coords.x, (int)coords.y);
+
+   if (u) {
+      log("Selected a unit");
+      selected_unit = u;
+      return 0;
+   }
+
+   selected_unit = NULL;
+   return -1;
+}
 
 Unit* getEnemy( int x, int y, float range, Direction dir, int my_team, int selector)
 {
@@ -406,13 +475,10 @@ int loadLevel( int level_id )
       setView( 11.9, Vector2f( 6.0, 6.0 ) );
 
       Unit *magician = new Magician( 4, 4, SOUTH );
-      unit_list.push_front( magician );
-      //Order o( MOVE_FORWARD );
-      //magician->addOrder( o );
+      addUnit( magician );
 
       Unit *targetpractice = new TargetPractice( 4, 7, SOUTH );
-      unit_list.push_front( targetpractice );
-      GRID_AT(unit_grid, 4, 7) = targetpractice;
+      addUnit( targetpractice );
    }
 
    return 0;
@@ -484,9 +550,11 @@ int updateLevel( int dt )
 
       updateAll( til_end );
 
+      between_turns = true;
       completeTurnAll();
       turn++;
       startTurnAll();
+      between_turns = false;
 
       updateAll( turn_progress );
    } else {
@@ -563,6 +631,7 @@ int drawLevel()
    drawProjectiles();
 
    // Gui
+   drawGui();
 
    return 0;
 } 
@@ -654,6 +723,8 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
          Vector2f old_spot = coordsWindowToView( old_mouse_x, old_mouse_y );
          Vector2f new_spot = coordsWindowToView( mouse_move.x, mouse_move.y );
          shiftView( old_spot.x - new_spot.x, old_spot.y - new_spot.y );
+
+         moved_since_click = 1;
       }
 
       old_mouse_x = mouse_move.x;
@@ -664,16 +735,23 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
 
    virtual bool mouseButtonPressed( const sf::Event::MouseButtonEvent &mbp )
    {
-      if (mbp.button == Mouse::Left)
+      if (mbp.button == Mouse::Left) {
          left_mouse_down = 1;
+         moved_since_click = 0;
+      }
 
       return true;
    }
 
    virtual bool mouseButtonReleased( const sf::Event::MouseButtonEvent &mbr )
    {
-      if (mbr.button == Mouse::Left)
+      if (mbr.button == Mouse::Left) {
          left_mouse_down = 0;
+
+         if (moved_since_click == 0)
+            selectUnit( coordsWindowToView( mbr.x, mbr.y ) );
+
+      }
 
       return true;
    }

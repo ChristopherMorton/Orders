@@ -4,6 +4,7 @@
 #include "savestate.h" 
 #include "level.h"
 #include "projectile.h"
+#include "gui.h"
 #include "listeners.h"
 #include "log.h"
 
@@ -78,6 +79,54 @@ void resetView()
    r_window->setView( r_window->getDefaultView() );
 }
 
+
+///////////////////////////////////////////////////////////////////////////////
+// Gui
+///////////////////////////////////////////////////////////////////////////////
+
+void loadTestLevel()
+{
+   menu_state = MENU_MAIN | MENU_PRI_INGAME;
+
+   loadLevel(-1);
+   setLevelListener(true);
+}
+
+bool initSplashGui = false;;
+IMButton* splashToTestLevel = NULL;
+Sprite* splashScreen = NULL;
+
+int initSplashMenuGui()
+{
+   splashScreen = new Sprite( *(texture_manager->getTexture("SplashScreen0.png") ));
+
+   splashToTestLevel = new IMButton();
+   splashToTestLevel->setPosition( 500, 300 );
+   splashToTestLevel->setSize( 200, 100 );
+   splashToTestLevel->setNormalTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   splashToTestLevel->setHoverTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   splashToTestLevel->setPressedTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   gui_manager->registerWidget( "splashToTestLevel", splashToTestLevel);
+   initSplashGui = true;
+
+   return 0;
+}
+
+void splashMenuGui()
+{
+   if (!initSplashGui) {
+      initSplashMenuGui();
+   }
+   else
+   {
+      // Draw
+      r_window->draw(*splashScreen);
+
+      if (splashToTestLevel->doWidget())
+         loadTestLevel();
+   }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Loading
 ///////////////////////////////////////////////////////////////////////////////
@@ -141,32 +190,62 @@ int preload()
    return 0;
 }
 
+int progressiveInit()
+{
+   static int progress = 0;
+   log ("Progressive init");
+
+   switch (progress) {
+      case 0:
+         if (initSplashMenuGui() == 0)
+            progress = 1;
+         break;
+      case 1:
+         if (initLevelGui() == 0)
+            progress = 2;
+         break;
+      case 2:
+         if (initProjectiles() == 0)
+            progress = 3;
+         break;
+
+      default:
+         return 0;
+   }
+
+   return 1;
+}
+
 // progressiveLoad works through the assets a bit at a time
 int progressiveLoad()
 {
    static int asset_segment = 0;
    int progress = 0;
 
-   if (asset_segment == 0)
-   {
-      // Need to load asset list first
-      loadAssetList();
-      asset_segment = 1;
-      return -1;
-   }
-
-   while (!asset_list.empty())
-   {
-      loadAsset( asset_list.front() );
-      asset_list.pop_front();
-      if (progress++ > PROGESS_CAP)
+   switch (asset_segment) {
+      case 0:
+         // Need to load asset list first
+         loadAssetList();
+         asset_segment = 1;
          return -1;
+      case 1:
+         while (!asset_list.empty())
+         {
+            loadAsset( asset_list.front() );
+            asset_list.pop_front();
+            if (progress++ > PROGESS_CAP)
+               return -1;
+         }
+         asset_segment = 2;
+         return -1;
+      case 2:
+         if (progressiveInit() == 0)
+            asset_segment = 3;
+         return -1;
+      default:
+         menu_state = MENU_POSTLOAD;
    }
 
-   if (loadProjectiles() == 1)
-      return -1;
-
-   menu_state = MENU_POSTLOAD;
    return 0;
 }
 
@@ -187,51 +266,10 @@ int loadingAnimation(int dt)
    return 0;
 }
 
-
-///////////////////////////////////////////////////////////////////////////////
-// Gui
-///////////////////////////////////////////////////////////////////////////////
-
-void loadTestLevel()
-{
-   menu_state = MENU_MAIN | MENU_PRI_INGAME;
-
-   loadLevel(-1);
-   setLevelListener(true);
-}
-
-void splashMenuGui()
-{
-   static bool init = false;
-   static Sprite* splashScreen = NULL;
-   static IMButton* splashToTestLevel = NULL;
-
-   if (!init) {
-      splashScreen = new Sprite( *(texture_manager->getTexture("SplashScreen0.png") ));
-
-      splashToTestLevel = new IMButton();
-      splashToTestLevel->setPosition( 500, 300 );
-      splashToTestLevel->setSize( 200, 100 );
-      splashToTestLevel->setNormalTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
-      splashToTestLevel->setHoverTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
-      splashToTestLevel->setPressedTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
-      gui_manager->registerWidget( "splashToTestLevel", splashToTestLevel);
-      init = true;
-   }
-   else
-   {
-
-      // Draw
-      r_window->draw(*splashScreen);
-
-      if (splashToTestLevel->doWidget())
-         loadTestLevel();
-   }
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 // Execution starts here
 ///////////////////////////////////////////////////////////////////////////////
+
 int runApp()
 {
    // Setup the window
@@ -277,7 +315,7 @@ int runApp()
    cursor_manager->createCursor( IMCursorManager::CLICKING, texture_manager->getTexture( "FingerCursorClick.png" ), 0, 0, 40, 60);
 
    // Initialise some GUIs - first run-through is init
-   splashMenuGui();
+   initSplashMenuGui();
 
 //////////////////////////////////////////////////////////////////////
 // Main Loop

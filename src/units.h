@@ -4,6 +4,8 @@
 #include "types.h"
 #include "orders.h"
 
+namespace sf { class Texture; };
+
 namespace sum
 {
 
@@ -21,6 +23,8 @@ public:
    float health, max_health;
    float speed; // 0.0-1.0 = when do moves complete?
    float attack_range;
+
+   float radius;
 
    float progress;
    int done_attack; // One attack per turn!
@@ -51,6 +55,7 @@ public:
    virtual int startTurn();
    virtual int completeTurn();
    virtual int update( float dtf );
+   virtual sf::Texture* getTexture() = 0;
    virtual int draw() = 0;
 
    virtual ~Unit();
@@ -94,6 +99,7 @@ public:
    //virtual int startTurn();
    //virtual int completeTurn();
    //virtual int update( float dtf );
+   virtual sf::Texture* getTexture();
    virtual int draw();
 
    virtual ~Magician();
@@ -108,6 +114,7 @@ public:
 
    virtual int addOrder( Order o );
    virtual int doAttack( Order o );
+   virtual sf::Texture* getTexture();
    virtual int draw();
    virtual ~TargetPractice();
 };

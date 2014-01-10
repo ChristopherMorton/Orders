@@ -22,12 +22,18 @@ int Projectile::update( float dtf )
    pos.y += (dtf * vel.y);
 
    // Calculate collisions
-   Unit *nearest = getEnemy( pos.x, pos.y, radius, ALL_DIR, -1, SELECT_CLOSEST );
+   Unit *nearest = getEnemy( pos.x, pos.y, 1.0, ALL_DIR, team, SELECT_CLOSEST );
 
    if (nearest != NULL) {
-      // Collide!! It will hit anything
-      nearest->takeDamage( damage );
-      return 1;
+      // Is it a hit?
+      float dx = (pos.x - nearest->x_real),
+            dy = (pos.y - nearest->y_real);
+      float dist_sq = (dx * dx) + (dy * dy);
+      float sum_radius = (radius + nearest->radius);
+      if (dist_sq <= (sum_radius * sum_radius)) {
+         nearest->takeDamage( damage );
+         return 1;
+      }
    }
 
    return 0;
@@ -65,30 +71,31 @@ Projectile::Projectile( Projectile_Type t, int tm, float x, float y, float speed
 
    switch (t) {
       case ARROW:
-         radius = 0.1;
+         radius = 0.05;
          damage = 20.0;
          break;
       case HOMING_ORB:
-         radius = 0.3;
+         radius = 0.1;
          damage = 30.0;
          break;
    }
 }
 
-int loadProjectiles()
+int initProjectiles()
 {
    // Setup Sprites
 
-   log("loadProjectiles complete");
+   log("initProjectiles complete");
    return 0;
 }
 
 Projectile *genProjectile( Projectile_Type t, int tm, float x, float y, float speed, Unit* target )
 {
-   log("Generating projectile");
    Projectile *result = NULL;
-   if (target && t < NUM_PROJECTILES)
+   if (target && t < NUM_PROJECTILES) {
+      log("Generating projectile");
       result = new Projectile( t, tm, x, y, speed, target );
+   }
 
    return result;
 }
