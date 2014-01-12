@@ -311,6 +311,9 @@ int Unit::startTurn()
 
 int Unit::update( float dtf )
 {
+   if (!alive)
+      return 1;
+
    progress += dtf;
    if (active && current_order < order_count && current_order >= 0) {
       Order &o = order_queue[current_order];
@@ -497,7 +500,9 @@ TargetPractice::TargetPractice( int x, int y, Direction face )
    y_grid = y_real = y;
    TurnTo( face );
 
-   health = max_health = 1000;
+   alive = true;
+
+   health = max_health = 200;
 
    attack_range = 0;
 

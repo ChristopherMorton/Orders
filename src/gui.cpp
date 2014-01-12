@@ -36,6 +36,11 @@ namespace sum
    int drawSelectedUnit()
    {
       if (selected_unit != NULL) {
+         if (selected_unit->alive == false) {
+            selected_unit = NULL;
+            return -1;
+         }
+
          Texture *t = selected_unit->getTexture();
          if (t) { 
             float window_edge = gui_window->getSize().x;

@@ -234,10 +234,10 @@ int zoomView( int ticks, Vector2f zoom_around )
 // Adding stuff
 //////////////////////////////////////////////////////////////////////
 
-int removeUnit( Unit *u )
+int removeUnit (list<Unit*>::iterator it)
 {
+   Unit *u = (*it);
    if (u) {
-      list<Unit*>::iterator it= find( unit_list.begin(), unit_list.end(), u );
       unit_list.erase( it );
 
       if (GRID_AT(unit_grid, u->x_grid, u->y_grid) == u)
@@ -504,19 +504,28 @@ int startTurnAll( )
 int updateAll( int dt )
 {
    float dtf = (float)dt / (float)TURN_LENGTH;
-   for (list<Unit*>::iterator it=unit_list.begin(); it != unit_list.end(); ++it)
+   int result;
+   for (list<Unit*>::iterator it=unit_list.begin(); it != unit_list.end();)
    {
       Unit* unit = (*it);
       if (unit) {
-         unit->update( dtf );
+         result = unit->update( dtf );
+         if (result == 1) {
+            // Kill the unit
+            list<Unit*>::iterator to_delete = it;
+            ++it;
+            removeUnit( to_delete );
+            continue;
+         }
       }
+      ++it;
    }
    for (list<Projectile*>::iterator it=projectile_list.begin(); it != projectile_list.end(); ++it)
    {
       Projectile* proj = (*it);
       if (proj) {
-         int r = proj->update( dtf );
-         if (r == 1) {
+         result = proj->update( dtf );
+         if (result == 1) {
             // Delete the projectile
             delete proj;
             (*it) = NULL;
