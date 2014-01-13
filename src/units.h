@@ -62,7 +62,30 @@ public:
 };
 
 
-class Tank : public Unit
+class Player : public Unit
+{
+private:
+   Player();
+   int init( int grid_x, int grid_y, Direction facing );
+
+public:
+   static Player* initPlayer( int grid_x, int grid_y, Direction facing );
+
+   virtual int addOrder( Order o );
+
+   virtual int doAttack( Order o );
+
+   virtual int startTurn();
+   virtual int completeTurn();
+   virtual int update( float dtf );
+   virtual sf::Texture* getTexture();
+   virtual int draw();
+
+   virtual ~Player();
+};
+
+
+class Hog : public Unit
 {
 
 };
@@ -72,25 +95,25 @@ class Warrior : public Unit
 
 };
 
-class Scout : public Unit
+class Worm : public Unit
 {
 
 };
 
-class Leiutenant : public Unit
+class Bird : public Unit
 {
 
 };
 
-class Magician : public Unit
+class Bug : public Unit
 {
 private:
-   Magician(); // Disallowed 
+   Bug(); // Disallowed 
 
    float orb_speed;
 
 public:
-   Magician( int grid_x, int grid_y, Direction face );
+   Bug( int grid_x, int grid_y, Direction face );
 
    virtual int addOrder( Order o );
 
@@ -102,7 +125,7 @@ public:
    virtual sf::Texture* getTexture();
    virtual int draw();
 
-   virtual ~Magician();
+   virtual ~Bug();
 };
 
 class TargetPractice : public Unit

@@ -31,6 +31,26 @@ namespace sum
       // Magician
       MAG_MEDITATE,
 
+      // Player Commands
+      PL_ALERT_ALL,
+      PL_ALERT_TEAM,
+      PL_ALERT_HOGS,
+      PL_ALERT_WARRIORS,
+      PL_ALERT_WORMS,
+      PL_ALERT_BIRDS,
+      PL_ALERT_BUGS,
+
+      PL_CMD_GO,
+
+      // Player spells
+      PL_CAST_HEAL,
+      PL_CAST_LIGHTNING,
+      PL_CAST_QUAKE,
+      PL_CAST_TIMELOCK,
+      PL_CAST_SCRY,
+      PL_CAST_TELEPATHY,
+      PL_END_TELEPATHY,
+
       NUM_ACTIONS
    };
 

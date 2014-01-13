@@ -50,10 +50,6 @@ int turn, turn_progress;
 // Some definitions
 //////////////////////////////////////////////////////////////////////
 
-struct Building
-{
-
-};
 
 //////////////////////////////////////////////////////////////////////
 // Level Data
@@ -75,12 +71,13 @@ Sprite *base_mountain_sprite;
 Sprite *base_underground_sprite;
 // Grids - row-major order, size = dim_x X dim_y
 Terrain* terrain_grid;
-Building** building_grid;
 Unit** unit_grid;
 // Lists
 list<Unit*> unit_list;
-list<Building*> building_list;
 list<Projectile*> projectile_list;
+
+list<Unit*> listening_units;
+Unit *player = NULL;
 
 //////////////////////////////////////////////////////////////////////
 // UI Data
@@ -248,6 +245,22 @@ int removeUnit (list<Unit*>::iterator it)
    return -1;
 }
 
+int addPlayer()
+{
+   if (player) {
+      int cx = player->x_grid, cy = player->y_grid;
+      if (GRID_AT(unit_grid, cx, cy) != NULL) {
+         log("Can't add a unit where one already is");
+         return -2;
+      }
+
+      // Otherwise, we should be good
+      GRID_AT(unit_grid, cx, cy) = player;
+      return 0;
+   }
+   return -1;
+}
+
 int addUnit( Unit *u )
 {
    if (u) {
@@ -388,6 +401,36 @@ Unit* getEnemy( int x, int y, float range, Direction dir, int my_team, int selec
 }
 
 //////////////////////////////////////////////////////////////////////
+// Player interface
+//////////////////////////////////////////////////////////////////////
+
+
+int broadcastOrder( Order o )
+{
+   if (NULL == player)
+      return -1;
+
+   for (list<Unit*>::iterator it=listening_units.begin(); it != listening_units.end(); ++it)
+   {
+      Unit* unit = (*it);
+      if (unit) {
+         unit->addOrder( o );
+      }
+   }
+
+   return 0;
+}
+
+int playerCommand( Order o )
+{
+   if (NULL == player)
+      return -1;
+
+
+   return 0;
+}
+
+//////////////////////////////////////////////////////////////////////
 // Loading
 //////////////////////////////////////////////////////////////////////
 
@@ -433,8 +476,6 @@ void clearGrids()
       delete terrain_grid;
    if (unit_grid)
       delete unit_grid;
-   if (building_grid)
-      delete building_grid; 
 }
 
 int initGrids(int x, int y)
@@ -449,8 +490,6 @@ int initGrids(int x, int y)
    terrain_grid = new Terrain[dim];
    for (int i = 0; i < dim; ++i) terrain_grid[i] = TER_NONE;
 
-   building_grid = new Building*[dim];
-   for (int i = 0; i < dim; ++i) building_grid[i] = NULL;
    unit_grid = new Unit*[dim];
    for (int i = 0; i < dim; ++i) unit_grid[i] = NULL;
 
@@ -474,11 +513,14 @@ int loadLevel( int level_id )
       GRID_AT(terrain_grid,11,11) = TER_TREE2;
       setView( 11.9, Vector2f( 6.0, 6.0 ) );
 
-      Unit *magician = new Magician( 4, 4, SOUTH );
-      addUnit( magician );
+      Unit *bug = new Bug( 4, 4, SOUTH );
+      addUnit( bug );
 
       Unit *targetpractice = new TargetPractice( 4, 7, SOUTH );
       addUnit( targetpractice );
+
+      player = Player::initPlayer( 5, 2, SOUTH );
+      addPlayer();
    }
 
    return 0;
@@ -490,6 +532,9 @@ int loadLevel( int level_id )
 
 int startTurnAll( )
 {
+   if (NULL != player)
+      player->startTurn();
+
    for (list<Unit*>::iterator it=unit_list.begin(); it != unit_list.end(); ++it)
    {
       Unit* unit = (*it);
@@ -505,6 +550,10 @@ int updateAll( int dt )
 {
    float dtf = (float)dt / (float)TURN_LENGTH;
    int result;
+
+   if (NULL != player)
+      player->update( dtf );
+
    for (list<Unit*>::iterator it=unit_list.begin(); it != unit_list.end();)
    {
       Unit* unit = (*it);
@@ -538,6 +587,9 @@ int updateAll( int dt )
 
 int completeTurnAll( )
 {
+   if (NULL != player)
+      player->completeTurn();
+
    for (list<Unit*>::iterator it=unit_list.begin(); it != unit_list.end(); ++it)
    {
       Unit* unit = (*it);
@@ -610,6 +662,9 @@ void drawTerrain()
 
 void drawUnits()
 {
+   if (NULL != player)
+      player->draw();
+
    for (list<Unit*>::iterator it=unit_list.begin(); it != unit_list.end(); ++it)
    {
       Unit* unit = (*it);

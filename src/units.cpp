@@ -14,11 +14,14 @@
 // Definitions
 //////////////////////////////////////////////////////////////////////
 
-#define MAGICIAN_BASE_HEALTH 100
-#define MAGICIAN_BASE_MEMORY 14
-#define MAGICIAN_BASE_VISION 5.0
-#define MAGICIAN_BASE_SPEED 0.9
-#define MAGICIAN_ORB_SPEED 3.0
+#define PLAYER_MAX_HEALTH 100
+#define PLAYER_MAX_ORDERS 500
+
+#define BUG_BASE_HEALTH 100
+#define BUG_BASE_MEMORY 14
+#define BUG_BASE_VISION 5.0
+#define BUG_BASE_SPEED 0.9
+#define BUG_ORB_SPEED 3.0
 
 using namespace sf;
 using namespace std;
@@ -357,18 +360,128 @@ int Unit::takeDamage( float damage )
 }
 
 //////////////////////////////////////////////////////////////////////
-// Magician
+// Player
+//////////////////////////////////////////////////////////////////////
+
+// Private
+Player::Player()
+{ }
+
+Player::~Player()
+{ 
+
+}
+
+Player *thePlayer = NULL;
+
+Player* Player::initPlayer( int grid_x, int grid_y, Direction facing )
+{
+   if (NULL == thePlayer)
+      thePlayer = new Player();
+   
+   thePlayer->init( grid_x, grid_y, facing );
+   return thePlayer;
+}
+
+int Player::init( int x, int y, Direction face )
+{
+   alive = true;
+
+   radius = 0.4;
+
+   x_grid = x_real = x;
+   y_grid = y_real = y;
+   TurnTo(face);
+
+   health = max_health = PLAYER_MAX_HEALTH;
+
+   attack_range = 0;
+
+   speed = 0.99;
+
+   max_orders = PLAYER_MAX_ORDERS;
+   order_queue = new Order[max_orders];
+   clearOrders();
+
+   active = 0;
+   team = 0; 
+
+   return 0;
+}
+
+int Player::addOrder( Order o )
+{
+   if (order_count >= max_orders) // No more memory
+      return -2;
+
+   order_queue[order_count] = o;
+   order_count++;
+
+   return 0;
+}
+
+int Player::doAttack( Order o )
+{
+   // Has no attack
+   return 0;
+}
+
+int Player::startTurn()
+{
+   // Here is where we shout a new command
+   Order o = order_queue[current_order];
+   if (o.action < PL_ALERT_ALL)
+      broadcastOrder( order_queue[current_order] );
+   else
+      playerCommand(o);
+
+   progress = 0;
+   return 0;
+}
+
+int Player::completeTurn()
+{
+   return 0;
+}
+
+int Player::update( float dtf )
+{
+   if (!alive)
+      return 1;
+
+   progress += dtf;
+   return 0;
+}
+
+sf::Texture* Player::getTexture()
+{
+   return SFML_TextureManager::getSingleton().getTexture( "Magician1.png" );
+}
+
+int Player::draw()
+{
+   Sprite *player = new Sprite(*getTexture());
+ 
+   normalizeTo1x1( player );
+   player->setPosition( x_real, y_real );
+   SFML_GlobalRenderWindow::get()->draw( *player );
+
+   return 0;
+}
+
+//////////////////////////////////////////////////////////////////////
+// Bug
 //////////////////////////////////////////////////////////////////////
 
 // *tors
-Magician::Magician()
+Bug::Bug()
 {
-   Magician( -1, -1, NORTH );
+   Bug( -1, -1, NORTH );
 }
 
-Magician::Magician( int x, int y, Direction face )
+Bug::Bug( int x, int y, Direction face )
 {
-   log("Creating Magician");
+   log("Creating Bug");
 
    alive = true;
 
@@ -378,14 +491,14 @@ Magician::Magician( int x, int y, Direction face )
    y_grid = y_real = y;
    TurnTo(face);
 
-   health = max_health = MAGICIAN_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
+   health = max_health = BUG_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
 
-   attack_range = MAGICIAN_BASE_VISION;
-   orb_speed = MAGICIAN_ORB_SPEED * ( 1.0 + ( focus_speed * 0.01) );
+   attack_range = BUG_BASE_VISION;
+   orb_speed = BUG_ORB_SPEED * ( 1.0 + ( focus_speed * 0.01) );
 
-   speed = MAGICIAN_BASE_SPEED * ( 1.0 - ( focus_speed * 0.02 ) );
+   speed = BUG_BASE_SPEED * ( 1.0 - ( focus_speed * 0.02 ) );
 
-   max_orders = MAGICIAN_BASE_MEMORY * ( 1.0 + ( focus_memory * 0.08 ) );
+   max_orders = BUG_BASE_MEMORY * ( 1.0 + ( focus_memory * 0.08 ) );
    order_queue = new Order[max_orders];
    clearOrders();
 
@@ -393,7 +506,7 @@ Magician::Magician( int x, int y, Direction face )
    team = 0;
 }
 
-Magician::~Magician()
+Bug::~Bug()
 {
    if (order_queue)
       delete order_queue;
@@ -401,7 +514,7 @@ Magician::~Magician()
 
 // Virtual methods
 
-int Magician::addOrder( Order o )
+int Bug::addOrder( Order o )
 {
    if (o.action <= WAIT || (o.action >= MAG_MEDITATE)) {
       if (order_count >= max_orders) // No more memory
@@ -414,9 +527,9 @@ int Magician::addOrder( Order o )
    } else return -1;
 }
 
-int Magician::doAttack( Order o )
+int Bug::doAttack( Order o )
 {
-   log("Magician doAttack");
+   log("Bug doAttack");
    int selector = SELECT_CLOSEST;
    Unit *target = NULL;
    switch(o.action) {
@@ -440,18 +553,18 @@ int Magician::doAttack( Order o )
    target = getEnemy( x_grid, y_grid, attack_range, facing, team, selector );
 
    if (target) {
-      log("Magician pre-generate");
+      log("Bug pre-generate");
       addProjectile( HOMING_ORB, team, x_real, y_real, orb_speed, target );
    }
 
-   log("Magician finishing attack");
+   log("Bug finishing attack");
 
    done_attack = 1;
    return 0;
 }
 
 /*
-int Magician::startTurn()
+int Bug::startTurn()
 {
    if (current_order < order_count) {
       Order o = order_queue[current_order];
@@ -461,31 +574,31 @@ int Magician::startTurn()
    return 0;
 }
 
-int Magician::completeTurn()
+int Bug::completeTurn()
 {
 
    return 0;
 }
 
-int Magician::update( float dtf )
+int Bug::update( float dtf )
 {
 
    return 0;
 }
 */
 
-sf::Texture* Magician::getTexture()
+sf::Texture* Bug::getTexture()
 {
    return SFML_TextureManager::getSingleton().getTexture( "Magician1.png" );
 }
 
-int Magician::draw()
+int Bug::draw()
 {
-   Sprite *mag = new Sprite(*getTexture());
+   Sprite *bug = new Sprite(*getTexture());
  
-   normalizeTo1x1( mag );
-   mag->setPosition( x_real, y_real );
-   SFML_GlobalRenderWindow::get()->draw( *mag );
+   normalizeTo1x1( bug );
+   bug->setPosition( x_real, y_real );
+   SFML_GlobalRenderWindow::get()->draw( *bug );
 
    return 0;
 }
