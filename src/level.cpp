@@ -247,6 +247,7 @@ int removeUnit (list<Unit*>::iterator it)
 
 int addPlayer()
 {
+   log( "Added Player" );
    if (player) {
       int cx = player->x_grid, cy = player->y_grid;
       if (GRID_AT(unit_grid, cx, cy) != NULL) {
@@ -256,6 +257,12 @@ int addPlayer()
 
       // Otherwise, we should be good
       GRID_AT(unit_grid, cx, cy) = player;
+
+      Order o( SUMMON_BUG, TRUE, 1);
+      o.iteration = 1;
+      player->addOrder( o );
+      player->activate();
+
       return 0;
    }
    return -1;
@@ -370,7 +377,7 @@ Unit* getEnemy( int x, int y, float range, Direction dir, int my_team, int selec
    for (int j = min_y; j <= max_y; ++j) {
       for (int i = min_x; i <= max_x; ++i) {
          Unit *u = GRID_AT(unit_grid,i,j);
-         if (u && u->team != my_team) {
+         if (u && u->team != my_team && u->alive) {
             float u_x = u->x_real - x, u_y = u->y_real - y;
             float u_squared = (u_x * u_x) + (u_y * u_y);
             // Is it really in range?
@@ -404,6 +411,133 @@ Unit* getEnemy( int x, int y, float range, Direction dir, int my_team, int selec
 // Player interface
 //////////////////////////////////////////////////////////////////////
 
+SummonMarker* summonMarker = NULL;
+
+int startSummon( Order o )
+{
+   log( "Starting a summon" );
+   int x = o.count,
+       y = o.iteration;
+
+   if (GRID_AT(unit_grid, x, y) != NULL) // Summon fails, obvi
+      return -1;
+
+   summonMarker = SummonMarker::get( x, y );
+   GRID_AT(unit_grid, x, y) = summonMarker;
+
+   return 0;
+}
+
+int completeSummon( Order o )
+{
+   int x = o.count,
+       y = o.iteration;
+
+   GRID_AT(unit_grid, x, y) = 0;
+   summonMarker = NULL;
+
+   Unit *u;
+   switch( o.action ) {
+      case SUMMON_TANK:
+         //u = new Tank();
+         //break;
+      case SUMMON_WARRIOR:
+         //u = new Warrior();
+         //break;
+      case SUMMON_WORM:
+         //u = new Worm();
+         //break;
+      case SUMMON_BIRD:
+         //u = new Bird();
+         //break;
+      case SUMMON_BUG:
+         u = new Bug( x, y, SOUTH );
+         break;
+   }
+
+   addUnit( u );
+
+   return 0;
+}
+
+int alert( Unit *u )
+{
+   listening_units.push_back(u);
+
+   u->active = 0;
+   u->clearOrders();
+
+   return 0;
+}
+
+int unalert( Unit *u )
+{
+
+   return 0;
+}
+
+int alertUnits( Order o )
+{
+   if (NULL == player)
+      return -1;
+
+   // Un-alert current listeners
+   for (list<Unit*>::iterator it=listening_units.begin(); it != listening_units.end(); ++it)
+   {
+      Unit* unit = (*it);
+      if (unit) {
+         unalert(unit);
+      }
+   }
+   listening_units.clear();
+
+   // Get search box
+   int x = player->x_grid, y = player->y_grid;
+   int shout_range = (int)player->attack_range + 1;
+   int min_x, max_x, min_y, max_y;
+   min_x = x - shout_range;
+   max_x = x + shout_range;
+   min_y = y - shout_range;
+   max_y = y + shout_range;
+   if (min_x < 0) min_x = 0;
+   if (min_x >= level_dim_x) min_x = level_dim_x - 1;
+   if (min_y < 0) min_y = 0;
+   if (min_y >= level_dim_y) min_y = level_dim_y - 1;
+
+   float range_squared = player->attack_range * player->attack_range;
+
+   for (int j = min_y; j <= max_y; ++j) {
+      for (int i = min_x; i <= max_x; ++i) {
+         Unit *u = GRID_AT(unit_grid,i,j);
+         if (u && u->team == 0) { // On my team
+            float u_x = u->x_real - x, u_y = u->y_real - y;
+            float u_squared = (u_x * u_x) + (u_y * u_y);
+            // Is it really in range?
+            if (u_squared <= range_squared) {
+
+               // Okay so it's in shout range, now what?
+               if (o.action == PL_ALERT_ALL) {
+                  alert(u);
+               } else if (o.action == PL_ALERT_TANKS && u->type == TANK_T) {
+                  alert(u);
+               } else if (o.action == PL_ALERT_WARRIORS && u->type == WARRIOR_T) {
+                  alert(u);
+               } else if (o.action == PL_ALERT_WORMS && u->type == WORM_T) {
+                  alert(u);
+               } else if (o.action == PL_ALERT_BIRDS && u->type == BIRD_T) {
+                  alert(u);
+               } else if (o.action == PL_ALERT_BUGS && u->type == BUG_T) {
+                  alert(u);
+               } else if (o.action == PL_ALERT_TEAM && u->team == o.count) {
+                  alert(u);
+               }
+            }
+         }
+      }
+   }
+
+   return 0;
+}
 
 int broadcastOrder( Order o )
 {
@@ -421,12 +555,57 @@ int broadcastOrder( Order o )
    return 0;
 }
 
-int playerCommand( Order o )
+int startPlayerCommand( Order o )
 {
    if (NULL == player)
       return -1;
 
+   switch( o.action ) {
+      case PL_ALERT_ALL:
+      case PL_ALERT_TEAM:
+      case PL_ALERT_TANKS:
+      case PL_ALERT_WARRIORS:
+      case PL_ALERT_WORMS:
+      case PL_ALERT_BIRDS:
+      case PL_ALERT_BUGS:
+         alertUnits( o );
+         break;
+      case SUMMON_TANK:
+      case SUMMON_WARRIOR:
+      case SUMMON_WORM:
+      case SUMMON_BIRD:
+      case SUMMON_BUG:
+         return startSummon( o );
+         break;
+      case PL_CAST_HEAL:
+      case PL_CAST_LIGHTNING:
+      case PL_CAST_QUAKE:
+      case PL_CAST_TIMELOCK:
+      case PL_CAST_SCRY:
+      case PL_CAST_TELEPATHY:
+         log("Spells not implemented");
+         // TODO
+         break;
+      default:
+         break;
+   }
 
+   return 0;
+}
+
+int completePlayerCommand( Order o )
+{
+   switch( o.action ) {
+      case SUMMON_TANK:
+      case SUMMON_WARRIOR:
+      case SUMMON_WORM:
+      case SUMMON_BIRD:
+      case SUMMON_BUG:
+         completeSummon( o );
+         break;
+      default:
+         break;
+   }
    return 0;
 }
 
@@ -554,6 +733,9 @@ int updateAll( int dt )
    if (NULL != player)
       player->update( dtf );
 
+   if (NULL != summonMarker)
+      summonMarker->update( dtf );
+
    for (list<Unit*>::iterator it=unit_list.begin(); it != unit_list.end();)
    {
       Unit* unit = (*it);
@@ -665,6 +847,9 @@ void drawUnits()
    if (NULL != player)
       player->draw();
 
+   if (NULL != summonMarker)
+      summonMarker->draw();
+
    for (list<Unit*>::iterator it=unit_list.begin(); it != unit_list.end(); ++it)
    {
       Unit* unit = (*it);
@@ -769,6 +954,16 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
       if (key_press.code == sf::Keyboard::M) {
          log("Pressed M");
          unit_list.back()->addOrder( Order( ATTACK_CLOSEST, TRUE, 1 ) );
+      }
+      if (key_press.code == sf::Keyboard::N) {
+         log("Pressed N");
+         Order o( SUMMON_BUG, TRUE, 1);
+         o.iteration = 1;
+         player->addOrder( o );
+      }
+      if (key_press.code == sf::Keyboard::E) {
+         log("Pressed E");
+         player->activate();
       }
 
       return true;

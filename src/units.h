@@ -9,6 +9,17 @@ namespace sf { class Texture; };
 namespace sum
 {
 
+enum UnitType {
+   PLAYER_T,
+   TANK_T,
+   WARRIOR_T,
+   WORM_T,
+   BIRD_T,
+   BUG_T,
+   TARGETPRACTICE_T,
+   SUMMONMARKER_T
+};
+
 class Unit
 {
 public:
@@ -17,6 +28,7 @@ public:
    Direction facing;
 
    int team; // 0 = player
+   UnitType type;
 
    bool alive;
 
@@ -84,8 +96,21 @@ public:
    virtual ~Player();
 };
 
+class SummonMarker : public Unit
+{
+private:
+   SummonMarker();
+public:
+   static SummonMarker* get( int grid_x, int grid_y );
 
-class Hog : public Unit
+   virtual int addOrder( Order o );
+   virtual int doAttack( Order o );
+   virtual sf::Texture* getTexture();
+   virtual int draw();
+   virtual ~SummonMarker();
+};
+
+class Tank : public Unit
 {
 
 };

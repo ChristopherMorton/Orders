@@ -24,7 +24,8 @@ namespace sum
    int addProjectile( Projectile_Type t, int team, float x, float y, float speed, Unit* target );
 
    int broadcastOrder( Order o );
-   int playerCommand( Order o );
+   int startPlayerCommand( Order o );
+   int completePlayerCommand( Order o );
 };
 
 #endif

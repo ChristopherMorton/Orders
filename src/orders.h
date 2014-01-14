@@ -34,13 +34,14 @@ namespace sum
       // Player Commands
       PL_ALERT_ALL,
       PL_ALERT_TEAM,
-      PL_ALERT_HOGS,
+      PL_ALERT_TANKS,
       PL_ALERT_WARRIORS,
       PL_ALERT_WORMS,
       PL_ALERT_BIRDS,
       PL_ALERT_BUGS,
 
       PL_CMD_GO,
+      PL_CMD_ALL_GO,
 
       // Player spells
       PL_CAST_HEAL,
@@ -50,6 +51,14 @@ namespace sum
       PL_CAST_SCRY,
       PL_CAST_TELEPATHY,
       PL_END_TELEPATHY,
+
+      // Unit summoning
+      SUMMON_TANK,
+      SUMMON_WARRIOR,
+      SUMMON_WORM,
+      SUMMON_BIRD,
+      SUMMON_BUG,
+      FAILED_SUMMON,
 
       NUM_ACTIONS
    };

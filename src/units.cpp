@@ -368,8 +368,8 @@ Player::Player()
 { }
 
 Player::~Player()
-{ 
-
+{
+   type = PLAYER_T;
 }
 
 Player *thePlayer = NULL;
@@ -395,7 +395,7 @@ int Player::init( int x, int y, Direction face )
 
    health = max_health = PLAYER_MAX_HEALTH;
 
-   attack_range = 0;
+   attack_range = 10;
 
    speed = 0.99;
 
@@ -432,8 +432,10 @@ int Player::startTurn()
    Order o = order_queue[current_order];
    if (o.action < PL_ALERT_ALL)
       broadcastOrder( order_queue[current_order] );
-   else
-      playerCommand(o);
+   else {
+      if (startPlayerCommand(o) == -1)
+         order_queue[current_order].action = FAILED_SUMMON;
+   }
 
    progress = 0;
    return 0;
@@ -441,6 +443,15 @@ int Player::startTurn()
 
 int Player::completeTurn()
 {
+   Order o = order_queue[current_order];
+   if (o.action >= PL_ALERT_ALL)
+      completePlayerCommand(o);
+
+   // Prepare to start
+   if (current_order == -1 && active && order_count > 0) {
+      current_order = 0;
+   }
+
    return 0;
 }
 
@@ -482,6 +493,8 @@ Bug::Bug()
 Bug::Bug( int x, int y, Direction face )
 {
    log("Creating Bug");
+
+   type = BUG_T;
 
    alive = true;
 
@@ -604,11 +617,94 @@ int Bug::draw()
 }
 
 //////////////////////////////////////////////////////////////////////
+// SummonMarker
+//////////////////////////////////////////////////////////////////////
+
+SummonMarker::SummonMarker( )
+{
+   type = SUMMONMARKER_T;
+
+   x_grid = x_real = 0;
+   y_grid = y_real = 0;
+   TurnTo( SOUTH );
+
+   alive = false;
+
+   health = max_health = 0;
+
+   attack_range = 0;
+
+   radius = 0.45;
+
+   speed = 0.5;
+
+   max_orders = 0;
+   order_queue = NULL;
+   clearOrders();
+
+   active = 0;
+   team = 0;
+}
+
+SummonMarker *theSummonMarker = NULL;
+
+SummonMarker* SummonMarker::get( int x, int y )
+{
+   if (NULL == theSummonMarker)
+      theSummonMarker = new SummonMarker();
+   
+   theSummonMarker->x_grid = x;
+   theSummonMarker->x_real = x;
+
+   theSummonMarker->y_grid = y;
+   theSummonMarker->y_real = y;
+
+   return theSummonMarker;
+}
+
+int SummonMarker::addOrder( Order o )
+{
+   // Does no orders
+   return 0;
+}
+
+int SummonMarker::doAttack( Order o )
+{
+   // Does no attacks
+   return 0;
+}
+
+sf::Texture* SummonMarker::getTexture()
+{
+   return SFML_TextureManager::getSingleton().getTexture( "TargetPractice.png" );
+}
+
+int SummonMarker::draw()
+{
+   Sprite *targ = new Sprite(*getTexture());
+
+   normalizeTo1x1( targ );
+   targ->setPosition( x_real, y_real );
+   SFML_GlobalRenderWindow::get()->draw( *targ );
+
+   return 0;
+
+}
+
+SummonMarker::~SummonMarker()
+{
+
+}
+
+
+//////////////////////////////////////////////////////////////////////
 // TargetPractice
 //////////////////////////////////////////////////////////////////////
 
 TargetPractice::TargetPractice( int x, int y, Direction face )
 {
+   type = TARGETPRACTICE_T;
+
    x_grid = x_real = x;
    y_grid = y_real = y;
    TurnTo( face );
@@ -623,7 +719,7 @@ TargetPractice::TargetPractice( int x, int y, Direction face )
 
    speed = 0.5;
 
-   max_orders = 1;
+   max_orders = 0;
    order_queue = NULL;
    clearOrders();
 
