@@ -223,12 +223,11 @@ int progressiveLoad()
    int progress = 0;
 
    switch (asset_segment) {
-      case 0:
-         // Need to load asset list first
+      case 0: // Load asset list
          loadAssetList();
          asset_segment = 1;
          return -1;
-      case 1:
+      case 1: // Load up to PROGESS_CAP assets
          while (!asset_list.empty())
          {
             loadAsset( asset_list.front() );
@@ -272,6 +271,9 @@ int loadingAnimation(int dt)
 
 int runApp()
 {
+   // Read the config files
+   
+
    // Setup the window
    shutdown(1,0);
    r_window = new RenderWindow(sf::VideoMode(800, 600, 32), "Summoner");
@@ -325,6 +327,7 @@ int runApp()
    {
       if (menu_state & MENU_MAIN) { 
 
+         // Get dt
          new_time = clock.getElapsedTime().asMilliseconds();
          dt = new_time - old_time;
          old_time = new_time;
@@ -345,12 +348,6 @@ int runApp()
             drawLevel();
 
          } else if (menu_state & MENU_PRI_ANIMATION) {
-
-         }
-
-         if (menu_state & MENU_SEC_GAME_OPTIONS) {
-
-         } else if (menu_state & MENU_SEC_GAME_OPTIONS) {
 
          } else if (menu_state & MENU_SEC_GAME_OPTIONS) {
 
