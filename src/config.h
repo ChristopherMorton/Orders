@@ -4,16 +4,16 @@
 #define W_FULLSCREEN_FLAG = 0x1
 #define W_SHOW_MENU_FLAG = 0x2
 
-namespace sum
+namespace config
 {
-   struct Config
-   {
-      int w_height;
-      int w_width;
-      int w_flags;
-   };
+   int width();
+   int height();
+   int flags();
 
-   extern Config config;
+   int load();
+   int save();
+
+   int setWindow( int w, int h, int f );
 };
 
 #endif

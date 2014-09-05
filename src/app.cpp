@@ -5,7 +5,6 @@
 #include "level.h"
 #include "projectile.h"
 #include "gui.h"
-#include "listeners.h"
 #include "log.h"
 
 // SFML includes
@@ -43,16 +42,22 @@ IMCursorManager* cursor_manager;
 SFML_TextureManager* texture_manager;
 SFML_WindowEventManager* event_manager;
 
-// Config
-Config config;
-
 // Player data - i.e. save state
 String player_name;
 LevelRecord *level_scores;
 
-// Menu state - i.e. which parts of the app are active
+void resetView()
+{
+   r_window->setView( r_window->getDefaultView() );
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Menus
+
+// MenuState handles where in the game we are
 typedef unsigned int MenuState;
 MenuState menu_state;
+
 // MenuState masks:
 // startup:
 #define MENU_PRELOAD 0x1
@@ -65,23 +70,12 @@ MenuState menu_state;
 #define MENU_PRI_INGAME 0x400
 #define MENU_PRI_ANIMATION 0x800
 // which secondary windows are up?
-#define MENU_SEC_GAME_OPTIONS 0x10000
+#define MENU_SEC_OPTIONS 0x10000
 #define MENU_SEC_AV_OPTIONS 0x20000
 #define MENU_SEC_INPUT_OPTIONS 0x40000
 #define MENU_ERROR_DIALOG 0x100000
 
-// Specific data for the menu sections
-// Map view:
-float mv_x_base, mv_y_base, mv_x_extent, mv_y_extent;
-
-void resetView()
-{
-   r_window->setView( r_window->getDefaultView() );
-}
-
-
-///////////////////////////////////////////////////////////////////////////////
-// Gui
+// Here's what the various menu buttons can DO
 
 void loadTestLevel()
 {
@@ -91,13 +85,77 @@ void loadTestLevel()
    setLevelListener(true);
 }
 
+// OPTIONS MENUS
+
+int av_temp_w_height, av_temp_w_width, av_temp_w_flags;
+
+void openOptionsMenu()
+{
+   menu_state = (menu_state | MENU_SEC_OPTIONS) & (~(MENU_SEC_AV_OPTIONS | MENU_SEC_INPUT_OPTIONS));
+}
+
+// AV
+void openAVOptions()
+{
+   menu_state = menu_state | MENU_SEC_OPTIONS | MENU_SEC_AV_OPTIONS;
+}
+
+int applyAVOptions()
+{
+   return 0;
+}
+
+void closeAVOptions()
+{
+   applyAVOptions();
+   openOptionsMenu();
+}
+
+// Input
+void openInputOptions()
+{
+   menu_state = menu_state | MENU_SEC_OPTIONS | MENU_SEC_INPUT_OPTIONS;
+}
+
+int applyInputOptions()
+{
+   return 0;
+}
+
+void closeInputOptions()
+{
+   applyInputOptions();
+   openOptionsMenu();
+}
+
+void closeOptionsMenu()
+{
+   if (menu_state & MENU_SEC_AV_OPTIONS)
+      applyInputOptions();
+   if (menu_state & MENU_SEC_INPUT_OPTIONS)
+      applyInputOptions();
+   menu_state = menu_state & (~(MENU_SEC_OPTIONS | MENU_SEC_AV_OPTIONS | MENU_SEC_INPUT_OPTIONS));
+}
+
+
+// Here's the actual buttons and shit
+
 bool initSplashGui = false;;
 IMButton* splashToTestLevel = NULL;
+IMButton* b_open_options = NULL;
 Sprite* splashScreen = NULL;
 
 int initSplashMenuGui()
 {
    splashScreen = new Sprite( *(texture_manager->getTexture("SplashScreen0.png") ));
+
+   b_open_options = new IMButton();
+   b_open_options->setPosition( 300, 200 );
+   b_open_options->setSize( 50, 50 );
+   b_open_options->setNormalTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   b_open_options->setHoverTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   b_open_options->setPressedTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   gui_manager->registerWidget( "Splash menu - open options", b_open_options);
 
    splashToTestLevel = new IMButton();
    splashToTestLevel->setPosition( 500, 300 );
@@ -111,7 +169,7 @@ int initSplashMenuGui()
    return 0;
 }
 
-void splashMenuGui()
+void splashMenu()
 {
    if (!initSplashGui) {
       initSplashMenuGui();
@@ -119,11 +177,25 @@ void splashMenuGui()
    else
    {
       // Draw
-      r_window->draw(*splashScreen);
+      SFML_GlobalRenderWindow::get()->draw(*splashScreen);
 
       if (splashToTestLevel->doWidget())
          loadTestLevel();
+
+      if (b_open_options->doWidget())
+         openOptionsMenu();
    }
+}
+
+
+int progressiveInitMenus()
+{
+   texture_manager = &SFML_TextureManager::getSingleton();
+   gui_manager = &IMGuiManager::getSingleton();
+
+   initSplashMenuGui();
+
+   return 0; // Done
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -195,7 +267,7 @@ int progressiveInit()
 
    switch (progress) {
       case 0:
-         if (initSplashMenuGui() == 0)
+         if (progressiveInitMenus() == 0)
             progress = 1;
          break;
       case 1:
@@ -264,16 +336,154 @@ int loadingAnimation(int dt)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Main Listeners
+
+struct MainWindowListener : public My_SFML_WindowListener
+{
+   virtual bool windowClosed( );
+   virtual bool windowResized( const sf::Event::SizeEvent &resized );
+   virtual bool windowLostFocus( );
+   virtual bool windowGainedFocus( );
+};
+
+struct MainMouseListener : public My_SFML_MouseListener
+{
+   virtual bool mouseMoved( const sf::Event::MouseMoveEvent &mouse_move );
+   virtual bool mouseButtonPressed( const sf::Event::MouseButtonEvent &mouse_button_press );
+   virtual bool mouseButtonReleased( const sf::Event::MouseButtonEvent &mouse_button_release );
+   virtual bool mouseWheelMoved( const sf::Event::MouseWheelEvent &mouse_wheel_move );
+};
+
+struct MainKeyListener : public My_SFML_KeyListener
+{
+   virtual bool keyPressed( const sf::Event::KeyEvent &key_press );
+   virtual bool keyReleased( const sf::Event::KeyEvent &key_release );
+};
+
+// Window
+bool MainWindowListener::windowClosed( )
+{
+   shutdown(1,1);
+   return true;
+}
+
+bool MainWindowListener::windowResized( const sf::Event::SizeEvent &resized )
+{
+
+   return true;
+}
+
+bool MainWindowListener::windowLostFocus( )
+{
+
+   return true;
+}
+
+bool MainWindowListener::windowGainedFocus( )
+{
+
+   return true;
+}
+
+// Mouse
+bool MainMouseListener::mouseMoved( const sf::Event::MouseMoveEvent &mouse_move )
+{
+   return true;
+}
+
+bool MainMouseListener::mouseButtonPressed( const sf::Event::MouseButtonEvent &mouse_button_press )
+{
+   log("Clicked");
+   IMCursorManager::getSingleton().setCursor( IMCursorManager::CLICKING );
+   return true;
+}
+
+bool MainMouseListener::mouseButtonReleased( const sf::Event::MouseButtonEvent &mouse_button_release )
+{
+   log("Un-Clicked");
+   IMCursorManager::getSingleton().setCursor( IMCursorManager::DEFAULT );
+   return true;
+}
+
+bool MainMouseListener::mouseWheelMoved( const sf::Event::MouseWheelEvent &mouse_wheel_move )
+{
+   return true;
+}
+
+// Key
+bool MainKeyListener::keyPressed( const sf::Event::KeyEvent &key_press )
+{
+   if (key_press.code == sf::Keyboard::Q)
+      shutdown(1,1);
+
+   if (key_press.code == sf::Keyboard::Escape) {
+      if (menu_state & MENU_SEC_OPTIONS)
+         closeOptionsMenu();
+      else
+         openOptionsMenu();
+   }
+
+   return true;
+}
+
+bool MainKeyListener::keyReleased( const sf::Event::KeyEvent &key_release )
+{
+   return true;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Main loop
+
+int mainLoop( int dt )
+{
+   event_manager->handleEvents();
+
+   r_window->clear(sf::Color::Yellow);
+
+   gui_manager->begin();
+
+   if (menu_state & MENU_SEC_OPTIONS)
+      dt = -1; // Paused
+
+   if (menu_state & MENU_PRI_SPLASH) {
+      splashMenu();
+
+   } else if (menu_state & MENU_PRI_MAP) {
+
+   } else if (menu_state & MENU_PRI_INGAME) {
+      updateLevel(dt);
+      drawLevel();
+
+   } else if (menu_state & MENU_PRI_ANIMATION) {
+
+   } 
+   
+   resetView();
+
+   gui_manager->end();
+
+   if (menu_state & MENU_SEC_OPTIONS) {
+      r_window->clear(sf::Color::Red);
+   }
+
+   cursor_manager->drawCursor();
+
+   return 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Execution starts here
 
 int runApp()
 {
    // Read the config files
-   
+   config::load();
+   config::save();
 
    // Setup the window
    shutdown(1,0);
-   r_window = new RenderWindow(sf::VideoMode(800, 600, 32), "Summoner");
+   r_window = new RenderWindow(sf::VideoMode(config::width(), config::height(), 32), "Summoner");
 
    // Setup various resource managers
    gui_manager = &IMGuiManager::getSingleton();
@@ -313,9 +523,6 @@ int runApp()
    cursor_manager->createCursor( IMCursorManager::DEFAULT, texture_manager->getTexture( "FingerCursor.png" ), 0, 0, 40, 60);
    cursor_manager->createCursor( IMCursorManager::CLICKING, texture_manager->getTexture( "FingerCursorClick.png" ), 0, 0, 40, 60);
 
-   // Initialise some GUIs - first run-through is init
-   initSplashMenuGui();
-
 //////////////////////////////////////////////////////////////////////
 // Main Loop
 //////////////////////////////////////////////////////////////////////
@@ -329,32 +536,7 @@ int runApp()
          dt = new_time - old_time;
          old_time = new_time;
 
-         event_manager->handleEvents();
-
-         r_window->clear(sf::Color::Yellow);
-
-         gui_manager->begin();
-
-         if (menu_state & MENU_PRI_SPLASH) {
-            splashMenuGui();
-
-         } else if (menu_state & MENU_PRI_MAP) {
-
-         } else if (menu_state & MENU_PRI_INGAME) {
-            updateLevel(dt);
-            drawLevel();
-
-         } else if (menu_state & MENU_PRI_ANIMATION) {
-
-         } else if (menu_state & MENU_SEC_GAME_OPTIONS) {
-
-         }
-
-         resetView();
-
-         gui_manager->end();
-
-         cursor_manager->drawCursor();
+         mainLoop( dt );
 
          r_window->display();
       }

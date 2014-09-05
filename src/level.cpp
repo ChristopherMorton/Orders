@@ -1014,10 +1014,8 @@ void setLevelListener( bool set )
    static LevelEventHandler level_listener;
    SFML_WindowEventManager& event_manager = SFML_WindowEventManager::getSingleton();
    if (set) {
-      event_manager.removeAllMouseListeners();
-      event_manager.removeAllKeyListeners();
-      event_manager.addMouseListener( &level_listener, "level" );
-      event_manager.addKeyListener( &level_listener, "level" );
+      event_manager.addMouseListener( &level_listener, "level mouse" );
+      event_manager.addKeyListener( &level_listener, "level key" );
    } else {
       event_manager.removeMouseListener( &level_listener );
       event_manager.removeKeyListener( &level_listener );
