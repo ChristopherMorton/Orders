@@ -34,7 +34,7 @@ namespace sum
 
 // Global app-state variables
 
-sf::RenderWindow *r_window;
+sf::RenderWindow *r_window = NULL;
 
 // Managers
 IMGuiManager* gui_manager;
@@ -49,6 +49,14 @@ LevelRecord *level_scores;
 void resetView()
 {
    r_window->setView( r_window->getDefaultView() );
+}
+
+void resetWindow()
+{ 
+   if (r_window != NULL)
+      r_window->create(sf::VideoMode(config::width(), config::height(), 32), "Summoner");
+   else 
+      r_window = new RenderWindow(sf::VideoMode(config::width(), config::height(), 32), "Summoner");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -87,7 +95,7 @@ void startLevel( int level )
 
 // OPTIONS MENUS
 
-int av_temp_w_height, av_temp_w_width, av_temp_w_flags;
+int av_selected_resolution;
 
 void openOptionsMenu()
 {
@@ -102,6 +110,21 @@ void openAVOptions()
 
 int applyAVOptions()
 {
+   log("Applying AV Options");
+   int w, h, f;
+   f = 0;
+   if (av_selected_resolution == 0) {
+      w = 800;
+      h = 600;
+   } else if (av_selected_resolution == 1) {
+      w = 1200;
+      h = 900;
+   }
+
+   config::setWindow( w, h, f );
+
+   resetWindow();
+
    return 0;
 }
 
@@ -246,14 +269,103 @@ void optionsMenu()
    }
 }
 
+
+// AV OPTIONS
+bool initAVOptionsMenu = false;
+IMButton* b_exit_av_options_menu = NULL,
+        * b_800x600 = NULL,
+        * b_1200x900 = NULL,
+        * b_av_apply = NULL;
+
+// Selections are:
+// 0 - 800x600
+// 1 - 1200x900
+
+int initAVOptionsMenuGui()
+{
+   b_exit_av_options_menu = new IMButton();
+   b_exit_av_options_menu->setPosition( 10, 10 );
+   b_exit_av_options_menu->setSize( 40, 40 );
+   b_exit_av_options_menu->setNormalTexture( texture_manager->getTexture( "GuiExitX.png" ) );
+   b_exit_av_options_menu->setHoverTexture( texture_manager->getTexture( "GuiExitX.png" ) );
+   b_exit_av_options_menu->setPressedTexture( texture_manager->getTexture( "GuiExitX.png" ) );
+   gui_manager->registerWidget( "Close AV Options Menu", b_exit_av_options_menu);
+
+   b_800x600 = new IMButton();
+   b_800x600->setPosition( 300, 300 );
+   b_800x600->setSize( 80, 80 );
+   b_800x600->setNormalTexture( texture_manager->getTexture( "BasicTree1.png" ) );
+   b_800x600->setHoverTexture( texture_manager->getTexture( "BasicTree1.png" ) );
+   b_800x600->setPressedTexture( texture_manager->getTexture( "BasicTree1.png" ) );
+   gui_manager->registerWidget( "Resolution 800 x 600", b_800x600);
+
+   b_1200x900 = new IMButton();
+   b_1200x900->setPosition( 500, 300 );
+   b_1200x900->setSize( 80, 80 );
+   b_1200x900->setNormalTexture( texture_manager->getTexture( "BasicTree2.png" ) );
+   b_1200x900->setHoverTexture( texture_manager->getTexture( "BasicTree2.png" ) );
+   b_1200x900->setPressedTexture( texture_manager->getTexture( "BasicTree2.png" ) );
+   gui_manager->registerWidget( "Resolution 1200 x 900", b_1200x900);
+
+   b_av_apply = new IMButton();
+   b_av_apply->setPosition( 400, 400 );
+   b_av_apply->setSize( 80, 80 );
+   b_av_apply->setNormalTexture( texture_manager->getTexture( "GuiExitX.png" ) );
+   b_av_apply->setHoverTexture( texture_manager->getTexture( "GuiExitX.png" ) );
+   b_av_apply->setPressedTexture( texture_manager->getTexture( "GuiExitX.png" ) );
+   gui_manager->registerWidget( "Apply AV Settings", b_av_apply);
+
+   if (config::width() == 1200 && config::height() == 900)
+      av_selected_resolution = 1;
+   else
+      av_selected_resolution = 0;
+
+   initAVOptionsMenu = true;
+
+   return 0;
+}
+
+void AVOptionsMenu()
+{
+   if (!initAVOptionsMenu) {
+      initAVOptionsMenuGui();
+   }
+   else
+   {
+      RenderWindow* r_wind = SFML_GlobalRenderWindow::get();
+      r_wind->clear(sf::Color::Red);
+
+      if (b_exit_av_options_menu->doWidget())
+         closeAVOptions();
+      if (b_800x600->doWidget())
+         av_selected_resolution = 0;
+      if (b_1200x900->doWidget())
+         av_selected_resolution = 1;
+      if (b_av_apply->doWidget())
+         applyAVOptions();
+   }
+
+}
+
 int progressiveInitMenus()
 {
-   texture_manager = &SFML_TextureManager::getSingleton();
-   gui_manager = &IMGuiManager::getSingleton();
+   static int count = 0;
 
-   initSplashMenuGui();
+   if (count == 0) { 
+      initSplashMenuGui();
+      count = 1;
+   } else if (count == 1) {
+      initOptionsMenuGui();
+      count = 2;
+   } else if (count == 2) {
+      initAVOptionsMenuGui();
+      count = 3;
+   } else if (count == 3) {
+      //initInputOptionsMenuGui();
+      return 0; // done
+   }
 
-   return 0; // Done
+   return -1; // repeat
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -501,9 +613,12 @@ int mainLoop( int dt )
 
    gui_manager->begin();
 
-   if (menu_state & MENU_SEC_OPTIONS) {
+   if (menu_state & MENU_SEC_AV_OPTIONS) {
+      AVOptionsMenu();
+   } else if (menu_state & MENU_SEC_INPUT_OPTIONS) {
+      //InputOptionsMenu();
+   } else if (menu_state & MENU_SEC_OPTIONS) {
       optionsMenu();
-
    } else if (menu_state & MENU_PRI_SPLASH) {
       splashMenu();
 
@@ -537,7 +652,7 @@ int runApp()
 
    // Setup the window
    shutdown(1,0);
-   r_window = new RenderWindow(sf::VideoMode(config::width(), config::height(), 32), "Summoner");
+   resetWindow();
 
    // Setup various resource managers
    gui_manager = &IMGuiManager::getSingleton();
