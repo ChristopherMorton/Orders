@@ -77,11 +77,11 @@ MenuState menu_state;
 
 // Here's what the various menu buttons can DO
 
-void loadTestLevel()
+void startLevel( int level )
 {
    menu_state = MENU_MAIN | MENU_PRI_INGAME;
 
-   loadLevel(-1);
+   loadLevel( level );
    setLevelListener(true);
 }
 
@@ -131,7 +131,7 @@ void closeInputOptions()
 void closeOptionsMenu()
 {
    if (menu_state & MENU_SEC_AV_OPTIONS)
-      applyInputOptions();
+      applyAVOptions();
    if (menu_state & MENU_SEC_INPUT_OPTIONS)
       applyInputOptions();
    menu_state = menu_state & (~(MENU_SEC_OPTIONS | MENU_SEC_AV_OPTIONS | MENU_SEC_INPUT_OPTIONS));
@@ -140,7 +140,9 @@ void closeOptionsMenu()
 
 // Here's the actual buttons and shit
 
-bool initSplashGui = false;;
+
+// SPLASH
+bool initSplashGui = false;
 IMButton* splashToTestLevel = NULL;
 IMButton* b_open_options = NULL;
 Sprite* splashScreen = NULL;
@@ -180,13 +182,69 @@ void splashMenu()
       SFML_GlobalRenderWindow::get()->draw(*splashScreen);
 
       if (splashToTestLevel->doWidget())
-         loadTestLevel();
+         startLevel( -1 );
 
       if (b_open_options->doWidget())
          openOptionsMenu();
    }
 }
 
+
+// OPTIONS
+bool initOptionsMenu = false;
+IMButton* b_exit_options_menu = NULL,
+        * b_av_options = NULL,
+        * b_input_options = NULL;
+
+int initOptionsMenuGui()
+{
+   b_exit_options_menu = new IMButton();
+   b_exit_options_menu->setPosition( 10, 10 );
+   b_exit_options_menu->setSize( 40, 40 );
+   b_exit_options_menu->setNormalTexture( texture_manager->getTexture( "GuiExitX.png" ) );
+   b_exit_options_menu->setHoverTexture( texture_manager->getTexture( "GuiExitX.png" ) );
+   b_exit_options_menu->setPressedTexture( texture_manager->getTexture( "GuiExitX.png" ) );
+   gui_manager->registerWidget( "Close Options Menu", b_exit_options_menu);
+
+   b_av_options = new IMButton();
+   b_av_options->setPosition( 300, 400 );
+   b_av_options->setSize( 80, 80 );
+   b_av_options->setNormalTexture( texture_manager->getTexture( "BasicTree1.png" ) );
+   b_av_options->setHoverTexture( texture_manager->getTexture( "BasicTree1.png" ) );
+   b_av_options->setPressedTexture( texture_manager->getTexture( "BasicTree1.png" ) );
+   gui_manager->registerWidget( "Open AV Option", b_av_options);
+
+   b_input_options = new IMButton();
+   b_input_options->setPosition( 500, 400 );
+   b_input_options->setSize( 80, 80 );
+   b_input_options->setNormalTexture( texture_manager->getTexture( "BasicTree2.png" ) );
+   b_input_options->setHoverTexture( texture_manager->getTexture( "BasicTree2.png" ) );
+   b_input_options->setPressedTexture( texture_manager->getTexture( "BasicTree2.png" ) );
+   gui_manager->registerWidget( "Open Input Options", b_input_options);
+
+   initOptionsMenu = true;
+
+   return 0;
+}
+
+void optionsMenu()
+{
+   if (!initOptionsMenu) {
+      initOptionsMenuGui();
+   }
+   else
+   {
+      RenderWindow* r_wind = SFML_GlobalRenderWindow::get();
+      r_wind->clear(sf::Color::Red);
+
+      if (b_exit_options_menu->doWidget())
+         closeOptionsMenu();
+      if (b_av_options->doWidget())
+         openAVOptions();
+      if (b_input_options->doWidget())
+         openInputOptions();
+   }
+}
 
 int progressiveInitMenus()
 {
@@ -443,10 +501,10 @@ int mainLoop( int dt )
 
    gui_manager->begin();
 
-   if (menu_state & MENU_SEC_OPTIONS)
-      dt = -1; // Paused
+   if (menu_state & MENU_SEC_OPTIONS) {
+      optionsMenu();
 
-   if (menu_state & MENU_PRI_SPLASH) {
+   } else if (menu_state & MENU_PRI_SPLASH) {
       splashMenu();
 
    } else if (menu_state & MENU_PRI_MAP) {
@@ -462,10 +520,6 @@ int mainLoop( int dt )
    resetView();
 
    gui_manager->end();
-
-   if (menu_state & MENU_SEC_OPTIONS) {
-      r_window->clear(sf::Color::Red);
-   }
 
    cursor_manager->drawCursor();
 

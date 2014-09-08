@@ -9,3 +9,4 @@ IMAGE GrayRock.png
 IMAGE BasicTree1.png
 IMAGE BasicTree2.png
 IMAGE TargetPractice.png
+IMAGE GuiExitX.png
