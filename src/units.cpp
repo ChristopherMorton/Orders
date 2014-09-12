@@ -463,7 +463,7 @@ int Player::update( float dtf )
 
 sf::Texture* Player::getTexture()
 {
-   return SFML_TextureManager::getSingleton().getTexture( "Magician1.png" );
+   return SFML_TextureManager::getSingleton().getTexture( "BugScratch.png" );
 }
 
 int Player::draw()
@@ -598,7 +598,7 @@ int Bug::update( float dtf )
 
 sf::Texture* Bug::getTexture()
 {
-   return SFML_TextureManager::getSingleton().getTexture( "Magician1.png" );
+   return SFML_TextureManager::getSingleton().getTexture( "BugScratch.png" );
 }
 
 int Bug::draw()

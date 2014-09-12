@@ -9,9 +9,16 @@
 #define LR_HARD_RT 0x20
 #define LR_HARD_MM 0x40
 
+#define NUM_LEVELS 20
+
 namespace sum
 {
    typedef int LevelRecord;
+
+   LevelRecord getRecord( int level );
+
+   int loadSaveGame();
+   int saveSaveGame();
 };
 
 #endif

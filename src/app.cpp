@@ -4,6 +4,7 @@
 #include "savestate.h" 
 #include "level.h"
 #include "projectile.h"
+#include "savestate.h"
 #include "gui.h"
 #include "log.h"
 
@@ -42,9 +43,8 @@ IMCursorManager* cursor_manager;
 SFML_TextureManager* texture_manager;
 SFML_WindowEventManager* event_manager;
 
-// Player data - i.e. save state
-String player_name;
-LevelRecord *level_scores;
+// Clock
+sf::Clock *game_clock = NULL;
 
 void resetView()
 {
@@ -81,9 +81,20 @@ MenuState menu_state;
 #define MENU_SEC_OPTIONS 0x10000
 #define MENU_SEC_AV_OPTIONS 0x20000
 #define MENU_SEC_INPUT_OPTIONS 0x40000
-#define MENU_ERROR_DIALOG 0x100000
+#define MENU_MAP_FOCUS 0x100000
+#define MENU_MAP_ORDER_LISTS 0x200000
+// other
+#define MENU_ERROR_DIALOG 0x1000000
 
 // Here's what the various menu buttons can DO
+
+void openMap()
+{
+   menu_state = MENU_MAIN | MENU_PRI_MAP;
+
+}
+
+// MAP
 
 void startLevel( int level )
 {
@@ -677,7 +688,7 @@ int runApp()
    menu_state = MENU_PRELOAD;
 
    // Timing!
-   sf::Clock clock;
+   game_clock = new sf::Clock();
    unsigned int old_time, new_time, dt;
    old_time = 0;
    new_time = 0;
@@ -685,7 +696,7 @@ int runApp()
    // Loading
    preload();
    while (progressiveLoad())
-      loadingAnimation(clock.getElapsedTime().asMilliseconds());
+      loadingAnimation(game_clock->getElapsedTime().asMilliseconds());
    postload();
 
    // Now setup some things using our new resources
@@ -701,7 +712,7 @@ int runApp()
       if (menu_state & MENU_MAIN) { 
 
          // Get dt
-         new_time = clock.getElapsedTime().asMilliseconds();
+         new_time = game_clock->getElapsedTime().asMilliseconds();
          dt = new_time - old_time;
          old_time = new_time;
 

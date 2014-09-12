@@ -6,6 +6,7 @@
 #include "gui.h"
 #include "util.h"
 #include "log.h"
+#include "clock.h"
 
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
@@ -80,6 +81,7 @@ Unit *player = NULL;
 // UI Data
 
 int left_mouse_down = 0;
+int left_mouse_down_time = 0;
 int moved_since_click = 1;
 
 //////////////////////////////////////////////////////////////////////
@@ -983,6 +985,7 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
    {
       if (mbp.button == Mouse::Left) {
          left_mouse_down = 1;
+         left_mouse_down_time = game_clock->getElapsedTime().asMilliseconds();
          moved_since_click = 0;
       }
 
@@ -993,8 +996,9 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
    {
       if (mbr.button == Mouse::Left) {
          left_mouse_down = 0;
+         int left_mouse_up_time = game_clock->getElapsedTime().asMilliseconds();
 
-         if (moved_since_click == 0)
+         if (left_mouse_up_time - left_mouse_down_time < 300)
             selectUnit( coordsWindowToView( mbr.x, mbr.y ) );
 
       }
