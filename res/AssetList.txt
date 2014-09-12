@@ -11,3 +11,4 @@ IMAGE BasicTree2.png
 IMAGE TargetPractice.png
 IMAGE GuiExitX.png
 IMAGE BugScratch.png
+IMAGE MapScratch.png

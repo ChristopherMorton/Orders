@@ -5,6 +5,8 @@
 #include "level.h"
 #include "projectile.h"
 #include "savestate.h"
+#include "menustate.h"
+#include "map.h"
 #include "gui.h"
 #include "log.h"
 
@@ -62,29 +64,7 @@ void resetWindow()
 ///////////////////////////////////////////////////////////////////////////////
 // Menus
 
-// MenuState handles where in the game we are
-typedef unsigned int MenuState;
 MenuState menu_state;
-
-// MenuState masks:
-// startup:
-#define MENU_PRELOAD 0x1
-#define MENU_LOADING 0x2
-#define MENU_POSTLOAD 0x4
-#define MENU_MAIN 0x8
-// where in the app are we?
-#define MENU_PRI_SPLASH 0x100
-#define MENU_PRI_MAP 0x200
-#define MENU_PRI_INGAME 0x400
-#define MENU_PRI_ANIMATION 0x800
-// which secondary windows are up?
-#define MENU_SEC_OPTIONS 0x10000
-#define MENU_SEC_AV_OPTIONS 0x20000
-#define MENU_SEC_INPUT_OPTIONS 0x40000
-#define MENU_MAP_FOCUS 0x100000
-#define MENU_MAP_ORDER_LISTS 0x200000
-// other
-#define MENU_ERROR_DIALOG 0x1000000
 
 // Here's what the various menu buttons can DO
 
@@ -178,6 +158,7 @@ void closeOptionsMenu()
 // SPLASH
 bool initSplashGui = false;
 IMButton* splashToTestLevel = NULL;
+IMButton* b_splash_to_map = NULL; 
 IMButton* b_open_options = NULL;
 Sprite* splashScreen = NULL;
 
@@ -194,14 +175,22 @@ int initSplashMenuGui()
    gui_manager->registerWidget( "Splash menu - open options", b_open_options);
 
    splashToTestLevel = new IMButton();
-   splashToTestLevel->setPosition( 500, 300 );
-   splashToTestLevel->setSize( 200, 100 );
+   splashToTestLevel->setPosition( 10, 10 );
+   splashToTestLevel->setSize( 40, 40 );
    splashToTestLevel->setNormalTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    splashToTestLevel->setHoverTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    splashToTestLevel->setPressedTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    gui_manager->registerWidget( "splashToTestLevel", splashToTestLevel);
-   initSplashGui = true;
 
+   b_splash_to_map = new IMButton();
+   b_splash_to_map->setPosition( 500, 300 );
+   b_splash_to_map->setSize( 200, 100 );
+   b_splash_to_map->setNormalTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   b_splash_to_map->setHoverTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   b_splash_to_map->setPressedTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   gui_manager->registerWidget( "Splash menu - go to map", b_splash_to_map);
+
+   initSplashGui = true;
    return 0;
 }
 
@@ -220,6 +209,9 @@ void splashMenu()
 
       if (b_open_options->doWidget())
          openOptionsMenu();
+
+      if (b_splash_to_map->doWidget())
+         openMap();
    }
 }
 
@@ -459,6 +451,10 @@ int progressiveInit()
          if (initProjectiles() == 0)
             progress = 3;
          break;
+      case 3:
+         if (initMap() == 0)
+            progress = 4;
+         break;
 
       default:
          return 0;
@@ -634,6 +630,8 @@ int mainLoop( int dt )
       splashMenu();
 
    } else if (menu_state & MENU_PRI_MAP) {
+      updateMap(dt);
+      drawMap();
 
    } else if (menu_state & MENU_PRI_INGAME) {
       updateLevel(dt);
