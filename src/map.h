@@ -6,8 +6,7 @@
 namespace sum
 {
    int initMap();
-   int updateMap( int dt );
-   int drawMap();
+   int drawMap( int dt );
 };
 
 #endif

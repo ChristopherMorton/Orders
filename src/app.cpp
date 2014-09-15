@@ -630,8 +630,12 @@ int mainLoop( int dt )
       splashMenu();
 
    } else if (menu_state & MENU_PRI_MAP) {
-      updateMap(dt);
-      drawMap();
+      int map_result = drawMap(dt);
+      if (map_result == -2) {
+         // Various map options etc
+      } else if (map_result == -1 || map_result >= 1) {
+         startLevel( map_result );
+      }
 
    } else if (menu_state & MENU_PRI_INGAME) {
       updateLevel(dt);
