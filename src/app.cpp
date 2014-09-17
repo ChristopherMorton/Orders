@@ -72,6 +72,12 @@ void openMap()
 {
    menu_state = MENU_MAIN | MENU_PRI_MAP;
 
+   setMapListener( true );
+}
+
+void closeMap()
+{
+   setMapListener( false );
 }
 
 // MAP

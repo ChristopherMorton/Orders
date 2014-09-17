@@ -7,6 +7,8 @@ namespace sum
 {
    int initMap();
    int drawMap( int dt );
+
+   void setMapListener( bool set );
 };
 
 #endif

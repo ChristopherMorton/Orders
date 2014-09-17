@@ -49,6 +49,7 @@ int turn, turn_progress;
 //////////////////////////////////////////////////////////////////////
 // Some definitions
 
+const float c_min_zoom_x = 10;
 
 //////////////////////////////////////////////////////////////////////
 // Level Data
@@ -82,7 +83,6 @@ Unit *player = NULL;
 
 int left_mouse_down = 0;
 int left_mouse_down_time = 0;
-int moved_since_click = 1;
 
 //////////////////////////////////////////////////////////////////////
 // Utility
@@ -91,9 +91,11 @@ int moved_since_click = 1;
 
 Vector2f coordsWindowToView( int window_x, int window_y )
 {
-   // (win_size / view_size) + view_base
-   float view_x = (((float)(level_view->getSize().x) / (float)(l_r_window->getSize().x))*window_x) + ((level_view->getCenter().x) - (level_view->getSize().x / 2.0));
-   float view_y = (((float)(level_view->getSize().y) / (float)(l_r_window->getSize().y))*window_y) + ((level_view->getCenter().y) - (level_view->getSize().y / 2.0));
+   RenderWindow *r_window = SFML_GlobalRenderWindow::get();
+   float view_x = (((float)window_x / (float)(r_window->getSize().x))* (float)(level_view->getSize().x)) 
+                + ((level_view->getCenter().x) - (level_view->getSize().x / 2.0));
+   float view_y = (((float)window_y / (float)(r_window->getSize().y))* (float)(level_view->getSize().y)) 
+                + ((level_view->getCenter().y) - (level_view->getSize().y / 2.0));
 
    return Vector2f( view_x, view_y );
 }
@@ -114,16 +116,27 @@ int setView( float x_size, Vector2f center )
 {
    float y_size = x_size * view_rel_x_to_y;
 
+   float x_add = 0, y_add = 0;
    float x_base = center.x - (x_size / 2),
          y_base = center.y - (y_size / 2),
          x_top = center.x + (x_size / 2),
          y_top = center.y + (y_size / 2);
 
-   if (x_base < 0 || y_base < 0 || x_top >= level_dim_x || y_top >= level_dim_y)
-   {
-      log("setView error: parameters describe view outside of level");
-      return -1;
-   }
+   // Don't need to check for: top AND bottom overlap -> failure
+   if (x_base < 0)
+      x_add = -x_base;
+
+   if (x_top > (level_dim_x ))
+      x_add = (level_dim_x ) - x_top;
+
+   if (y_base < 0)
+      y_add = -y_base;
+
+   if (y_top > (level_dim_y ))
+      y_add = (level_dim_y ) - y_top;
+
+   center.x += x_add;
+   center.y += y_add;
 
    level_view->setSize( x_size, y_size );
    level_view->setCenter( center.x, center.y );
@@ -137,6 +150,8 @@ int shiftView( float x_shift, float y_shift )
    Vector2f old_center = level_view->getCenter(),
             old_size = level_view->getSize();
    Vector2f new_center (old_center.x + x_shift, old_center.y + y_shift);
+
+   return setView( old_size.x, new_center );
 
    float x_add = 0, y_add = 0;
    float x_base = new_center.x - (old_size.x / 2.0);
@@ -171,6 +186,25 @@ int zoomView( int ticks, Vector2f zoom_around )
    Vector2f old_center = level_view->getCenter(),
             old_size = level_view->getSize();
    Vector2f new_center ((old_center.x + zoom_around.x) / 2.0, (old_center.y + zoom_around.y) / 2.0);
+   Vector2f new_size (old_size*zoom_val);
+
+   // Fit map
+   if (new_size.x > level_dim_x) {
+      float x_fit = level_dim_x / new_size.x;
+      new_size *= x_fit;
+   }
+   if (new_size.y > level_dim_y) {
+      float y_fit = level_dim_y / new_size.y;
+      new_size *= y_fit;
+   }
+
+   // Zoom limits
+   if (new_size.x < c_min_zoom_x) {
+      float min_fit = c_min_zoom_x / new_size.x;
+      new_size *= min_fit;
+   }
+
+   return setView( new_size.x, new_center );
 
    float x_add = 0, y_add = 0;
    float x_base = new_center.x - (zoom_val * old_size.x / 2.0);
@@ -971,8 +1005,6 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
          Vector2f old_spot = coordsWindowToView( old_mouse_x, old_mouse_y );
          Vector2f new_spot = coordsWindowToView( mouse_move.x, mouse_move.y );
          shiftView( old_spot.x - new_spot.x, old_spot.y - new_spot.y );
-
-         moved_since_click = 1;
       }
 
       old_mouse_x = mouse_move.x;
@@ -986,7 +1018,6 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
       if (mbp.button == Mouse::Left) {
          left_mouse_down = 1;
          left_mouse_down_time = game_clock->getElapsedTime().asMilliseconds();
-         moved_since_click = 0;
       }
 
       return true;
