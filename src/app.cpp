@@ -22,6 +22,7 @@
 #include "IMGuiManager.hpp"
 #include "IMCursorManager.hpp"
 #include "IMButton.hpp"
+#include "IMTextButton.hpp"
 
 // C includes
 #include <stdio.h>
@@ -32,12 +33,19 @@
 
 using namespace sf;
 
+///////////////////////////////////////////////////////////////////////////////
+// Data
+
+Font *menu_font;
+
+MenuState menu_state;
+
 namespace sum
 {
 
 // Global app-state variables
 
-sf::RenderWindow *r_window = NULL;
+RenderWindow *r_window = NULL;
 
 // Managers
 IMGuiManager* gui_manager;
@@ -46,7 +54,7 @@ SFML_TextureManager* texture_manager;
 SFML_WindowEventManager* event_manager;
 
 // Clock
-sf::Clock *game_clock = NULL;
+Clock *game_clock = NULL;
 
 void resetView()
 {
@@ -56,15 +64,17 @@ void resetView()
 void resetWindow()
 { 
    if (r_window != NULL)
-      r_window->create(sf::VideoMode(config::width(), config::height(), 32), "Summoner");
+      r_window->create(VideoMode(config::width(), config::height(), 32), "Summoner", Style::None);
    else 
-      r_window = new RenderWindow(sf::VideoMode(config::width(), config::height(), 32), "Summoner");
+      r_window = new RenderWindow(VideoMode(config::width(), config::height(), 32), "Summoner", Style::None);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Menus
+// Definitions
 
-MenuState menu_state;
+
+///////////////////////////////////////////////////////////////////////////////
+// Menus
 
 // Here's what the various menu buttons can DO
 
@@ -267,7 +277,7 @@ void optionsMenu()
    else
    {
       RenderWindow* r_wind = SFML_GlobalRenderWindow::get();
-      r_wind->clear(sf::Color::Red);
+      r_wind->clear(Color::Red);
 
       if (b_exit_options_menu->doWidget())
          closeOptionsMenu();
@@ -281,10 +291,14 @@ void optionsMenu()
 
 // AV OPTIONS
 bool initAVOptionsMenu = false;
-IMButton* b_exit_av_options_menu = NULL,
-        * b_800x600 = NULL,
-        * b_1200x900 = NULL,
-        * b_av_apply = NULL;
+IMButton* b_exit_av_options_menu = NULL;
+IMTextButton* b_800x600 = NULL;
+IMTextButton* b_1200x900 = NULL;
+IMTextButton* b_av_apply = NULL;
+
+string s_800x600 = "800 x 600";
+string s_1200x900 = "1200 x 900";
+string s_apply_av = "Apply changes";
 
 // Selections are:
 // 0 - 800x600
@@ -300,28 +314,43 @@ int initAVOptionsMenuGui()
    b_exit_av_options_menu->setPressedTexture( texture_manager->getTexture( "GuiExitX.png" ) );
    gui_manager->registerWidget( "Close AV Options Menu", b_exit_av_options_menu);
 
-   b_800x600 = new IMButton();
-   b_800x600->setPosition( 300, 300 );
-   b_800x600->setSize( 80, 80 );
-   b_800x600->setNormalTexture( texture_manager->getTexture( "BasicTree1.png" ) );
-   b_800x600->setHoverTexture( texture_manager->getTexture( "BasicTree1.png" ) );
-   b_800x600->setPressedTexture( texture_manager->getTexture( "BasicTree1.png" ) );
+   b_800x600 = new IMTextButton();
+   b_800x600->setPosition( 250, 300 );
+   b_800x600->setSize( 300, 40 );
+   b_800x600->setNormalTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   b_800x600->setHoverTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   b_800x600->setPressedTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   b_800x600->setText( &s_800x600 );
+   b_800x600->setFont( menu_font );
+   b_800x600->setTextSize( 16 );
+   b_800x600->setTextColor( sf::Color::Black );
+   b_800x600->centerText();
    gui_manager->registerWidget( "Resolution 800 x 600", b_800x600);
 
-   b_1200x900 = new IMButton();
-   b_1200x900->setPosition( 500, 300 );
-   b_1200x900->setSize( 80, 80 );
-   b_1200x900->setNormalTexture( texture_manager->getTexture( "BasicTree2.png" ) );
-   b_1200x900->setHoverTexture( texture_manager->getTexture( "BasicTree2.png" ) );
-   b_1200x900->setPressedTexture( texture_manager->getTexture( "BasicTree2.png" ) );
+   b_1200x900 = new IMTextButton();
+   b_1200x900->setPosition( 250, 350 );
+   b_1200x900->setSize( 300, 40 );
+   b_1200x900->setNormalTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   b_1200x900->setHoverTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   b_1200x900->setPressedTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   b_1200x900->setText( &s_1200x900 );
+   b_1200x900->setFont( menu_font );
+   b_1200x900->setTextSize( 16 );
+   b_1200x900->setTextColor( sf::Color::Black );
+   b_1200x900->centerText();
    gui_manager->registerWidget( "Resolution 1200 x 900", b_1200x900);
 
-   b_av_apply = new IMButton();
-   b_av_apply->setPosition( 400, 400 );
-   b_av_apply->setSize( 80, 80 );
-   b_av_apply->setNormalTexture( texture_manager->getTexture( "GuiExitX.png" ) );
-   b_av_apply->setHoverTexture( texture_manager->getTexture( "GuiExitX.png" ) );
-   b_av_apply->setPressedTexture( texture_manager->getTexture( "GuiExitX.png" ) );
+   b_av_apply = new IMTextButton();
+   b_av_apply->setPosition( 300, 400 );
+   b_av_apply->setSize( 200, 40 );
+   b_av_apply->setNormalTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   b_av_apply->setHoverTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   b_av_apply->setPressedTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   b_av_apply->setText( &s_apply_av );
+   b_av_apply->setFont( menu_font );
+   b_av_apply->setTextSize( 16 );
+   b_av_apply->setTextColor( sf::Color::Black );
+   b_av_apply->centerText();
    gui_manager->registerWidget( "Apply AV Settings", b_av_apply);
 
    if (config::width() == 1200 && config::height() == 900)
@@ -342,7 +371,7 @@ void AVOptionsMenu()
    else
    {
       RenderWindow* r_wind = SFML_GlobalRenderWindow::get();
-      r_wind->clear(sf::Color::Red);
+      r_wind->clear(Color::Red);
 
       if (b_exit_av_options_menu->doWidget())
          closeAVOptions();
@@ -359,6 +388,10 @@ void AVOptionsMenu()
 int progressiveInitMenus()
 {
    static int count = 0;
+
+   menu_font = new Font();
+   if (menu_font->loadFromFile("/usr/share/fonts/TTF/LiberationMono-Regular.ttf"))
+      log("Successfully loaded font");
 
    if (count == 0) { 
       initSplashMenuGui();
@@ -380,7 +413,7 @@ int progressiveInitMenus()
 ///////////////////////////////////////////////////////////////////////////////
 // Loading
 
-#define PROGESS_CAP 100
+#define PROGRESS_CAP 100
 
 #define ASSET_TYPE_END 0
 #define ASSET_TYPE_TEXTURE 1
@@ -480,12 +513,12 @@ int progressiveLoad()
          loadAssetList();
          asset_segment = 1;
          return -1;
-      case 1: // Load up to PROGESS_CAP assets
+      case 1: // Load up to PROGRESS_CAP assets
          while (!asset_list.empty())
          {
             loadAsset( asset_list.front() );
             asset_list.pop_front();
-            if (progress++ > PROGESS_CAP)
+            if (progress++ > PROGRESS_CAP)
                return -1;
          }
          asset_segment = 2;
@@ -513,7 +546,7 @@ int postload()
 
 int loadingAnimation(int dt)
 {
-   r_window->clear(sf::Color::Black);
+   r_window->clear(Color::Black);
    r_window->display();
    return 0;
 }
@@ -524,23 +557,23 @@ int loadingAnimation(int dt)
 struct MainWindowListener : public My_SFML_WindowListener
 {
    virtual bool windowClosed( );
-   virtual bool windowResized( const sf::Event::SizeEvent &resized );
+   virtual bool windowResized( const Event::SizeEvent &resized );
    virtual bool windowLostFocus( );
    virtual bool windowGainedFocus( );
 };
 
 struct MainMouseListener : public My_SFML_MouseListener
 {
-   virtual bool mouseMoved( const sf::Event::MouseMoveEvent &mouse_move );
-   virtual bool mouseButtonPressed( const sf::Event::MouseButtonEvent &mouse_button_press );
-   virtual bool mouseButtonReleased( const sf::Event::MouseButtonEvent &mouse_button_release );
-   virtual bool mouseWheelMoved( const sf::Event::MouseWheelEvent &mouse_wheel_move );
+   virtual bool mouseMoved( const Event::MouseMoveEvent &mouse_move );
+   virtual bool mouseButtonPressed( const Event::MouseButtonEvent &mouse_button_press );
+   virtual bool mouseButtonReleased( const Event::MouseButtonEvent &mouse_button_release );
+   virtual bool mouseWheelMoved( const Event::MouseWheelEvent &mouse_wheel_move );
 };
 
 struct MainKeyListener : public My_SFML_KeyListener
 {
-   virtual bool keyPressed( const sf::Event::KeyEvent &key_press );
-   virtual bool keyReleased( const sf::Event::KeyEvent &key_release );
+   virtual bool keyPressed( const Event::KeyEvent &key_press );
+   virtual bool keyReleased( const Event::KeyEvent &key_release );
 };
 
 // Window
@@ -550,7 +583,7 @@ bool MainWindowListener::windowClosed( )
    return true;
 }
 
-bool MainWindowListener::windowResized( const sf::Event::SizeEvent &resized )
+bool MainWindowListener::windowResized( const Event::SizeEvent &resized )
 {
 
    return true;
@@ -569,37 +602,37 @@ bool MainWindowListener::windowGainedFocus( )
 }
 
 // Mouse
-bool MainMouseListener::mouseMoved( const sf::Event::MouseMoveEvent &mouse_move )
+bool MainMouseListener::mouseMoved( const Event::MouseMoveEvent &mouse_move )
 {
    return true;
 }
 
-bool MainMouseListener::mouseButtonPressed( const sf::Event::MouseButtonEvent &mouse_button_press )
+bool MainMouseListener::mouseButtonPressed( const Event::MouseButtonEvent &mouse_button_press )
 {
    log("Clicked");
    IMCursorManager::getSingleton().setCursor( IMCursorManager::CLICKING );
    return true;
 }
 
-bool MainMouseListener::mouseButtonReleased( const sf::Event::MouseButtonEvent &mouse_button_release )
+bool MainMouseListener::mouseButtonReleased( const Event::MouseButtonEvent &mouse_button_release )
 {
    log("Un-Clicked");
    IMCursorManager::getSingleton().setCursor( IMCursorManager::DEFAULT );
    return true;
 }
 
-bool MainMouseListener::mouseWheelMoved( const sf::Event::MouseWheelEvent &mouse_wheel_move )
+bool MainMouseListener::mouseWheelMoved( const Event::MouseWheelEvent &mouse_wheel_move )
 {
    return true;
 }
 
 // Key
-bool MainKeyListener::keyPressed( const sf::Event::KeyEvent &key_press )
+bool MainKeyListener::keyPressed( const Event::KeyEvent &key_press )
 {
-   if (key_press.code == sf::Keyboard::Q)
+   if (key_press.code == Keyboard::Q)
       shutdown(1,1);
 
-   if (key_press.code == sf::Keyboard::Escape) {
+   if (key_press.code == Keyboard::Escape) {
       if (menu_state & MENU_SEC_OPTIONS)
          closeOptionsMenu();
       else
@@ -609,7 +642,7 @@ bool MainKeyListener::keyPressed( const sf::Event::KeyEvent &key_press )
    return true;
 }
 
-bool MainKeyListener::keyReleased( const sf::Event::KeyEvent &key_release )
+bool MainKeyListener::keyReleased( const Event::KeyEvent &key_release )
 {
    return true;
 }
@@ -622,7 +655,7 @@ int mainLoop( int dt )
 {
    event_manager->handleEvents();
 
-   r_window->clear(sf::Color::Yellow);
+   r_window->clear(Color::Yellow);
 
    gui_manager->begin();
 
@@ -651,9 +684,9 @@ int mainLoop( int dt )
 
    } 
    
-   resetView();
-
    gui_manager->end();
+
+   resetView();
 
    cursor_manager->drawCursor();
 
@@ -696,7 +729,7 @@ int runApp()
    menu_state = MENU_PRELOAD;
 
    // Timing!
-   game_clock = new sf::Clock();
+   game_clock = new Clock();
    unsigned int old_time, new_time, dt;
    old_time = 0;
    new_time = 0;

@@ -6,6 +6,10 @@ typedef unsigned int MenuState;
 
 extern MenuState menu_state; // stored in app.cpp
 
+namespace sf { class Font; };
+extern sf::Font *menu_font;
+
+
 // MenuState masks:
 // startup:
 #define MENU_PRELOAD 0x1

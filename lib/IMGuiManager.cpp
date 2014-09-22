@@ -123,6 +123,11 @@ void IMGuiManager::end()
         }
     }
 
+    if (1 == state.mouse_down && NULL == state.active_widget) {
+       // Mouse was clicked NOT on a widget, so disallow activation of other widgets
+       state.active_widget = (IMGuiWidget*)-1;
+    }
+
     if (NULL != state.active_widget && 0 == state.mouse_down) {
         // That is to say, the mouse is not clicked, so clear active stuff
         state.active_widget = NULL;

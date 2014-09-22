@@ -1,30 +1,48 @@
 #include "map.h"
+#include "menustate.h"
 #include "util.h"
 #include "shutdown.h"
 #include "clock.h"
+#include "log.h"
 
 #include "SFML_GlobalRenderWindow.hpp"
 #include "SFML_TextureManager.hpp"
 #include "SFML_WindowEventManager.hpp"
 
 #include "IMButton.hpp"
+#include "IMTextButton.hpp"
 #include "IMGuiManager.hpp"
 
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
+
+#include <sstream>
 
 using namespace sf;
 
 namespace sum
 {
 
+///////////////////////////////////////////////////////////////////////////////
+// Data
+
 Sprite *s_map = NULL;
 View *map_view = NULL;
 
 IMButton *b_start_test_level = NULL;
+IMButton *b_map_to_splash = NULL;
+IMTextButton *b_map_to_options = NULL;
+IMTextButton *b_map_to_focus = NULL;
+IMTextButton *b_map_to_presets = NULL;
 
-const int map_dimension = 100;
-const int view_size = 30;
+string s_map_to_options = "Options";
+
+int selected_level = 0;
+
+const int c_map_dimension = 100;
+const int c_view_size = 30;
+
+const int c_map_gui_y_dim = 6;
 
 ///////////////////////////////////////////////////////////////////////////////
 // View
@@ -32,20 +50,20 @@ const int view_size = 30;
 Vector2f coordsWindowToMapView( int window_x, int window_y )
 {
    RenderWindow *r_window = SFML_GlobalRenderWindow::get();
-   float view_x = ( ((float)window_x / (float)(r_window->getSize().x)) *(float)view_size ) 
-                  + ((map_view->getCenter().x) - (view_size / 2.0));
-   float view_y = ( ((float)window_y / (float)(r_window->getSize().y)) *(float)view_size ) 
-                  + ((map_view->getCenter().y) - (view_size / 2.0));
+   float view_x = ( ((float)window_x / (float)(r_window->getSize().x)) *(float)c_view_size ) 
+                  + ((map_view->getCenter().x) - (c_view_size / 2.0));
+   float view_y = ( ((float)window_y / (float)(r_window->getSize().y)) *(float)c_view_size ) 
+                  + ((map_view->getCenter().y) - (c_view_size / 2.0));
 
    return Vector2f( view_x, view_y );
 }
 
 int setMapView( Vector2f center )
 { 
-   if (center.x < (view_size / 2)) center.x = (view_size / 2);
-   if (center.y < (view_size / 2)) center.y = (view_size / 2);
-   if (center.x > (map_dimension - (view_size / 2))) center.x = (map_dimension - (view_size / 2));
-   if (center.y > (map_dimension - (view_size / 2))) center.y = (map_dimension - (view_size / 2));
+   if (center.x < (c_view_size / 2)) center.x = (c_view_size / 2);
+   if (center.y < (c_view_size / 2)) center.y = (c_view_size / 2);
+   if (center.x > (c_map_dimension - (c_view_size / 2))) center.x = (c_map_dimension - (c_view_size / 2));
+   if (center.y > (c_map_dimension - (c_view_size / 2))) center.y = (c_map_dimension - (c_view_size / 2));
 
    map_view->setCenter( center.x, center.y );
 
@@ -63,42 +81,114 @@ int shiftMapView( float x_shift, float y_shift )
    return 0;
 }
 
+int selectMapObject( Vector2f coords )
+{
+   int cx = (int)coords.x,
+       cy = (int)coords.y;
+
+   std::stringstream ls;
+   ls << "Selecting a map object (level) at x=" << cx << ", y=" << cy;
+   log(ls.str());
+
+   // TODO: is there a level at this location? -data structure??
+
+   if (cx >= 40 && cx <= 50 && cy >= 40 && cy <= 50) {
+      log("Selected a map object at 40-50 x 40-50");
+      selected_level = -1;
+      return 0;
+   }
+
+   selected_level = 0;
+   return -1;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // API 
 
-int initMap()
+void initMapLevels()
+{
+
+}
+
+void initMapGui()
 {
    SFML_TextureManager *texture_manager = &SFML_TextureManager::getSingleton();
-   s_map = new Sprite( *texture_manager->getTexture( "MapScratch.png" ));
-   normalizeTo1x1( s_map );
-   s_map->scale( map_dimension, map_dimension );
-
-   map_view = new View();
-   map_view->setSize( view_size, view_size );
-   setMapView( Vector2f( 50, 50 ) );
+   IMGuiManager *gui_manager = &IMGuiManager::getSingleton();
 
    b_start_test_level = new IMButton();
-   b_start_test_level->setPosition( 0, 0 );
-   b_start_test_level->setSize( 30, 30 );
+   b_start_test_level->setPosition( 100, 100 );
+   b_start_test_level->setSize( 20, 20 );
    b_start_test_level->setNormalTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    b_start_test_level->setHoverTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    b_start_test_level->setPressedTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
-   IMGuiManager::getSingleton().registerWidget( "Start Test Level", b_start_test_level);
+   gui_manager->registerWidget( "Start Test Level", b_start_test_level);
 
-   return 0;
+   b_map_to_splash = new IMButton();
+   b_map_to_splash->setPosition( 0, 0 );
+   b_map_to_splash->setSize( 40, 40 );
+   b_map_to_splash->setNormalTexture( texture_manager->getTexture( "GoBackButtonScratch.png" ) );
+   b_map_to_splash->setHoverTexture( texture_manager->getTexture( "GoBackButtonScratch.png" ) );
+   b_map_to_splash->setPressedTexture( texture_manager->getTexture( "GoBackButtonScratch.png" ) );
+   gui_manager->registerWidget( "Map to Splash", b_map_to_splash);
+
+   b_map_to_options = new IMTextButton();
+   b_map_to_options->setPosition( 60, 0 );
+   b_map_to_options->setSize( 120, 40 );
+   b_map_to_options->setNormalTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   b_map_to_options->setHoverTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   b_map_to_options->setPressedTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   b_map_to_options->setText( &s_map_to_options );
+   b_map_to_options->setFont( menu_font );
+   b_map_to_options->setTextSize( 24 );
+   b_map_to_options->setTextColor( sf::Color::Black );
+   b_map_to_options->centerText();
+   gui_manager->registerWidget( "Map to Options", b_map_to_options);
+}
+
+int initMap()
+{
+   static int progress = 0;
+   if (progress == 0) {
+      initMapLevels();
+      progress = 1;
+      return -1;
+   } else if (progress == 1) {
+      initMapGui();
+      progress = 2;
+      return -1;
+   } else {
+      SFML_TextureManager *texture_manager = &SFML_TextureManager::getSingleton();
+      s_map = new Sprite( *texture_manager->getTexture( "MapScratch.png" ));
+      normalizeTo1x1( s_map );
+      s_map->scale( c_map_dimension, c_map_dimension );
+
+      map_view = new View();
+      map_view->setSize( c_view_size, c_view_size );
+      setMapView( Vector2f( 50, 50 ) );
+
+      return 0;
+   }
 }
 
 int drawMap( int dt )
 {
+   int retval = 0;
    RenderWindow *r_window = SFML_GlobalRenderWindow::get();
    r_window->setView(*map_view);
    r_window->draw( *s_map );
+   r_window->setView( r_window->getDefaultView() );
 
    if (b_start_test_level->doWidget()) {
-      return -1;
+      retval = 1;
+   }
+   if (b_map_to_splash->doWidget()) {
+      menu_state = MENU_MAIN | MENU_PRI_SPLASH;
+   }
+   if (b_map_to_options->doWidget()) {
+      menu_state = (menu_state | MENU_SEC_OPTIONS) & (~(MENU_SEC_AV_OPTIONS | MENU_SEC_INPUT_OPTIONS));
    }
 
-   return 0;
+   return retval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -160,7 +250,16 @@ struct MapEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListene
    {
       if (mbr.button == Mouse::Left) {
          left_mouse_down = 0;
-         //int left_mouse_up_time = game_clock->getElapsedTime().asMilliseconds();
+         int left_mouse_up_time = game_clock->getElapsedTime().asMilliseconds();
+
+         if (left_mouse_up_time - left_mouse_down_time < 300) {
+
+            // FIRST: is the mouse in the gui?
+            if (mbr.y <= c_map_gui_y_dim)
+               return true;
+
+            selectMapObject( coordsWindowToMapView( mbr.x, mbr.y ) );
+         }
       }
 
       return true;
@@ -168,7 +267,7 @@ struct MapEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListene
 
    virtual bool mouseWheelMoved( const Event::MouseWheelEvent &mwm )
    {
-      //zoomView( mwm.delta, coordsWindowToView( mwm.x, mwm.y ) );
+      //zoomView( mwm.delta, coordsWindowToMapView( mwm.x, mwm.y ) );
       return true;
    }
 };
