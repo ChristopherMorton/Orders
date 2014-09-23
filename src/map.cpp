@@ -1,4 +1,5 @@
 #include "map.h"
+#include "savestate.h"
 #include "menustate.h"
 #include "config.h"
 #include "util.h"
@@ -44,10 +45,11 @@ string s_map_to_presets = "Order Sets";
 
 int selected_level = 0;
 
-const int c_map_dimension = 100;
-const int c_view_size = 30;
+const int c_map_dimension = 30;
+const float c_view_size = 9;
 
-const int c_map_gui_y_dim = 6;
+Vector3i *a_level_locations; // Z value is 1 for unlocked, 0 for locked
+Sprite *sp_level_marker = NULL;
 
 ///////////////////////////////////////////////////////////////////////////////
 // View
@@ -55,9 +57,9 @@ const int c_map_gui_y_dim = 6;
 Vector2f coordsWindowToMapView( int window_x, int window_y )
 {
    RenderWindow *r_window = SFML_GlobalRenderWindow::get();
-   float view_x = ( ((float)window_x / (float)(r_window->getSize().x)) *(float)c_view_size ) 
+   float view_x = ( ((float)window_x / (float)(r_window->getSize().x)) *c_view_size ) 
                   + ((map_view->getCenter().x) - (c_view_size / 2.0));
-   float view_y = ( ((float)window_y / (float)(r_window->getSize().y)) *(float)c_view_size ) 
+   float view_y = ( ((float)window_y / (float)(r_window->getSize().y)) *c_view_size ) 
                   + ((map_view->getCenter().y) - (c_view_size / 2.0));
 
    return Vector2f( view_x, view_y );
@@ -112,7 +114,12 @@ int selectMapObject( Vector2f coords )
 
 void initMapLevels()
 {
+   a_level_locations = new Vector3i[NUM_LEVELS];
 
+   a_level_locations[0].x = 15; a_level_locations[0].y = 26; a_level_locations[0].z = 1;
+
+   sp_level_marker = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "MapButtonScratch.png" )));
+   normalizeTo1x1( sp_level_marker );
 }
 
 void initMapGui()
@@ -204,9 +211,22 @@ int initMap()
 
       map_view = new View();
       map_view->setSize( c_view_size, c_view_size );
-      setMapView( Vector2f( 50, 50 ) );
+      setMapView( Vector2f( c_map_dimension / 2, c_map_dimension / 2 ) );
 
       return 0;
+   }
+}
+
+void drawLevelLocations()
+{
+   RenderWindow *r_window = SFML_GlobalRenderWindow::get();
+   for( int i = 0; i < NUM_LEVELS; ++i ) {
+      if (a_level_locations[i].z == 1) {
+         // Draw the marker for the level
+         sp_level_marker->setPosition( a_level_locations[i].x, a_level_locations[i].y );
+         r_window->draw( *sp_level_marker );
+
+      }
    }
 }
 
@@ -216,6 +236,9 @@ int drawMap( int dt )
    RenderWindow *r_window = SFML_GlobalRenderWindow::get();
    r_window->setView(*map_view);
    r_window->draw( *s_map );
+
+   drawLevelLocations();
+
    r_window->setView( r_window->getDefaultView() );
 
    int bar_height = (config::height() / 15) + 10;
@@ -308,7 +331,7 @@ struct MapEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListene
          if (left_mouse_up_time - left_mouse_down_time < 300) {
 
             // FIRST: is the mouse in the gui?
-            if (mbr.y <= c_map_gui_y_dim)
+            if (mbr.y <= config::height() / 15)
                return true;
 
             selectMapObject( coordsWindowToMapView( mbr.x, mbr.y ) );
