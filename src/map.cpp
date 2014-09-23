@@ -121,39 +121,29 @@ void initMapGui()
    IMGuiManager *gui_manager = &IMGuiManager::getSingleton();
 
    b_start_test_level = new IMButton();
-   b_start_test_level->setNormalTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
-   b_start_test_level->setHoverTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
-   b_start_test_level->setPressedTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   b_start_test_level->setAllTextures( texture_manager->getTexture( "OrderButtonBase.png" ) );
    gui_manager->registerWidget( "Start Test Level", b_start_test_level);
 
    b_map_to_splash = new IMButton();
-   b_map_to_splash->setNormalTexture( texture_manager->getTexture( "GoBackButtonScratch.png" ) );
-   b_map_to_splash->setHoverTexture( texture_manager->getTexture( "GoBackButtonScratch.png" ) );
-   b_map_to_splash->setPressedTexture( texture_manager->getTexture( "GoBackButtonScratch.png" ) );
+   b_map_to_splash->setAllTextures( texture_manager->getTexture( "GoBackButtonScratch.png" ) );
    gui_manager->registerWidget( "Map to Splash", b_map_to_splash);
 
    b_map_to_options = new IMTextButton();
-   b_map_to_options->setNormalTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
-   b_map_to_options->setHoverTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
-   b_map_to_options->setPressedTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   b_map_to_options->setAllTextures( texture_manager->getTexture( "OrderButtonBase.png" ) );
    b_map_to_options->setText( &s_map_to_options );
    b_map_to_options->setFont( menu_font );
    b_map_to_options->setTextColor( sf::Color::Black );
    gui_manager->registerWidget( "Map to Options", b_map_to_options);
 
    b_map_to_focus = new IMTextButton();
-   b_map_to_focus->setNormalTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
-   b_map_to_focus->setHoverTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
-   b_map_to_focus->setPressedTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   b_map_to_focus->setAllTextures( texture_manager->getTexture( "OrderButtonBase.png" ) );
    b_map_to_focus->setText( &s_map_to_focus );
    b_map_to_focus->setFont( menu_font );
    b_map_to_focus->setTextColor( sf::Color::Black );
    gui_manager->registerWidget( "Map to Focus", b_map_to_focus);
 
    b_map_to_presets = new IMTextButton();
-   b_map_to_presets->setNormalTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
-   b_map_to_presets->setHoverTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
-   b_map_to_presets->setPressedTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   b_map_to_presets->setAllTextures( texture_manager->getTexture( "OrderButtonBase.png" ) );
    b_map_to_presets->setText( &s_map_to_presets );
    b_map_to_presets->setFont( menu_font );
    b_map_to_presets->setTextColor( sf::Color::Black );

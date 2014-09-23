@@ -12,3 +12,5 @@ IMAGE TargetPractice.png
 IMAGE GuiExitX.png
 IMAGE BugScratch.png
 IMAGE MapScratch.png
+IMAGE MapButtonScratch.png
+IMAGE GoBackButtonScratch.png
