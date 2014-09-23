@@ -70,22 +70,26 @@ int load()
    ifstream config_in;
    config_in.open("res/config.txt"); 
 
-   while (true) {
-      // Get next line
-      config_in >> type;
-      if (config_in.eof())
-         break;
+   if (config_in.is_open()) {
+      while (true) {
+         // Get next line
+         config_in >> type;
+         if (config_in.eof())
+            break;
 
-      if (config_in.bad()) {
-         log("Error in reading config - config_in is 'bad' - INVESTIGATE");
-         break;
+         if (config_in.bad()) {
+            log("Error in reading config - config_in is 'bad' - INVESTIGATE");
+            break;
+         }
+
+         if (type == "WINDOW") {
+            int w = 0, h = 0, f = 0;
+            config_in >> w >> h >> f;
+            setWindow( w, h, f );
+         }
       }
 
-      if (type == "WINDOW") {
-         int w = 0, h = 0, f = 0;
-         config_in >> w >> h >> f;
-         setWindow( w, h, f );
-      }
+      config_in.close();
    }
 
    return 0;

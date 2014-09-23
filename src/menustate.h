@@ -7,8 +7,7 @@ typedef unsigned int MenuState;
 extern MenuState menu_state; // stored in app.cpp
 
 namespace sf { class Font; };
-extern sf::Font *menu_font;
-
+extern sf::Font *menu_font; // stored in app.cpp
 
 // MenuState masks:
 // startup:
@@ -26,7 +25,7 @@ extern sf::Font *menu_font;
 #define MENU_SEC_AV_OPTIONS 0x20000
 #define MENU_SEC_INPUT_OPTIONS 0x40000
 #define MENU_MAP_FOCUS 0x100000
-#define MENU_MAP_ORDER_LISTS 0x200000
+#define MENU_MAP_PRESETS 0x200000
 // other
 #define MENU_ERROR_DIALOG 0x1000000
 

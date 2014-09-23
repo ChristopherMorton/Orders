@@ -130,6 +130,8 @@ int applyAVOptions()
 
    config::setWindow( w, h, f );
 
+   config::save();
+
    resetWindow();
 
    return 0;
