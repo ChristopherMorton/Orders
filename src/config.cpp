@@ -102,6 +102,8 @@ int save()
 
    config_out << "WINDOW " << w_width << " " << w_height << " " << w_flags;
 
+   config_out.close();
+
    return 0;
 }
 

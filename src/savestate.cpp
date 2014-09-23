@@ -11,10 +11,11 @@ namespace sum
 {
 
 LevelRecord *level_scores = NULL;
+bool init_level_record = false;
 
 LevelRecord getRecord( int level )
 {
-   if (level >= 0 && level < NUM_LEVELS)
+   if (init_level_record && level >= 0 && level < NUM_LEVELS)
       return (level_scores[level]);
 
    return 0;
@@ -22,7 +23,7 @@ LevelRecord getRecord( int level )
 
 void setRecord( int level, LevelRecord record )
 {
-   if (level >= 0 && level < NUM_LEVELS)
+   if (init_level_record && level >= 0 && level < NUM_LEVELS)
       level_scores[level] = record;
 }
 
@@ -33,6 +34,8 @@ void initRecords()
 
    for (int i = 0; i < NUM_LEVELS; ++i)
       level_scores[i] = 0;
+
+   init_level_record = true;
 }
 
 int loadSaveGame()
@@ -66,6 +69,14 @@ int loadSaveGame()
 
 int saveSaveGame()
 {
+   ofstream save_out;
+   save_out.open("res/.save"); 
+
+   for (int i = 0; i < NUM_LEVELS; ++i) {
+      save_out << i << " " << level_scores[i] << " ";
+   }
+
+   save_out.close();
    
    return 0;
 }

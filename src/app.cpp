@@ -525,9 +525,14 @@ int progressiveLoad()
          }
          asset_segment = 2;
          return -1;
-      case 2:
+      case 2: // Initialize a variety of things
          if (progressiveInit() == 0)
             asset_segment = 3;
+         return -1;
+      case 3: // Load save game
+         loadSaveGame();
+         saveSaveGame();
+         asset_segment = 4;
          return -1;
       default:
          menu_state = MENU_POSTLOAD;
