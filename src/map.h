@@ -7,6 +7,8 @@ namespace sum
    int drawMap( int dt );
 
    void setMapListener( bool set );
+
+   void fitGui_Map();
 };
 
 #endif

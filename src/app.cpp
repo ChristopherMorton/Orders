@@ -72,6 +72,7 @@ void resetWindow()
 ///////////////////////////////////////////////////////////////////////////////
 // Definitions
 
+void refitGuis(); // Predeclared
 
 ///////////////////////////////////////////////////////////////////////////////
 // Menus
@@ -132,6 +133,7 @@ int applyAVOptions()
 
    config::save();
 
+   refitGuis();
    resetWindow();
 
    return 0;
@@ -180,35 +182,45 @@ IMButton* b_splash_to_map = NULL;
 IMButton* b_open_options = NULL;
 Sprite* splashScreen = NULL;
 
+void fitGui_Splash()
+{
+   if (!initSplashGui) return;
+
+   b_open_options->setPosition( 300, 200 );
+   b_open_options->setSize( 50, 50 );
+
+   splashToTestLevel->setPosition( 10, 10 );
+   splashToTestLevel->setSize( 40, 40 );
+
+   b_splash_to_map->setPosition( 500, 300 );
+   b_splash_to_map->setSize( 200, 100 );
+}
+
 int initSplashMenuGui()
 {
    splashScreen = new Sprite( *(texture_manager->getTexture("SplashScreen0.png") ));
 
    b_open_options = new IMButton();
-   b_open_options->setPosition( 300, 200 );
-   b_open_options->setSize( 50, 50 );
    b_open_options->setNormalTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    b_open_options->setHoverTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    b_open_options->setPressedTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    gui_manager->registerWidget( "Splash menu - open options", b_open_options);
 
    splashToTestLevel = new IMButton();
-   splashToTestLevel->setPosition( 10, 10 );
-   splashToTestLevel->setSize( 40, 40 );
    splashToTestLevel->setNormalTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    splashToTestLevel->setHoverTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    splashToTestLevel->setPressedTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    gui_manager->registerWidget( "splashToTestLevel", splashToTestLevel);
 
    b_splash_to_map = new IMButton();
-   b_splash_to_map->setPosition( 500, 300 );
-   b_splash_to_map->setSize( 200, 100 );
    b_splash_to_map->setNormalTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    b_splash_to_map->setHoverTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    b_splash_to_map->setPressedTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    gui_manager->registerWidget( "Splash menu - go to map", b_splash_to_map);
 
    initSplashGui = true;
+   fitGui_Splash();
+
    return 0;
 }
 
@@ -240,33 +252,42 @@ IMButton* b_exit_options_menu = NULL,
         * b_av_options = NULL,
         * b_input_options = NULL;
 
+void fitGui_Options()
+{
+   if (!initOptionsMenu) return;
+
+   b_exit_options_menu->setPosition( 10, 10 );
+   b_exit_options_menu->setSize( 40, 40 );
+
+   b_av_options->setPosition( 300, 400 );
+   b_av_options->setSize( 80, 80 );
+
+   b_input_options->setPosition( 500, 400 );
+   b_input_options->setSize( 80, 80 );
+}
+
 int initOptionsMenuGui()
 {
    b_exit_options_menu = new IMButton();
-   b_exit_options_menu->setPosition( 10, 10 );
-   b_exit_options_menu->setSize( 40, 40 );
    b_exit_options_menu->setNormalTexture( texture_manager->getTexture( "GuiExitX.png" ) );
    b_exit_options_menu->setHoverTexture( texture_manager->getTexture( "GuiExitX.png" ) );
    b_exit_options_menu->setPressedTexture( texture_manager->getTexture( "GuiExitX.png" ) );
    gui_manager->registerWidget( "Close Options Menu", b_exit_options_menu);
 
    b_av_options = new IMButton();
-   b_av_options->setPosition( 300, 400 );
-   b_av_options->setSize( 80, 80 );
    b_av_options->setNormalTexture( texture_manager->getTexture( "BasicTree1.png" ) );
    b_av_options->setHoverTexture( texture_manager->getTexture( "BasicTree1.png" ) );
    b_av_options->setPressedTexture( texture_manager->getTexture( "BasicTree1.png" ) );
    gui_manager->registerWidget( "Open AV Option", b_av_options);
 
    b_input_options = new IMButton();
-   b_input_options->setPosition( 500, 400 );
-   b_input_options->setSize( 80, 80 );
    b_input_options->setNormalTexture( texture_manager->getTexture( "BasicTree2.png" ) );
    b_input_options->setHoverTexture( texture_manager->getTexture( "BasicTree2.png" ) );
    b_input_options->setPressedTexture( texture_manager->getTexture( "BasicTree2.png" ) );
    gui_manager->registerWidget( "Open Input Options", b_input_options);
 
    initOptionsMenu = true;
+   fitGui_Options();
 
    return 0;
 }
@@ -306,53 +327,62 @@ string s_apply_av = "Apply changes";
 // 0 - 800x600
 // 1 - 1200x900
 
+void fitGui_AVOptions()
+{
+   if (!initAVOptionsMenu) return;
+
+   b_exit_av_options_menu->setPosition( 10, 10 );
+   b_exit_av_options_menu->setSize( 40, 40 );
+
+   b_800x600->setPosition( 250, 300 );
+   b_800x600->setSize( 300, 40 );
+   b_800x600->setTextSize( 16 );
+   b_800x600->centerText();
+
+   b_1200x900->setPosition( 250, 350 );
+   b_1200x900->setSize( 300, 40 );
+   b_1200x900->setTextSize( 16 );
+   b_1200x900->centerText();
+
+   b_av_apply->setPosition( 300, 400 );
+   b_av_apply->setSize( 200, 40 );
+   b_av_apply->setTextSize( 16 );
+   b_av_apply->centerText();
+}
+
 int initAVOptionsMenuGui()
 {
    b_exit_av_options_menu = new IMButton();
-   b_exit_av_options_menu->setPosition( 10, 10 );
-   b_exit_av_options_menu->setSize( 40, 40 );
    b_exit_av_options_menu->setNormalTexture( texture_manager->getTexture( "GuiExitX.png" ) );
    b_exit_av_options_menu->setHoverTexture( texture_manager->getTexture( "GuiExitX.png" ) );
    b_exit_av_options_menu->setPressedTexture( texture_manager->getTexture( "GuiExitX.png" ) );
    gui_manager->registerWidget( "Close AV Options Menu", b_exit_av_options_menu);
 
    b_800x600 = new IMTextButton();
-   b_800x600->setPosition( 250, 300 );
-   b_800x600->setSize( 300, 40 );
    b_800x600->setNormalTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    b_800x600->setHoverTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    b_800x600->setPressedTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    b_800x600->setText( &s_800x600 );
    b_800x600->setFont( menu_font );
-   b_800x600->setTextSize( 16 );
    b_800x600->setTextColor( sf::Color::Black );
-   b_800x600->centerText();
    gui_manager->registerWidget( "Resolution 800 x 600", b_800x600);
 
    b_1200x900 = new IMTextButton();
-   b_1200x900->setPosition( 250, 350 );
-   b_1200x900->setSize( 300, 40 );
    b_1200x900->setNormalTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    b_1200x900->setHoverTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    b_1200x900->setPressedTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    b_1200x900->setText( &s_1200x900 );
    b_1200x900->setFont( menu_font );
-   b_1200x900->setTextSize( 16 );
    b_1200x900->setTextColor( sf::Color::Black );
-   b_1200x900->centerText();
    gui_manager->registerWidget( "Resolution 1200 x 900", b_1200x900);
 
    b_av_apply = new IMTextButton();
-   b_av_apply->setPosition( 300, 400 );
-   b_av_apply->setSize( 200, 40 );
    b_av_apply->setNormalTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    b_av_apply->setHoverTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    b_av_apply->setPressedTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    b_av_apply->setText( &s_apply_av );
    b_av_apply->setFont( menu_font );
-   b_av_apply->setTextSize( 16 );
    b_av_apply->setTextColor( sf::Color::Black );
-   b_av_apply->centerText();
    gui_manager->registerWidget( "Apply AV Settings", b_av_apply);
 
    if (config::width() == 1200 && config::height() == 900)
@@ -361,6 +391,7 @@ int initAVOptionsMenuGui()
       av_selected_resolution = 0;
 
    initAVOptionsMenu = true;
+   fitGui_AVOptions();
 
    return 0;
 }
@@ -559,6 +590,20 @@ int loadingAnimation(int dt)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Propogation
+
+void refitGuis()
+{
+   fitGui_Splash(); 
+
+   fitGui_Options();
+   fitGui_AVOptions();
+   //fitGui_InputOptions();
+
+   fitGui_Map();
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Main Listeners
 
 struct MainWindowListener : public My_SFML_WindowListener
@@ -751,9 +796,6 @@ int runApp()
    cursor_manager->createCursor( IMCursorManager::DEFAULT, texture_manager->getTexture( "FingerCursor.png" ), 0, 0, 40, 60);
    cursor_manager->createCursor( IMCursorManager::CLICKING, texture_manager->getTexture( "FingerCursorClick.png" ), 0, 0, 40, 60);
 
-//////////////////////////////////////////////////////////////////////
-// Main Loop
-//////////////////////////////////////////////////////////////////////
    log("Entering main loop");
    while (shutdown() == 0)
    {

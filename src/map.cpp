@@ -36,6 +36,8 @@ IMTextButton *b_map_to_options = NULL;
 IMTextButton *b_map_to_focus = NULL;
 IMTextButton *b_map_to_presets = NULL;
 
+bool init_map_gui = false;
+
 string s_map_to_options = "Options";
 string s_map_to_focus = "Focus";
 string s_map_to_presets = "Order Sets";
@@ -119,60 +121,77 @@ void initMapGui()
    IMGuiManager *gui_manager = &IMGuiManager::getSingleton();
 
    b_start_test_level = new IMButton();
-   b_start_test_level->setPosition( 100, 100 );
-   b_start_test_level->setSize( 20, 20 );
    b_start_test_level->setNormalTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    b_start_test_level->setHoverTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    b_start_test_level->setPressedTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    gui_manager->registerWidget( "Start Test Level", b_start_test_level);
 
    b_map_to_splash = new IMButton();
-   b_map_to_splash->setPosition( 0, 0 );
-   b_map_to_splash->setSize( 40, 40 );
    b_map_to_splash->setNormalTexture( texture_manager->getTexture( "GoBackButtonScratch.png" ) );
    b_map_to_splash->setHoverTexture( texture_manager->getTexture( "GoBackButtonScratch.png" ) );
    b_map_to_splash->setPressedTexture( texture_manager->getTexture( "GoBackButtonScratch.png" ) );
    gui_manager->registerWidget( "Map to Splash", b_map_to_splash);
 
    b_map_to_options = new IMTextButton();
-   b_map_to_options->setPosition( 60, 0 );
-   b_map_to_options->setSize( 200, 40 );
    b_map_to_options->setNormalTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    b_map_to_options->setHoverTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    b_map_to_options->setPressedTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    b_map_to_options->setText( &s_map_to_options );
    b_map_to_options->setFont( menu_font );
-   b_map_to_options->setTextSize( 24 );
    b_map_to_options->setTextColor( sf::Color::Black );
-   b_map_to_options->centerText();
    gui_manager->registerWidget( "Map to Options", b_map_to_options);
 
    b_map_to_focus = new IMTextButton();
-   b_map_to_focus->setPosition( 280, 0 );
-   b_map_to_focus->setSize( 200, 40 );
    b_map_to_focus->setNormalTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    b_map_to_focus->setHoverTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    b_map_to_focus->setPressedTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    b_map_to_focus->setText( &s_map_to_focus );
    b_map_to_focus->setFont( menu_font );
-   b_map_to_focus->setTextSize( 24 );
    b_map_to_focus->setTextColor( sf::Color::Black );
-   b_map_to_focus->centerText();
    gui_manager->registerWidget( "Map to Focus", b_map_to_focus);
 
-
    b_map_to_presets = new IMTextButton();
-   b_map_to_presets->setPosition( 500, 0 );
-   b_map_to_presets->setSize( 200, 40 );
    b_map_to_presets->setNormalTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    b_map_to_presets->setHoverTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    b_map_to_presets->setPressedTexture( texture_manager->getTexture( "OrderButtonBase.png" ) );
    b_map_to_presets->setText( &s_map_to_presets );
    b_map_to_presets->setFont( menu_font );
-   b_map_to_presets->setTextSize( 24 );
    b_map_to_presets->setTextColor( sf::Color::Black );
-   b_map_to_presets->centerText();
    gui_manager->registerWidget( "Map to Presets", b_map_to_presets);
+
+   init_map_gui = true;
+}
+
+void fitGui_Map()
+{
+   if (!init_map_gui)
+      initMapGui();
+
+   int width = config::width(),
+       height = config::height();
+
+   int bar_height = height / 15;
+
+   b_start_test_level->setPosition( 100, 100 );
+   b_start_test_level->setSize( 20, 20 );
+
+   b_map_to_splash->setPosition( 0, 0 );
+   b_map_to_splash->setSize( bar_height, bar_height );
+
+   b_map_to_options->setPosition( 60, 0 );
+   b_map_to_options->setSize( 200, bar_height );
+   b_map_to_options->setTextSize( 24 );
+   b_map_to_options->centerText();
+
+   b_map_to_focus->setPosition( 280, 0 );
+   b_map_to_focus->setSize( 200, bar_height );
+   b_map_to_focus->setTextSize( 24 );
+   b_map_to_focus->centerText();
+
+   b_map_to_presets->setPosition( 500, 0 );
+   b_map_to_presets->setSize( 200, bar_height );
+   b_map_to_presets->setTextSize( 24 );
+   b_map_to_presets->centerText();
 }
 
 int initMap()
@@ -184,6 +203,7 @@ int initMap()
       return -1;
    } else if (progress == 1) {
       initMapGui();
+      fitGui_Map();
       progress = 2;
       return -1;
    } else {
@@ -208,7 +228,8 @@ int drawMap( int dt )
    r_window->draw( *s_map );
    r_window->setView( r_window->getDefaultView() );
 
-   RectangleShape gui_bar( Vector2f( config::width(), 50 ) );
+   int bar_height = (config::height() / 15) + 10;
+   RectangleShape gui_bar( Vector2f( config::width(), bar_height ) );
    gui_bar.setFillColor( Color::White );
    gui_bar.setOutlineThickness( 0 );
 

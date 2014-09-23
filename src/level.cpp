@@ -712,7 +712,7 @@ int loadLevel( int level_id )
    if (level_id == -1 || true)
    {
       base_terrain = BASE_TER_GRASS;
-      initGrids(20,15);
+      initGrids(15,15);
       GRID_AT(terrain_grid,6,5) = TER_TREE1;
       GRID_AT(terrain_grid,2,2) = TER_TREE2;
       GRID_AT(terrain_grid,11,11) = TER_TREE2;
