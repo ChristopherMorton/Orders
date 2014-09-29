@@ -44,12 +44,17 @@ string s_map_to_focus = "Focus";
 string s_map_to_presets = "Order Sets";
 
 int selected_level = 0;
+int *a_selection_grid;
+#define GRID_AT(GRID,X,Y) (GRID[((X) + ((Y) * c_map_dimension))])
 
 const int c_map_dimension = 30;
 const float c_view_size = 9;
 
 Vector3i *a_level_locations; // Z value is 1 for unlocked, 0 for locked
 Sprite *sp_level_marker = NULL;
+Sprite *sp_star = NULL;
+Sprite *sp_star_left = NULL;
+Sprite *sp_star_right = NULL;
 
 ///////////////////////////////////////////////////////////////////////////////
 // View
@@ -97,16 +102,19 @@ int selectMapObject( Vector2f coords )
    ls << "Selecting a map object (level) at x=" << cx << ", y=" << cy;
    log(ls.str());
 
-   // TODO: is there a level at this location? -data structure??
-
-   if (cx >= 40 && cx <= 50 && cy >= 40 && cy <= 50) {
-      log("Selected a map object at 40-50 x 40-50");
+   if (cx < 0 || cy < 0 || cx >= c_map_dimension || cy >= c_map_dimension) {
       selected_level = -1;
-      return 0;
+      log("FAILED, coords out of bounds");
+      return -1;
    }
 
-   selected_level = 0;
-   return -1;
+   selected_level = GRID_AT(a_selection_grid,cx,cy);
+
+   std::stringstream ls2;
+   ls2 << "Selected level #" << selected_level;
+   log(ls2.str());
+
+   return 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -116,10 +124,36 @@ void initMapLevels()
 {
    a_level_locations = new Vector3i[NUM_LEVELS];
 
+   // Set up level locations
    a_level_locations[0].x = 15; a_level_locations[0].y = 26; a_level_locations[0].z = 1;
+
+   a_selection_grid = new int[c_map_dimension * c_map_dimension];
+
+   for (int i = 0; i < c_map_dimension; ++i)
+      for (int j = 0; j < c_map_dimension; ++j)
+         GRID_AT(a_selection_grid,i,j) = -1;
+
+   for (int i = 0; i < NUM_LEVELS; ++i) {
+      if (a_level_locations[i].z == 1) {
+         int x = a_level_locations[i].x, y = a_level_locations[i].y;
+         GRID_AT(a_selection_grid,x,y) = i;
+         GRID_AT(a_selection_grid,x+1,y) = i;
+         GRID_AT(a_selection_grid,x+2,y) = i;
+      }
+   }
 
    sp_level_marker = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "MapButtonScratch.png" )));
    normalizeTo1x1( sp_level_marker );
+
+   sp_star = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "StarFull.png" )));
+   normalizeTo1x1( sp_star );
+   sp_star->scale( 0.5, 0.5 );
+   sp_star_right = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "StarRightHalf.png" )));
+   normalizeTo1x1( sp_star_right );
+   sp_star_right->scale( 0.5, 0.5 );
+   sp_star_left = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "StarLeftHalf.png" )));
+   normalizeTo1x1( sp_star_left );
+   sp_star_left->scale( 0.5, 0.5 );
 }
 
 void initMapGui()
@@ -217,6 +251,38 @@ int initMap()
    }
 }
 
+void drawStars( float x, float y, LevelRecord record )
+{
+   RenderWindow *r_window = SFML_GlobalRenderWindow::get();
+
+   if (record & LR_EASY) {
+      sp_star->setPosition( x + 0, y + 0.5 );
+      r_window->draw( *sp_star );
+      sp_star->setPosition( x + 0.5, y + 0.5 );
+      r_window->draw( *sp_star );
+   }
+   if (record & LR_HARD) {
+      sp_star->setPosition( x + 0.25, y );
+      r_window->draw( *sp_star );
+   }
+   if (record & LR_EASY_RT) {
+      sp_star->setPosition( x + 1.0, y + 0.5 );
+      r_window->draw( *sp_star );
+   }
+   if (record & LR_EASY_MM) {
+      sp_star->setPosition( x + 1.5, y + 0.5 );
+      r_window->draw( *sp_star );
+   }
+   if (record & LR_HARD_RT) {
+      sp_star_left->setPosition( x + 1.25, y );
+      r_window->draw( *sp_star_left );
+   }
+   if (record & LR_HARD_MM) {
+      sp_star_right->setPosition( x + 1.25, y );
+      r_window->draw( *sp_star_right );
+   }
+}
+
 void drawLevelLocations()
 {
    RenderWindow *r_window = SFML_GlobalRenderWindow::get();
@@ -226,6 +292,8 @@ void drawLevelLocations()
          sp_level_marker->setPosition( a_level_locations[i].x, a_level_locations[i].y );
          r_window->draw( *sp_level_marker );
 
+         LevelRecord record = getRecord( i );
+         drawStars( a_level_locations[i].x + 1, a_level_locations[i].y, record );
       }
    }
 }

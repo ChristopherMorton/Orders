@@ -14,3 +14,6 @@ IMAGE BugScratch.png
 IMAGE MapScratch.png
 IMAGE MapButtonScratch.png
 IMAGE GoBackButtonScratch.png
+IMAGE StarFull.png
+IMAGE StarLeftHalf.png
+IMAGE StarRightHalf.png

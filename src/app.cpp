@@ -344,22 +344,29 @@ void fitGui_AVOptions()
 {
    if (!initAVOptionsMenu) return;
 
-   b_exit_av_options_menu->setPosition( 10, 10 );
-   b_exit_av_options_menu->setSize( 40, 40 );
+   int width = config::width(),
+       height = config::height();
 
-   b_800x600->setPosition( 250, 300 );
-   b_800x600->setSize( 300, 40 );
-   b_800x600->setTextSize( 16 );
+   float gui_tick_x = (float)width / 80.0,
+         gui_tick_y = (float)height / 60.0;
+   int gui_text_size = width / 50;
+
+   b_exit_av_options_menu->setPosition( gui_tick_x, gui_tick_y );
+   b_exit_av_options_menu->setSize( gui_tick_x * 4, gui_tick_y * 4 );
+
+   b_800x600->setPosition( 25 * gui_tick_x, 30 * gui_tick_y );
+   b_800x600->setSize( 30 * gui_tick_x, 4 * gui_tick_y );
+   b_800x600->setTextSize( gui_text_size );
    b_800x600->centerText();
 
-   b_1200x900->setPosition( 250, 350 );
-   b_1200x900->setSize( 300, 40 );
-   b_1200x900->setTextSize( 16 );
+   b_1200x900->setPosition( 25 * gui_tick_x, 35 * gui_tick_y );
+   b_1200x900->setSize( 30 * gui_tick_x, 4 * gui_tick_y );
+   b_1200x900->setTextSize( gui_text_size );
    b_1200x900->centerText();
 
-   b_av_apply->setPosition( 300, 400 );
-   b_av_apply->setSize( 200, 40 );
-   b_av_apply->setTextSize( 16 );
+   b_av_apply->setPosition( 30 * gui_tick_x, 40 * gui_tick_y );
+   b_av_apply->setSize( 20 * gui_tick_x, 4 * gui_tick_y );
+   b_av_apply->setTextSize( gui_text_size );
    b_av_apply->centerText();
 }
 
@@ -606,6 +613,8 @@ void refitGuis()
    //fitGui_InputOptions();
 
    fitGui_Map();
+
+   fitGui_Level();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -666,14 +675,12 @@ bool MainMouseListener::mouseMoved( const Event::MouseMoveEvent &mouse_move )
 
 bool MainMouseListener::mouseButtonPressed( const Event::MouseButtonEvent &mouse_button_press )
 {
-   log("Clicked");
    IMCursorManager::getSingleton().setCursor( IMCursorManager::CLICKING );
    return true;
 }
 
 bool MainMouseListener::mouseButtonReleased( const Event::MouseButtonEvent &mouse_button_release )
 {
-   log("Un-Clicked");
    IMCursorManager::getSingleton().setCursor( IMCursorManager::DEFAULT );
    return true;
 }

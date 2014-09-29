@@ -26,6 +26,8 @@ namespace sum
    int broadcastOrder( Order o );
    int startPlayerCommand( Order o );
    int completePlayerCommand( Order o );
+
+   void fitGui_Level();
 };
 
 #endif

@@ -6,6 +6,7 @@
 #include "gui.h"
 #include "util.h"
 #include "log.h"
+#include "config.h"
 #include "clock.h"
 
 #include <SFML/Graphics.hpp>
@@ -34,15 +35,8 @@ namespace sum {
 //////////////////////////////////////////////////////////////////////
 // Global app-state variables
 
-RenderWindow *l_r_window;
 View *level_view;
 float view_rel_x_to_y;
-
-// Managers
-IMGuiManager* l_gui_manager;
-IMCursorManager* l_cursor_manager;
-SFML_TextureManager* l_texture_manager;
-SFML_WindowEventManager* l_event_manager;
 
 int turn, turn_progress;
 
@@ -639,21 +633,27 @@ int completePlayerCommand( Order o )
 //////////////////////////////////////////////////////////////////////
 // Loading
 
+void fitGui_Level()
+{
+   view_rel_x_to_y = config::height() / config::width();
+}
+
 void initTextures()
 {
+   SFML_TextureManager &t_manager = SFML_TextureManager::getSingleton();
    // Setup terrain
    terrain_sprites = new Sprite*[NUM_TERRAINS];
 
    terrain_sprites[TER_NONE] = NULL;
-   terrain_sprites[TER_TREE1] = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "BasicTree1.png" )));
-   terrain_sprites[TER_TREE2] = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "BasicTree2.png" )));
+   terrain_sprites[TER_TREE1] = new Sprite( *(t_manager.getTexture( "BasicTree1.png" )));
+   terrain_sprites[TER_TREE2] = new Sprite( *(t_manager.getTexture( "BasicTree2.png" )));
          
    normalizeTo1x1( terrain_sprites[TER_TREE1] );
    normalizeTo1x1( terrain_sprites[TER_TREE2] );
    
-   base_grass_sprite = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "GreenGrass.png" )));
-   base_mountain_sprite = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "GrayRock.png" )));
-   base_underground_sprite = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "BrownRock.png" )));
+   base_grass_sprite = new Sprite( *(t_manager.getTexture( "GreenGrass.png" )));
+   base_mountain_sprite = new Sprite( *(t_manager.getTexture( "GrayRock.png" )));
+   base_underground_sprite = new Sprite( *(t_manager.getTexture( "BrownRock.png" )));
 
 }
 
@@ -661,14 +661,8 @@ void init()
 {
    if (level_init) return;
 
-   l_r_window = SFML_GlobalRenderWindow::get();
-   l_gui_manager = &IMGuiManager::getSingleton();
-   l_cursor_manager = &IMCursorManager::getSingleton();
-   l_texture_manager = &SFML_TextureManager::getSingleton();
-   l_event_manager = &SFML_WindowEventManager::getSingleton();
-
    level_view = new View();
-   view_rel_x_to_y = ((float)l_r_window->getSize().y) / ((float)l_r_window->getSize().x);
+   view_rel_x_to_y = ((float)config::height()) / ((float)config::width());
 
    initTextures();
 
@@ -709,7 +703,7 @@ int loadLevel( int level_id )
       init();
 
    // Currently only loads test level
-   if (level_id == -1 || true)
+   if (level_id == 0 || true)
    {
       base_terrain = BASE_TER_GRASS;
       initGrids(15,15);
@@ -846,11 +840,12 @@ void drawBaseTerrain()
    
    s_ter->setPosition( 0, 0 );
    s_ter->setScale( level_dim_x, level_dim_y ); 
-   l_r_window->draw( *s_ter );
+   SFML_GlobalRenderWindow::get()->draw( *s_ter );
 }
 
 void drawTerrain()
 {
+   RenderWindow *r_window = SFML_GlobalRenderWindow::get();
    int x, y;
    for (x = 0; x < level_dim_x; ++x) {
       for (y = 0; y < level_dim_y; ++y) {
@@ -859,7 +854,7 @@ void drawTerrain()
       
          if (s_ter) {
             s_ter->setPosition( x, y );
-            l_r_window->draw( *s_ter );
+            r_window->draw( *s_ter );
          }
 
       }
@@ -896,7 +891,7 @@ void drawProjectiles()
 
 int drawLevel()
 {
-   l_r_window->setView(*level_view);
+   SFML_GlobalRenderWindow::get()->setView(*level_view);
    // Level
    drawBaseTerrain();
    drawTerrain();
