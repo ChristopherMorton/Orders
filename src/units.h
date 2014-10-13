@@ -100,13 +100,16 @@ class SummonMarker : public Unit
 {
 private:
    SummonMarker();
+   float rotation;
 public:
    static SummonMarker* get( int grid_x, int grid_y );
 
    virtual int addOrder( Order o );
    virtual int doAttack( Order o );
+   virtual int update( float dtf );
    virtual sf::Texture* getTexture();
    virtual int draw();
+
    virtual ~SummonMarker();
 };
 

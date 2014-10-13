@@ -39,15 +39,20 @@ int Projectile::update( float dtf )
    return 0;
 }
 
+Sprite *sp_magic_projectile = NULL;
+
 int Projectile::draw( )
 {
-   // Need ROTATION
+   if (NULL == sp_magic_projectile) {
+      Texture *tex =SFML_TextureManager::getSingleton().getTexture( "orb0.png" ); 
+      sp_magic_projectile = new Sprite( *(tex));
+      Vector2u dim = tex->getSize();
+      sp_magic_projectile->setOrigin( dim.x / 2.0, dim.y / 2.0 );
+      normalizeTo1x1( sp_magic_projectile );
+   }
 
-   Sprite *sprite = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "orb0.png" )));
-
-   normalizeTo1x1( sprite );
-   sprite->setPosition( pos );
-   SFML_GlobalRenderWindow::get()->draw( *sprite );
+   sp_magic_projectile->setPosition( pos );
+   SFML_GlobalRenderWindow::get()->draw( *sp_magic_projectile );
 
    return 0;
 }

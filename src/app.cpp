@@ -186,10 +186,10 @@ void fitGui_Splash()
 {
    if (!initSplashGui) return;
 
-   b_open_options->setPosition( 300, 200 );
-   b_open_options->setSize( 50, 50 );
+   b_open_options->setPosition( 10, 10 );
+   b_open_options->setSize( 40, 40 );
 
-   splashToTestLevel->setPosition( 10, 10 );
+   splashToTestLevel->setPosition( 300, 200 );
    splashToTestLevel->setSize( 40, 40 );
 
    b_splash_to_map->setPosition( 500, 300 );
@@ -201,7 +201,7 @@ int initSplashMenuGui()
    splashScreen = new Sprite( *(texture_manager->getTexture("SplashScreen0.png") ));
 
    b_open_options = new IMButton();
-   b_open_options->setAllTextures( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   b_open_options->setAllTextures( texture_manager->getTexture( "GearIcon.png" ) );
    gui_manager->registerWidget( "Splash menu - open options", b_open_options);
 
    splashToTestLevel = new IMButton();

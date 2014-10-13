@@ -26,6 +26,7 @@
 
 #define TURN_LENGTH 1000
 
+#define MOUSE_DOWN_SELECT_TIME 200
 
 using namespace sf;
 using namespace std;
@@ -400,7 +401,7 @@ Unit* getEnemy( int x, int y, float range, Direction dir, int my_team, int selec
       for (int i = min_x; i <= max_x; ++i) {
          Unit *u = GRID_AT(unit_grid,i,j);
          if (u && u->team != my_team && u->alive) {
-            float u_x = u->x_real - x, u_y = u->y_real - y;
+            float u_x = u->x_grid - x, u_y = u->y_grid - y;
             float u_squared = (u_x * u_x) + (u_y * u_y);
             // Is it really in range?
             if (u_squared <= range_squared) {
@@ -531,7 +532,7 @@ int alertUnits( Order o )
       for (int i = min_x; i <= max_x; ++i) {
          Unit *u = GRID_AT(unit_grid,i,j);
          if (u && u->team == 0) { // On my team
-            float u_x = u->x_real - x, u_y = u->y_real - y;
+            float u_x = u->x_grid - x, u_y = u->y_grid - y;
             float u_squared = (u_x * u_x) + (u_y * u_y);
             // Is it really in range?
             if (u_squared <= range_squared) {
@@ -635,7 +636,7 @@ int completePlayerCommand( Order o )
 
 void fitGui_Level()
 {
-   view_rel_x_to_y = config::height() / config::width();
+   view_rel_x_to_y = ((float)config::height()) / ((float)config::width());
 }
 
 void initTextures()
@@ -1024,7 +1025,7 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
          left_mouse_down = 0;
          int left_mouse_up_time = game_clock->getElapsedTime().asMilliseconds();
 
-         if (left_mouse_up_time - left_mouse_down_time < 300)
+         if (left_mouse_up_time - left_mouse_down_time < MOUSE_DOWN_SELECT_TIME)
             selectUnit( coordsWindowToView( mbr.x, mbr.y ) );
 
       }

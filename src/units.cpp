@@ -3,6 +3,7 @@
 #include "focus.h"
 #include "util.h"
 #include "projectile.h"
+#include "clock.h"
 #include "log.h"
 
 #include "SFML_GlobalRenderWindow.hpp"
@@ -386,8 +387,10 @@ int Player::init( int x, int y, Direction face )
 
    radius = 0.4;
 
-   x_grid = x_real = x;
-   y_grid = y_real = y;
+   x_grid = x;
+   y_grid = y;
+   x_real = x + 0.5;
+   y_real = y + 0.5;
    TurnTo(face);
 
    health = max_health = PLAYER_MAX_HEALTH;
@@ -466,13 +469,19 @@ sf::Texture* Player::getTexture()
    return SFML_TextureManager::getSingleton().getTexture( "BugScratch.png" );
 }
 
+Sprite *sp_player = NULL;
+
 int Player::draw()
 {
-   Sprite *player = new Sprite(*getTexture());
- 
-   normalizeTo1x1( player );
-   player->setPosition( x_real, y_real );
-   SFML_GlobalRenderWindow::get()->draw( *player );
+   if (NULL == sp_player) {
+      sp_player = new Sprite(*getTexture());
+      Vector2u dim = getTexture()->getSize();
+      sp_player->setOrigin( dim.x / 2.0, dim.y / 2.0 );
+      normalizeTo1x1( sp_player );
+   }
+
+   sp_player->setPosition( x_real, y_real );
+   SFML_GlobalRenderWindow::get()->draw( *sp_player );
 
    return 0;
 }
@@ -496,8 +505,10 @@ Bug::Bug( int x, int y, Direction face )
 
    radius = 0.4;
 
-   x_grid = x_real = x;
-   y_grid = y_real = y;
+   x_grid = x;
+   y_grid = y;
+   x_real = x + 0.5;
+   y_real = y + 0.5;
    TurnTo(face);
 
    health = max_health = BUG_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
@@ -601,13 +612,27 @@ sf::Texture* Bug::getTexture()
    return SFML_TextureManager::getSingleton().getTexture( "BugScratch.png" );
 }
 
+Sprite *sp_bug = NULL;
+
 int Bug::draw()
 {
-   Sprite *bug = new Sprite(*getTexture());
- 
-   normalizeTo1x1( bug );
-   bug->setPosition( x_real, y_real );
-   SFML_GlobalRenderWindow::get()->draw( *bug );
+   if (NULL == sp_bug) {
+      sp_bug = new Sprite(*getTexture());
+      Vector2u dim = getTexture()->getSize();
+      sp_bug->setOrigin( dim.x / 2.0, dim.y / 2.0 );
+      normalizeTo1x1( sp_bug );
+   }
+
+   sp_bug->setPosition( x_real, y_real );
+
+   int rotation;
+   if (facing == EAST) rotation = 0;
+   if (facing == SOUTH) rotation = 90;
+   if (facing == WEST) rotation = 180;
+   if (facing == NORTH) rotation = 270;
+   sp_bug->setRotation( rotation );
+
+   SFML_GlobalRenderWindow::get()->draw( *sp_bug );
 
    return 0;
 }
@@ -619,8 +644,10 @@ SummonMarker::SummonMarker( )
 {
    type = SUMMONMARKER_T;
 
-   x_grid = x_real = 0;
-   y_grid = y_real = 0;
+   x_grid = 0;
+   y_grid = 0;
+   x_real = x_grid + 0.5;
+   y_real = y_grid + 0.5;
    TurnTo( SOUTH );
 
    alive = false;
@@ -649,10 +676,10 @@ SummonMarker* SummonMarker::get( int x, int y )
       theSummonMarker = new SummonMarker();
    
    theSummonMarker->x_grid = x;
-   theSummonMarker->x_real = x;
+   theSummonMarker->x_real = x + 0.5;
 
    theSummonMarker->y_grid = y;
-   theSummonMarker->y_real = y;
+   theSummonMarker->y_real = y + 0.5;
 
    return theSummonMarker;
 }
@@ -674,16 +701,28 @@ sf::Texture* SummonMarker::getTexture()
    return SFML_TextureManager::getSingleton().getTexture( "TargetPractice.png" );
 }
 
+int SummonMarker::update( float dtf )
+{
+   rotation += (dtf * 360);
+   return 0;
+}
+
+Sprite *sp_summon_marker = NULL;
+
 int SummonMarker::draw()
 {
-   Sprite *targ = new Sprite(*getTexture());
+   if (NULL == sp_summon_marker) {
+      sp_summon_marker = new Sprite(*getTexture());
+      Vector2u dim = getTexture()->getSize();
+      sp_summon_marker->setOrigin( dim.x / 2.0, dim.y / 2.0 );
+      normalizeTo1x1( sp_summon_marker );
+   }
 
-   normalizeTo1x1( targ );
-   targ->setPosition( x_real, y_real );
-   SFML_GlobalRenderWindow::get()->draw( *targ );
+   sp_summon_marker->setRotation( rotation );
+   sp_summon_marker->setPosition( x_real, y_real );
+   SFML_GlobalRenderWindow::get()->draw( *sp_summon_marker );
 
    return 0;
-
 }
 
 SummonMarker::~SummonMarker()
@@ -699,8 +738,10 @@ TargetPractice::TargetPractice( int x, int y, Direction face )
 {
    type = TARGETPRACTICE_T;
 
-   x_grid = x_real = x;
-   y_grid = y_real = y;
+   x_grid = x;
+   y_grid = y;
+   x_real = x_grid + 0.5;
+   y_real = y_grid + 0.5;
    TurnTo( face );
 
    alive = true;
@@ -738,13 +779,19 @@ sf::Texture* TargetPractice::getTexture()
    return SFML_TextureManager::getSingleton().getTexture( "TargetPractice.png" );
 }
 
+Sprite *sp_targ = NULL;
+
 int TargetPractice::draw()
 {
-   Sprite *targ = new Sprite(*getTexture());
+   if (NULL == sp_targ) {
+      sp_targ = new Sprite(*getTexture());
+      Vector2u dim = getTexture()->getSize();
+      sp_targ->setOrigin( dim.x / 2.0, dim.y / 2.0 );
+      normalizeTo1x1( sp_targ );
+   }
 
-   normalizeTo1x1( targ );
-   targ->setPosition( x_real, y_real );
-   SFML_GlobalRenderWindow::get()->draw( *targ );
+   sp_targ->setPosition( x_real, y_real );
+   SFML_GlobalRenderWindow::get()->draw( *sp_targ );
 
    return 0;
 

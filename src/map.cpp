@@ -1,4 +1,5 @@
 #include "map.h"
+#include "level.h"
 #include "savestate.h"
 #include "menustate.h"
 #include "config.h"
@@ -20,6 +21,8 @@
 
 #include <sstream>
 
+#define MOUSE_DOWN_SELECT_TIME 200
+
 using namespace sf;
 
 namespace sum
@@ -36,14 +39,16 @@ IMButton *b_map_to_splash = NULL;
 IMTextButton *b_map_to_options = NULL;
 IMTextButton *b_map_to_focus = NULL;
 IMTextButton *b_map_to_presets = NULL;
+IMTextButton *b_map_start_level = NULL;
 
 bool init_map_gui = false;
 
 string s_map_to_options = "Options";
 string s_map_to_focus = "Focus";
 string s_map_to_presets = "Order Sets";
+string s_map_start_level = "Start Level";
 
-int selected_level = 0;
+int selected_level = -1;
 int *a_selection_grid;
 #define GRID_AT(GRID,X,Y) (GRID[((X) + ((Y) * c_map_dimension))])
 
@@ -55,6 +60,9 @@ Sprite *sp_level_marker = NULL;
 Sprite *sp_star = NULL;
 Sprite *sp_star_left = NULL;
 Sprite *sp_star_right = NULL;
+Sprite *sp_star_empty = NULL;
+Sprite *sp_star_empty_left = NULL;
+Sprite *sp_star_empty_right = NULL;
 
 ///////////////////////////////////////////////////////////////////////////////
 // View
@@ -148,12 +156,22 @@ void initMapLevels()
    sp_star = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "StarFull.png" )));
    normalizeTo1x1( sp_star );
    sp_star->scale( 0.5, 0.5 );
-   sp_star_right = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "StarRightHalf.png" )));
+   sp_star_right = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "StarFullRight.png" )));
    normalizeTo1x1( sp_star_right );
    sp_star_right->scale( 0.5, 0.5 );
-   sp_star_left = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "StarLeftHalf.png" )));
+   sp_star_left = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "StarFullLeft.png" )));
    normalizeTo1x1( sp_star_left );
    sp_star_left->scale( 0.5, 0.5 );
+
+   sp_star_empty = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "StarEmpty.png" )));
+   normalizeTo1x1( sp_star_empty );
+   sp_star_empty->scale( 0.5, 0.5 );
+   sp_star_empty_right = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "StarEmptyRight.png" )));
+   normalizeTo1x1( sp_star_empty_right );
+   sp_star_empty_right->scale( 0.5, 0.5 );
+   sp_star_empty_left = new Sprite( *(SFML_TextureManager::getSingleton().getTexture( "StarEmptyLeft.png" )));
+   normalizeTo1x1( sp_star_empty_left );
+   sp_star_empty_left->scale( 0.5, 0.5 );
 }
 
 void initMapGui()
@@ -190,6 +208,13 @@ void initMapGui()
    b_map_to_presets->setTextColor( sf::Color::Black );
    gui_manager->registerWidget( "Map to Presets", b_map_to_presets);
 
+   b_map_start_level = new IMTextButton();
+   b_map_start_level->setAllTextures( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   b_map_start_level->setText( &s_map_start_level );
+   b_map_start_level->setFont( menu_font );
+   b_map_start_level->setTextColor( sf::Color::Black );
+   gui_manager->registerWidget( "Map Start Level", b_map_start_level);
+
    init_map_gui = true;
 }
 
@@ -202,27 +227,39 @@ void fitGui_Map()
        height = config::height();
 
    int bar_height = height / 15;
+   int bar_but_width = width / 4.5;
 
    b_start_test_level->setPosition( 100, 100 );
    b_start_test_level->setSize( 20, 20 );
 
-   b_map_to_splash->setPosition( 0, 0 );
-   b_map_to_splash->setSize( bar_height, bar_height );
+   // Bar
+   int bar_fill = 0;
 
-   b_map_to_options->setPosition( 60, 0 );
-   b_map_to_options->setSize( 200, bar_height );
+   b_map_to_splash->setPosition( bar_fill, 0 );
+   b_map_to_splash->setSize( bar_height, bar_height );
+   bar_fill += bar_height + 10; 
+
+   b_map_to_options->setPosition( bar_fill, 0 );
+   b_map_to_options->setSize( bar_but_width, bar_height );
    b_map_to_options->setTextSize( 24 );
    b_map_to_options->centerText();
+   bar_fill += bar_but_width + 10; 
 
-   b_map_to_focus->setPosition( 280, 0 );
-   b_map_to_focus->setSize( 200, bar_height );
+   b_map_to_focus->setPosition( bar_fill, 0 );
+   b_map_to_focus->setSize( bar_but_width, bar_height );
    b_map_to_focus->setTextSize( 24 );
    b_map_to_focus->centerText();
+   bar_fill += bar_but_width + 10; 
 
-   b_map_to_presets->setPosition( 500, 0 );
-   b_map_to_presets->setSize( 200, bar_height );
+   b_map_to_presets->setPosition( bar_fill, 0 );
+   b_map_to_presets->setSize( bar_but_width, bar_height );
    b_map_to_presets->setTextSize( 24 );
    b_map_to_presets->centerText();
+
+   b_map_start_level->setPosition( (width / 2) - 150, height - 60);
+   b_map_start_level->setSize( 300, 60 );
+   b_map_start_level->setTextSize( 24 );
+   b_map_start_level->centerText();
 }
 
 int initMap()
@@ -255,32 +292,39 @@ void drawStars( float x, float y, LevelRecord record )
 {
    RenderWindow *r_window = SFML_GlobalRenderWindow::get();
 
-   if (record & LR_EASY) {
-      sp_star->setPosition( x + 0, y + 0.5 );
-      r_window->draw( *sp_star );
-      sp_star->setPosition( x + 0.5, y + 0.5 );
-      r_window->draw( *sp_star );
-   }
-   if (record & LR_HARD) {
-      sp_star->setPosition( x + 0.25, y );
-      r_window->draw( *sp_star );
-   }
-   if (record & LR_EASY_RT) {
-      sp_star->setPosition( x + 1.0, y + 0.5 );
-      r_window->draw( *sp_star );
-   }
-   if (record & LR_EASY_MM) {
-      sp_star->setPosition( x + 1.5, y + 0.5 );
-      r_window->draw( *sp_star );
-   }
-   if (record & LR_HARD_RT) {
-      sp_star_left->setPosition( x + 1.25, y );
-      r_window->draw( *sp_star_left );
-   }
-   if (record & LR_HARD_MM) {
-      sp_star_right->setPosition( x + 1.25, y );
-      r_window->draw( *sp_star_right );
-   }
+   Sprite *which_star = NULL;
+
+   if (record & LR_EASY) which_star = sp_star;
+   else which_star = sp_star_empty;
+   which_star->setPosition( x + 0, y + 0.5 );
+   r_window->draw( *which_star );
+   which_star->setPosition( x + 0.5, y + 0.5 );
+   r_window->draw( *which_star );
+
+   if (record & LR_HARD) which_star = sp_star;
+   else which_star = sp_star_empty;
+   which_star->setPosition( x + 0.25, y );
+   r_window->draw( *which_star );
+   
+   if (record & LR_EASY_RT) which_star = sp_star;
+   else which_star = sp_star_empty;
+   which_star->setPosition( x + 1.0, y + 0.5 );
+   r_window->draw( *which_star );
+   
+   if (record & LR_EASY_MM) which_star = sp_star;
+   else which_star = sp_star_empty;
+   which_star->setPosition( x + 1.5, y + 0.5 );
+   r_window->draw( *which_star );
+   
+   if (record & LR_HARD_RT) which_star = sp_star_left;
+   else which_star = sp_star_empty_left; 
+   which_star->setPosition( x + 1.25, y );
+   r_window->draw( *which_star );
+   
+   if (record & LR_HARD_MM) which_star = sp_star_right;
+   else which_star = sp_star_empty_right;
+   which_star->setPosition( x + 1.25, y );
+   r_window->draw( *which_star ); 
 }
 
 void drawLevelLocations()
@@ -330,6 +374,15 @@ int drawMap( int dt )
    }
    if (b_map_to_presets->doWidget()) {
       menu_state = MENU_MAIN | MENU_PRI_MAP | MENU_MAP_PRESETS;
+   }
+
+   if (selected_level >= 0) {
+      if (b_map_start_level->doWidget()) {
+         menu_state = MENU_MAIN | MENU_PRI_INGAME;
+
+         loadLevel( selected_level );
+         setLevelListener(true);
+      }
    }
 
    return retval;
@@ -396,7 +449,7 @@ struct MapEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListene
          left_mouse_down = 0;
          int left_mouse_up_time = game_clock->getElapsedTime().asMilliseconds();
 
-         if (left_mouse_up_time - left_mouse_down_time < 300) {
+         if (left_mouse_up_time - left_mouse_down_time < MOUSE_DOWN_SELECT_TIME) {
 
             // FIRST: is the mouse in the gui?
             if (mbr.y <= config::height() / 15)

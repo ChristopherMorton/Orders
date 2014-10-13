@@ -15,5 +15,8 @@ IMAGE MapScratch.png
 IMAGE MapButtonScratch.png
 IMAGE GoBackButtonScratch.png
 IMAGE StarFull.png
-IMAGE StarLeftHalf.png
-IMAGE StarRightHalf.png
+IMAGE StarFullLeft.png
+IMAGE StarFullRight.png
+IMAGE StarEmpty.png
+IMAGE StarEmptyLeft.png
+IMAGE StarEmptyRight.png
