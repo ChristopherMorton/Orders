@@ -95,8 +95,6 @@ void IMGuiManager::begin()
     // Get mouse state from sf::Mouse
     state.mouse_down = sf::Mouse::isButtonPressed( sf::Mouse::Left );
     state.mouse_pos = sf::Mouse::getPosition( *r_window );
-
-    // std::cout << state.mouse_pos.x << ", " << state.mouse_pos.y << ": " << state.mouse_down << std::endl;
 }
 
 void IMGuiManager::pushSprite( Drawable* sprite )
