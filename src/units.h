@@ -113,12 +113,12 @@ public:
    virtual ~SummonMarker();
 };
 
-class Tank : public Unit
+class Monster : public Unit
 {
 
 };
 
-class Warrior : public Unit
+class Soldier : public Unit
 {
 
 };

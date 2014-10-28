@@ -14,6 +14,7 @@
 
 #include "IMButton.hpp"
 #include "IMTextButton.hpp"
+#include "IMEdgeTextButton.hpp"
 #include "IMGuiManager.hpp"
 
 #include <SFML/Graphics.hpp>
@@ -34,12 +35,11 @@ namespace sum
 Sprite *s_map = NULL;
 View *map_view = NULL;
 
-IMButton *b_start_test_level = NULL;
 IMButton *b_map_to_splash = NULL;
-IMTextButton *b_map_to_options = NULL;
-IMTextButton *b_map_to_focus = NULL;
-IMTextButton *b_map_to_presets = NULL;
-IMTextButton *b_map_start_level = NULL;
+IMEdgeTextButton *b_map_to_options = NULL;
+IMEdgeTextButton *b_map_to_focus = NULL;
+IMEdgeTextButton *b_map_to_presets = NULL;
+IMEdgeTextButton *b_map_start_level = NULL;
 
 bool init_map_gui = false;
 
@@ -179,37 +179,45 @@ void initMapGui()
    SFML_TextureManager *texture_manager = &SFML_TextureManager::getSingleton();
    IMGuiManager *gui_manager = &IMGuiManager::getSingleton();
 
-   b_start_test_level = new IMButton();
-   b_start_test_level->setAllTextures( texture_manager->getTexture( "OrderButtonBase.png" ) );
-   gui_manager->registerWidget( "Start Test Level", b_start_test_level);
-
    b_map_to_splash = new IMButton();
    b_map_to_splash->setAllTextures( texture_manager->getTexture( "GoBackButtonScratch.png" ) );
    gui_manager->registerWidget( "Map to Splash", b_map_to_splash);
 
-   b_map_to_options = new IMTextButton();
-   b_map_to_options->setAllTextures( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   b_map_to_options = new IMEdgeTextButton();
+   b_map_to_options->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
+   b_map_to_options->setCornerAllTextures( texture_manager->getTexture( "UICorner3px.png" ) );
+   b_map_to_options->setEdgeAllTextures( texture_manager->getTexture( "UIEdge3px.png" ) );
+   b_map_to_options->setEdgeWidth( 3 );
    b_map_to_options->setText( &s_map_to_options );
    b_map_to_options->setFont( menu_font );
    b_map_to_options->setTextColor( sf::Color::Black );
    gui_manager->registerWidget( "Map to Options", b_map_to_options);
 
-   b_map_to_focus = new IMTextButton();
-   b_map_to_focus->setAllTextures( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   b_map_to_focus = new IMEdgeTextButton();
+   b_map_to_focus->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
+   b_map_to_focus->setCornerAllTextures( texture_manager->getTexture( "UICorner3px.png" ) );
+   b_map_to_focus->setEdgeAllTextures( texture_manager->getTexture( "UIEdge3px.png" ) );
+   b_map_to_focus->setEdgeWidth( 3 );
    b_map_to_focus->setText( &s_map_to_focus );
    b_map_to_focus->setFont( menu_font );
    b_map_to_focus->setTextColor( sf::Color::Black );
    gui_manager->registerWidget( "Map to Focus", b_map_to_focus);
 
-   b_map_to_presets = new IMTextButton();
-   b_map_to_presets->setAllTextures( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   b_map_to_presets = new IMEdgeTextButton();
+   b_map_to_presets->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
+   b_map_to_presets->setCornerAllTextures( texture_manager->getTexture( "UICorner3px.png" ) );
+   b_map_to_presets->setEdgeAllTextures( texture_manager->getTexture( "UIEdge3px.png" ) );
+   b_map_to_presets->setEdgeWidth( 3 );
    b_map_to_presets->setText( &s_map_to_presets );
    b_map_to_presets->setFont( menu_font );
    b_map_to_presets->setTextColor( sf::Color::Black );
    gui_manager->registerWidget( "Map to Presets", b_map_to_presets);
 
-   b_map_start_level = new IMTextButton();
-   b_map_start_level->setAllTextures( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   b_map_start_level = new IMEdgeTextButton();
+   b_map_start_level->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
+   b_map_start_level->setCornerAllTextures( texture_manager->getTexture( "UICorner3px.png" ) );
+   b_map_start_level->setEdgeAllTextures( texture_manager->getTexture( "UIEdge3px.png" ) );
+   b_map_start_level->setEdgeWidth( 3 );
    b_map_start_level->setText( &s_map_start_level );
    b_map_start_level->setFont( menu_font );
    b_map_start_level->setTextColor( sf::Color::Black );
@@ -228,9 +236,6 @@ void fitGui_Map()
 
    int bar_height = height / 15;
    int bar_but_width = width / 4.5;
-
-   b_start_test_level->setPosition( 100, 100 );
-   b_start_test_level->setSize( 20, 20 );
 
    // Bar
    int bar_fill = 0;
@@ -353,16 +358,14 @@ int drawMap( int dt )
 
    r_window->setView( r_window->getDefaultView() );
 
-   int bar_height = (config::height() / 15) + 10;
+   int bar_height = config::height() / 15;
    RectangleShape gui_bar( Vector2f( config::width(), bar_height ) );
-   gui_bar.setFillColor( Color::White );
+   Color c( 249, 204, 159 );
+   gui_bar.setFillColor(c);
    gui_bar.setOutlineThickness( 0 );
 
    r_window->draw( gui_bar );
 
-   if (b_start_test_level->doWidget()) {
-      retval = 1;
-   }
    if (b_map_to_splash->doWidget()) {
       menu_state = MENU_MAIN | MENU_PRI_SPLASH;
    }
@@ -377,12 +380,8 @@ int drawMap( int dt )
    }
 
    if (selected_level >= 0) {
-      if (b_map_start_level->doWidget()) {
-         menu_state = MENU_MAIN | MENU_PRI_INGAME;
-
+      if (b_map_start_level->doWidget())
          loadLevel( selected_level );
-         setLevelListener(true);
-      }
    }
 
    return retval;

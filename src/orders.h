@@ -53,8 +53,8 @@ namespace sum
       PL_END_TELEPATHY,
 
       // Unit summoning
-      SUMMON_TANK,
-      SUMMON_WARRIOR,
+      SUMMON_MONSTER,
+      SUMMON_SOLDIER,
       SUMMON_WORM,
       SUMMON_BIRD,
       SUMMON_BUG,
@@ -90,6 +90,8 @@ namespace sum
 
       //Order( Order& r );
    };
+
+   void drawOrder( Order o, int x, int y, int size );
 };
 
 #endif 

@@ -28,6 +28,11 @@ namespace sum
    int completePlayerCommand( Order o );
 
    void fitGui_Level();
+
+   // Gui related
+   extern Unit *selected_unit;
+
+   int initLevelGui();
 };
 
 #endif

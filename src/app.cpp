@@ -7,7 +7,6 @@
 #include "savestate.h"
 #include "menustate.h"
 #include "map.h"
-#include "gui.h"
 #include "log.h"
 
 // SFML includes
@@ -22,7 +21,7 @@
 #include "IMGuiManager.hpp"
 #include "IMCursorManager.hpp"
 #include "IMButton.hpp"
-#include "IMTextButton.hpp"
+#include "IMEdgeTextButton.hpp"
 
 // C includes
 #include <stdio.h>
@@ -89,16 +88,6 @@ void openMap()
 void closeMap()
 {
    setMapListener( false );
-}
-
-// MAP
-
-void startLevel( int level )
-{
-   menu_state = MENU_MAIN | MENU_PRI_INGAME;
-
-   loadLevel( level );
-   setLevelListener(true);
 }
 
 // OPTIONS MENUS
@@ -177,23 +166,26 @@ void closeOptionsMenu()
 
 // SPLASH
 bool initSplashGui = false;
-IMButton* splashToTestLevel = NULL;
-IMButton* b_splash_to_map = NULL; 
-IMButton* b_open_options = NULL;
+IMEdgeTextButton *b_splash_to_map = NULL; 
+string s_splash_to_map = "Play!";
+IMButton *b_open_options = NULL;
+IMButton *b_splashToTestLevel = NULL;
 Sprite* splashScreen = NULL;
 
 void fitGui_Splash()
 {
    if (!initSplashGui) return;
 
-   b_open_options->setPosition( 10, 10 );
+   b_open_options->setPosition( 0, 0 );
    b_open_options->setSize( 40, 40 );
 
-   splashToTestLevel->setPosition( 300, 200 );
-   splashToTestLevel->setSize( 40, 40 );
+   //b_splashToTestLevel->setPosition( config::height() - 50, config::width() - 50 );
+   b_splashToTestLevel->setPosition( 40, 40 );
+   b_splashToTestLevel->setSize( 50, 50 );
 
    b_splash_to_map->setPosition( 500, 300 );
    b_splash_to_map->setSize( 200, 100 );
+   b_splash_to_map->centerText();
 }
 
 int initSplashMenuGui()
@@ -204,12 +196,19 @@ int initSplashMenuGui()
    b_open_options->setAllTextures( texture_manager->getTexture( "GearIcon.png" ) );
    gui_manager->registerWidget( "Splash menu - open options", b_open_options);
 
-   splashToTestLevel = new IMButton();
-   splashToTestLevel->setAllTextures( texture_manager->getTexture( "OrderButtonBase.png" ) );
-   gui_manager->registerWidget( "splashToTestLevel", splashToTestLevel);
+   b_splashToTestLevel = new IMButton();
+   b_splashToTestLevel->setAllTextures( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   gui_manager->registerWidget( "splashToTestLevel", b_splashToTestLevel);
 
-   b_splash_to_map = new IMButton();
-   b_splash_to_map->setAllTextures( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   b_splash_to_map = new IMEdgeTextButton();
+   b_splash_to_map->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
+   b_splash_to_map->setCornerAllTextures( texture_manager->getTexture( "UICorner3px.png" ) );
+   b_splash_to_map->setEdgeAllTextures( texture_manager->getTexture( "UIEdge3px.png" ) );
+   b_splash_to_map->setEdgeWidth( 3 );
+   b_splash_to_map->setText( &s_splash_to_map );
+   b_splash_to_map->setFont( menu_font );
+   b_splash_to_map->setTextSize( 48 );
+   b_splash_to_map->setTextColor( sf::Color::Black );
    gui_manager->registerWidget( "Splash menu - go to map", b_splash_to_map);
 
    initSplashGui = true;
@@ -228,8 +227,8 @@ void splashMenu()
       // Draw
       SFML_GlobalRenderWindow::get()->draw(*splashScreen);
 
-      if (splashToTestLevel->doWidget())
-         startLevel( -1 );
+      if (b_splashToTestLevel->doWidget())
+         loadLevel(0);
 
       if (b_open_options->doWidget())
          openOptionsMenu();
@@ -736,8 +735,6 @@ int mainLoop( int dt )
       int map_result = drawMap(dt);
       if (map_result == -2) {
          // Various map options etc
-      } else if (map_result == -1 || map_result >= 1) {
-         startLevel( map_result );
       }
 
    } else if (menu_state & MENU_PRI_INGAME) {
