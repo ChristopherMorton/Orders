@@ -20,3 +20,6 @@ IMAGE StarFullRight.png
 IMAGE StarEmpty.png
 IMAGE StarEmptyLeft.png
 IMAGE StarEmptyRight.png
+IMAGE UICorner3px.png
+IMAGE UIEdge3px.png
+IMAGE UICenterBrown.png
