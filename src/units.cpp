@@ -447,6 +447,9 @@ int Player::completeTurn()
    if (o.action >= PL_ALERT_ALL)
       completePlayerCommand(o);
 
+   if (current_order < order_count) 
+      current_order++;
+
    // Prepare to start
    if (current_order == -1 && active && order_count > 0) {
       current_order = 0;
@@ -621,6 +624,7 @@ int Bug::draw()
       Vector2u dim = getTexture()->getSize();
       sp_bug->setOrigin( dim.x / 2.0, dim.y / 2.0 );
       normalizeTo1x1( sp_bug );
+      sp_bug->scale( 0.5, 0.5 );
    }
 
    sp_bug->setPosition( x_real, y_real );

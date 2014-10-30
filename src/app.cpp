@@ -29,6 +29,7 @@
 // C++ includes
 #include <deque>
 #include <fstream>
+#include <sstream>
 
 using namespace sf;
 
@@ -477,13 +478,16 @@ int loadAssetList()
 {
    /* Actually read AssetList.txt 
     */ 
-   string type, path;
+   string type, path, line;
    ifstream alist_in;
    alist_in.open("res/AssetList.txt");
 
    while (true) {
       // Get next line
-      alist_in >> type >> path;
+      getline( alist_in, line );
+      stringstream s_line(line);
+      s_line >> type;
+
       if (alist_in.eof())
          break;
 
@@ -492,8 +496,13 @@ int loadAssetList()
          break;
       }
 
-      if (type == "IMAGE")
+      if (type == "//") // comment
+         continue;
+
+      if (type == "IMAGE") {
+         s_line >> path;
          asset_list.push_back( Asset( ASSET_TYPE_TEXTURE, path ) );
+      }
    }
 
    return 0;

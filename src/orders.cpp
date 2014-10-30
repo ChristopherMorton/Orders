@@ -126,9 +126,10 @@ void Order::logSelf()
    log(s.str());
 }
 
-void drawOrder( Order o, int x, int y, int size )
+Texture *getOrderTexture( Order o )
 {
    SFML_TextureManager &t_manager = SFML_TextureManager::getSingleton();
+
    Texture *base_tex = NULL;
    switch (o.action)
    {
@@ -203,7 +204,7 @@ void drawOrder( Order o, int x, int y, int size )
       case PL_CMD_GO:
          base_tex = t_manager.getTexture( "PlayerGoButton.png" );
          break;
-      case PL_CMD_ALL_GO:
+      case PL_CMD_GO_ALL:
          base_tex = t_manager.getTexture( "PlayerGoAllButton.png" );
          break;
 
@@ -247,9 +248,16 @@ void drawOrder( Order o, int x, int y, int size )
 
       case MAG_MEDITATE:
       case FAILED_SUMMON:
+      case SKIP:
          base_tex = NULL;
 
    }
+   return base_tex;
+}
+
+void drawOrder( Order o, int x, int y, int size )
+{
+   Texture *base_tex = getOrderTexture( o );
    if (NULL == base_tex)
       return;
 

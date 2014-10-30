@@ -18,6 +18,9 @@
 #include "SFML_TextureManager.hpp"
 #include "IMGuiManager.hpp"
 #include "IMCursorManager.hpp"
+#include "IMImageButton.hpp"
+#include "IMTextButton.hpp"
+#include "IMEdgeButton.hpp"
 
 #include "stdio.h"
 #include "math.h"
@@ -435,6 +438,58 @@ Unit* getEnemy( int x, int y, float range, Direction dir, int my_team, int selec
 //////////////////////////////////////////////////////////////////////
 // Player interface
 
+// Choosing player orders
+
+int order_prep_count = 1;
+Order_Conditional order_prep_cond = TRUE;
+
+#define ORDER_PREP_LAST_COUNT 0x1
+#define ORDER_PREP_LAST_COND 0x2
+#define ORDER_PREP_LAST_ORDER 0x4
+int order_prep_last_input = 0;
+
+int playerAddCount( int digit )
+{
+   if (order_prep_last_input == ORDER_PREP_LAST_COUNT) {
+      // Add another digit to the count
+      order_prep_count = (order_prep_count * 10) + digit;
+   }
+   else
+      order_prep_count = digit;
+
+   order_prep_last_input = ORDER_PREP_LAST_COUNT;
+   return 0;
+}
+
+      
+int playerAddInfiniteCount()
+{
+   order_prep_count = -1;
+   return 0;
+}
+
+int playerAddConditional( Order_Conditional c )
+{
+   order_prep_cond = c;
+
+   order_prep_last_input = ORDER_PREP_LAST_COND;
+   return 0;
+}
+
+int playerAddOrder( Order_Action a )
+{
+   Order o;
+   o.initOrder( a, order_prep_cond, order_prep_count );
+
+   player->addOrder( o );
+
+   order_prep_count = 1;
+   order_prep_cond = TRUE;
+   order_prep_last_input = ORDER_PREP_LAST_ORDER;
+   return 0;
+}
+
+// Summons
 SummonMarker* summonMarker = NULL;
 
 int startSummon( Order o )
@@ -461,6 +516,7 @@ int completeSummon( Order o )
    summonMarker = NULL;
 
    Unit *u;
+   /*
    switch( o.action ) {
       case SUMMON_MONSTER:
          //u = new Monster();
@@ -478,6 +534,9 @@ int completeSummon( Order o )
          u = new Bug( x, y, SOUTH );
          break;
    }
+   */
+   if (o.action == SUMMON_BUG)
+      u = new Bug( x, y, SOUTH );
 
    addUnit( u );
 
@@ -635,11 +694,6 @@ int completePlayerCommand( Order o )
 
 //////////////////////////////////////////////////////////////////////
 // Loading
-
-void fitGui_Level()
-{
-   view_rel_x_to_y = ((float)config::height()) / ((float)config::width());
-}
 
 void initTextures()
 {
@@ -833,8 +887,551 @@ int updateLevel( int dt )
 //////////////////////////////////////////////////////////////////////
 // GUI
 
+// The order buttons part of the gui
+
+bool init_level_gui = false;
+IMImageButton *b_o_move_forward,
+              *b_o_move_backward,
+              *b_o_turn_north,
+              *b_o_turn_east,
+              *b_o_turn_south,
+              *b_o_turn_west,
+              *b_o_attack_smallest,
+              *b_o_attack_biggest,
+              *b_o_attack_closest,
+              *b_o_attack_farthest,
+              *b_o_start_block,
+              *b_o_end_block,
+              *b_o_repeat,
+              *b_o_wait,
+              *b_pl_alert_all,
+              *b_pl_cmd_go,
+              *b_pl_cmd_go_all;
+IMTextButton *b_count_1,
+             *b_count_2,
+             *b_count_3,
+             *b_count_4,
+             *b_count_5,
+             *b_count_6,
+             *b_count_7,
+             *b_count_8,
+             *b_count_9,
+             *b_count_0,
+             *b_count_infinite;
+string s_1 = "1", s_2 = "2", s_3 = "3", s_4 = "4", s_5 = "5", s_6 = "6", s_7 = "7", s_8 = "8", s_9 = "9", s_0 = "0", s_infinite = "∞";
+// Gui Boxes
+IMEdgeButton *b_numpad_area,
+             *b_conditional_area,
+             *b_movement_area,
+             *b_attack_area,
+             *b_control_area,
+             *b_pl_cmd_area;
+
+bool isMouseOverGui( int x, int y )
+{
+   int width = config::width(),
+       height = config::height();
+
+   int sec_buffer = 5;
+   float button_size = (((float)width) - (20.0 * sec_buffer)) / 20.0;
+
+   if (y > (height - ((sec_buffer * 2) + (button_size * 3))))
+      return true; // All button areas are this tall
+
+   if (y > (height - ((sec_buffer * 2) + (button_size * 4)))
+         && (x > width / 2))
+      return true; // Unit specialty areas are taller
+
+   if (y > (height - ((sec_buffer * 6) + (button_size * 4)))
+         && x < ((sec_buffer * 2) + (button_size * 5)))
+      return true; // Player command area is tallest of all
+
+   if (selected_unit && (y < 50) && (x > width - 120))
+      return true; // Over the selected unit area
+
+   return false;
+}
+
+void fitGui_Level()
+{
+   int width = config::width(),
+       height = config::height();
+
+   int sec_buffer = 5;
+   float button_size = (((float)width) - (20.0 * sec_buffer)) / 20.0;
+
+   float sec_start_numpad = 0,
+       sec_start_conditionals = sec_start_numpad + (sec_buffer * 2) + (button_size * 3),
+       sec_start_movement = sec_start_conditionals + (sec_buffer * 2) + (button_size * 1),
+       sec_start_attack = sec_start_movement + (sec_buffer * 2) + (button_size * 3),
+       sec_start_control = sec_start_attack + (sec_buffer * 2) + (button_size * 2),
+       sec_start_monster = sec_start_control + (sec_buffer * 2) + (button_size * 1),
+       sec_start_soldier = sec_start_monster + (sec_buffer * 2) + (button_size * 2),
+       sec_start_worm = sec_start_soldier + (sec_buffer * 2) + (button_size * 2),
+       sec_start_bird = sec_start_worm + (sec_buffer * 2) + (button_size * 2),
+       sec_start_bug = sec_start_bird + (sec_buffer * 2) + (button_size * 2);
+
+   // Numpad
+
+   b_numpad_area->setSize( (sec_buffer * 2) + (button_size * 3),
+                           (sec_buffer * 2) + (button_size * 4));
+   b_numpad_area->setPosition( sec_start_numpad, 
+                               height - ((sec_buffer * 2) + (button_size * 4)));
+   
+   b_count_0->setSize( button_size, button_size );
+   b_count_0->setPosition( sec_start_numpad + sec_buffer + button_size,
+                           height - (sec_buffer + button_size));
+   
+   b_count_1->setSize( button_size, button_size );
+   b_count_1->setPosition( sec_start_numpad + sec_buffer,
+                           height - (sec_buffer + button_size * 4) );
+
+   b_count_2->setSize( button_size, button_size );
+   b_count_2->setPosition( sec_start_numpad + sec_buffer + button_size,
+                           height - (sec_buffer + button_size * 4) );
+
+   b_count_3->setSize( button_size, button_size );
+   b_count_3->setPosition( sec_start_numpad + sec_buffer + (button_size * 2),
+                           height - (sec_buffer + button_size * 4) );
+
+   b_count_4->setSize( button_size, button_size );
+   b_count_4->setPosition( sec_start_numpad + sec_buffer,
+                           height - (sec_buffer + button_size * 3) );
+
+   b_count_5->setSize( button_size, button_size );
+   b_count_5->setPosition( sec_start_numpad + sec_buffer + button_size,
+                           height - (sec_buffer + button_size * 3) );
+
+   b_count_6->setSize( button_size, button_size );
+   b_count_6->setPosition( sec_start_numpad + sec_buffer + (button_size * 2),
+                           height - (sec_buffer + button_size * 3) );
+
+   b_count_7->setSize( button_size, button_size );
+   b_count_7->setPosition( sec_start_numpad + sec_buffer,
+                           height - (sec_buffer + button_size * 2) );
+
+   b_count_8->setSize( button_size, button_size );
+   b_count_8->setPosition( sec_start_numpad + sec_buffer + button_size,
+                           height - (sec_buffer + button_size * 2) );
+
+   b_count_9->setSize( button_size, button_size );
+   b_count_9->setPosition( sec_start_numpad + sec_buffer + (button_size * 2),
+                           height - (sec_buffer + button_size * 2) );
+
+   b_count_infinite->setSize( button_size, button_size );
+   b_count_infinite->setPosition( sec_start_numpad + sec_buffer + (button_size * 2),
+                                  height - (sec_buffer + button_size) );
+
+   // Player commands
+
+   b_pl_cmd_area->setSize( (sec_buffer * 2) + (button_size * 3),
+                           (sec_buffer * 2) + (button_size * 1));
+   b_pl_cmd_area->setPosition( sec_start_numpad, 
+                               height - ((sec_buffer * 4) + (button_size * 5)));
+
+   b_pl_alert_all->setSize( button_size, button_size );
+   b_pl_alert_all->setPosition( sec_start_numpad + sec_buffer,
+                                height - ((sec_buffer * 3) + (button_size * 5)) );
+
+   b_pl_cmd_go->setSize( button_size, button_size );
+   b_pl_cmd_go->setPosition( sec_start_numpad + sec_buffer + button_size,
+                             height - ((sec_buffer * 3) + (button_size * 5)) );
+
+   b_pl_cmd_go_all->setSize( button_size, button_size );
+   b_pl_cmd_go_all->setPosition( sec_start_numpad + sec_buffer + (button_size * 2),
+                                 height - ((sec_buffer * 3) + (button_size * 5)) );
+
+   // Conditionals
+   // TODO
+
+   b_conditional_area->setSize( (sec_buffer * 2) + (button_size * 1),
+                                (sec_buffer * 2) + (button_size * 3));
+   b_conditional_area->setPosition( sec_start_conditionals,
+                                    height - ((sec_buffer * 2) + (button_size * 3)));
+
+   // Movement
+
+   b_movement_area->setSize( (sec_buffer * 2) + (button_size * 3),
+                             (sec_buffer * 2) + (button_size * 3));
+   b_movement_area->setPosition( sec_start_movement,
+                                 height - ((sec_buffer * 2) + (button_size * 3)));
+
+   b_o_move_forward->setSize( button_size, button_size );
+   b_o_move_forward->setPosition( sec_start_movement + sec_buffer + (button_size * 2),
+                                  height - (sec_buffer + (button_size * 3)));
+
+   b_o_move_backward->setSize( button_size, button_size );
+   b_o_move_backward->setPosition( sec_start_movement + sec_buffer,
+                                   height - (sec_buffer + (button_size * 3)));
+
+   b_o_wait->setSize( button_size, button_size );
+   b_o_wait->setPosition( sec_start_movement + sec_buffer + button_size,
+                          height - (sec_buffer + (button_size * 3)));
+
+   b_o_turn_north->setSize( button_size, button_size );
+   b_o_turn_north->setPosition( sec_start_movement + sec_buffer + button_size,
+                                height - (sec_buffer + (button_size * 2)));
+
+   b_o_turn_east->setSize( button_size, button_size );
+   b_o_turn_east->setPosition( sec_start_movement + sec_buffer + (button_size * 2),
+                               height - (sec_buffer + (button_size * 1)));
+
+   b_o_turn_south->setSize( button_size, button_size );
+   b_o_turn_south->setPosition( sec_start_movement + sec_buffer + button_size,
+                                height - (sec_buffer + (button_size * 1)));
+
+   b_o_turn_west->setSize( button_size, button_size );
+   b_o_turn_west->setPosition( sec_start_movement + sec_buffer,
+                               height - (sec_buffer + (button_size * 1)));
+
+   // Attack
+
+   b_attack_area->setSize( (sec_buffer * 2) + (button_size * 2),
+                           (sec_buffer * 2) + (button_size * 3));
+   b_attack_area->setPosition( sec_start_attack,
+                               height - ((sec_buffer * 2) + (button_size * 3)));
+
+   b_o_attack_smallest->setSize( button_size, button_size );
+   b_o_attack_smallest->setPosition( sec_start_attack + sec_buffer,
+                                     height - (sec_buffer + (button_size * 2)));
+
+   b_o_attack_biggest->setSize( button_size, button_size );
+   b_o_attack_biggest->setPosition( sec_start_attack + sec_buffer + button_size,
+                                    height - (sec_buffer + (button_size * 2)));
+
+   b_o_attack_closest->setSize( button_size, button_size );
+   b_o_attack_closest->setPosition( sec_start_attack + sec_buffer,
+                                    height - (sec_buffer + (button_size * 1)));
+
+   b_o_attack_farthest->setSize( button_size, button_size );
+   b_o_attack_farthest->setPosition( sec_start_attack + sec_buffer + button_size,
+                                     height - (sec_buffer + (button_size * 1)));
+
+   // Control
+
+   b_control_area->setSize( (sec_buffer * 2) + (button_size * 1),
+                           (sec_buffer * 2) + (button_size * 3));
+   b_control_area->setPosition( sec_start_control,
+                                height - ((sec_buffer * 2) + (button_size * 3)));
+
+   b_o_start_block->setSize( button_size, button_size );
+   b_o_start_block->setPosition( sec_start_control + sec_buffer,
+                                 height - (sec_buffer + (button_size * 3)));
+
+   b_o_end_block->setSize( button_size, button_size );
+   b_o_end_block->setPosition( sec_start_control + sec_buffer,
+                               height - (sec_buffer + (button_size * 2)));
+
+   b_o_repeat->setSize( button_size, button_size );
+   b_o_repeat->setPosition( sec_start_control + sec_buffer,
+                            height - (sec_buffer + (button_size * 1)));
+
+   view_rel_x_to_y = ((float)height) / ((float)width);
+}
+
 int initLevelGui()
 {
+   SFML_TextureManager &t_manager = SFML_TextureManager::getSingleton();
+   IMGuiManager &gui_manager = IMGuiManager::getSingleton();
+
+   // These should be ImageButtons with the border changing around the central image
+   // but for now they can be unchanging regular buttons.
+
+   b_o_move_forward = new IMImageButton();
+   b_o_move_forward->setAllTextures( t_manager.getTexture( "OrderMoveForward.png" ) );
+   b_o_move_forward->setPressedTexture( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_o_move_forward->setImage( NULL );
+   gui_manager.registerWidget( "Order: move forward", b_o_move_forward);
+
+   b_o_move_backward = new IMImageButton();
+   b_o_move_backward->setAllTextures( t_manager.getTexture( "OrderMoveBackward.png" ) );
+   b_o_move_backward->setImage( NULL );
+   gui_manager.registerWidget( "Order: move backward", b_o_move_backward);
+
+   b_o_turn_north = new IMImageButton();
+   b_o_turn_north->setAllTextures( t_manager.getTexture( "OrderTurnNorth.png" ) );
+   b_o_turn_north->setImage( NULL );
+   gui_manager.registerWidget( "Order: turn north", b_o_turn_north);
+
+   b_o_turn_east = new IMImageButton();
+   b_o_turn_east->setAllTextures( t_manager.getTexture( "OrderTurnEast.png" ) );
+   b_o_turn_east->setImage( NULL );
+   gui_manager.registerWidget( "Order: turn east", b_o_turn_east);
+
+   b_o_turn_south = new IMImageButton();
+   b_o_turn_south->setAllTextures( t_manager.getTexture( "OrderTurnSouth.png" ) );
+   b_o_turn_south->setImage( NULL );
+   gui_manager.registerWidget( "Order: turn south", b_o_turn_south);
+
+   b_o_turn_west = new IMImageButton();
+   b_o_turn_west->setAllTextures( t_manager.getTexture( "OrderTurnWest.png" ) );
+   b_o_turn_west->setImage( NULL );
+   gui_manager.registerWidget( "Order: turn west", b_o_turn_west);
+
+   b_o_attack_smallest = new IMImageButton();
+   b_o_attack_smallest->setAllTextures( t_manager.getTexture( "OrderAttackSmallest.png" ) );
+   b_o_attack_smallest->setImage( NULL );
+   gui_manager.registerWidget( "Order: attack smallest", b_o_attack_smallest);
+
+   b_o_attack_biggest = new IMImageButton();
+   b_o_attack_biggest->setAllTextures( t_manager.getTexture( "OrderAttackBiggest.png" ) );
+   b_o_attack_biggest->setImage( NULL );
+   gui_manager.registerWidget( "Order: attack biggest", b_o_attack_biggest);
+
+   b_o_attack_closest = new IMImageButton();
+   b_o_attack_closest->setAllTextures( t_manager.getTexture( "OrderAttackClosest.png" ) );
+   b_o_attack_closest->setImage( NULL );
+   gui_manager.registerWidget( "Order: attack closest", b_o_attack_closest);
+
+   b_o_attack_farthest = new IMImageButton();
+   b_o_attack_farthest->setAllTextures( t_manager.getTexture( "OrderAttackFarthest.png" ) );
+   b_o_attack_farthest->setImage( NULL );
+   gui_manager.registerWidget( "Order: attack farthest", b_o_attack_farthest);
+
+   b_o_start_block = new IMImageButton();
+   b_o_start_block->setAllTextures( t_manager.getTexture( "ControlStartBlock.png" ) );
+   b_o_start_block->setImage( NULL );
+   gui_manager.registerWidget( "Control: start block", b_o_start_block);
+
+   b_o_end_block = new IMImageButton();
+   b_o_end_block->setAllTextures( t_manager.getTexture( "ControlEndBlock.png" ) );
+   b_o_end_block->setImage( NULL );
+   gui_manager.registerWidget( "Control: end block", b_o_end_block);
+
+   b_o_repeat = new IMImageButton();
+   b_o_repeat->setAllTextures( t_manager.getTexture( "ControlRepeat.png" ) );
+   b_o_repeat->setImage( NULL );
+   gui_manager.registerWidget( "Control: repeat", b_o_repeat);
+
+   b_o_wait = new IMImageButton();
+   b_o_wait->setAllTextures( t_manager.getTexture( "OrderWait.png" ) );
+   b_o_wait->setImage( NULL );
+   gui_manager.registerWidget( "Order: wait", b_o_wait);
+
+   b_pl_alert_all = new IMImageButton();
+   b_pl_alert_all->setAllTextures( t_manager.getTexture( "PlayerAlert.png" ) );
+   b_pl_alert_all->setImage( NULL );
+   gui_manager.registerWidget( "Player: alert all", b_pl_alert_all);
+
+   b_pl_cmd_go = new IMImageButton();
+   b_pl_cmd_go->setAllTextures( t_manager.getTexture( "PlayerGoButton.png" ) );
+   b_pl_cmd_go->setImage( NULL );
+   gui_manager.registerWidget( "Player: command go", b_pl_cmd_go);
+
+   b_pl_cmd_go_all = new IMImageButton();
+   b_pl_cmd_go_all->setAllTextures( t_manager.getTexture( "PlayerGoAllButton.png" ) );
+   b_pl_cmd_go_all->setImage( NULL );
+   gui_manager.registerWidget( "Player: command go all", b_pl_cmd_go_all);
+
+   b_count_1 = new IMTextButton();
+   b_count_1->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_1->setText( &s_1 );
+   b_count_1->setTextColor( Color::Black );
+   gui_manager.registerWidget( "Count: 1", b_count_1);
+
+   b_count_2 = new IMTextButton();
+   b_count_2->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_2->setText( &s_2 );
+   b_count_2->setTextColor( Color::Black );
+   gui_manager.registerWidget( "Count: 2", b_count_2);
+
+   b_count_3 = new IMTextButton();
+   b_count_3->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_3->setText( &s_3 );
+   b_count_3->setTextColor( Color::Black );
+   gui_manager.registerWidget( "Count: 3", b_count_3);
+
+   b_count_4 = new IMTextButton();
+   b_count_4->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_4->setText( &s_4 );
+   b_count_4->setTextColor( Color::Black );
+   gui_manager.registerWidget( "Count: 4", b_count_4);
+
+   b_count_5 = new IMTextButton();
+   b_count_5->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_5->setText( &s_5 );
+   b_count_5->setTextColor( Color::Black );
+   gui_manager.registerWidget( "Count: 5", b_count_5);
+
+   b_count_6 = new IMTextButton();
+   b_count_6->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_6->setText( &s_6 );
+   b_count_6->setTextColor( Color::Black );
+   gui_manager.registerWidget( "Count: 6", b_count_6);
+
+   b_count_7 = new IMTextButton();
+   b_count_7->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_7->setText( &s_7 );
+   b_count_7->setTextColor( Color::Black );
+   gui_manager.registerWidget( "Count: 7", b_count_7);
+
+   b_count_8 = new IMTextButton();
+   b_count_8->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_8->setText( &s_8 );
+   b_count_8->setTextColor( Color::Black );
+   gui_manager.registerWidget( "Count: 8", b_count_8);
+
+   b_count_9 = new IMTextButton();
+   b_count_9->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_9->setText( &s_9 );
+   b_count_9->setTextColor( Color::Black );
+   gui_manager.registerWidget( "Count: 9", b_count_9);
+
+   b_count_0 = new IMTextButton();
+   b_count_0->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_0->setText( &s_0 );
+   b_count_0->setTextColor( Color::Black );
+   gui_manager.registerWidget( "Count: 0", b_count_0);
+
+   b_count_infinite = new IMTextButton();
+   b_count_infinite->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_infinite->setText( &s_infinite );
+   b_count_infinite->setTextColor( Color::Black );
+   gui_manager.registerWidget( "Count: infinite", b_count_infinite);
+
+   b_numpad_area = new IMEdgeButton();
+   b_numpad_area->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
+   b_numpad_area->setCornerAllTextures( t_manager.getTexture( "UICorner3px.png" ) );
+   b_numpad_area->setEdgeAllTextures( t_manager.getTexture( "UIEdge3px.png" ) );
+   b_numpad_area->setEdgeWidth( 3 );
+   gui_manager.registerWidget( "Numpad area", b_numpad_area);
+
+   b_conditional_area = new IMEdgeButton();
+   b_conditional_area->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
+   b_conditional_area->setCornerAllTextures( t_manager.getTexture( "UICorner3px.png" ) );
+   b_conditional_area->setEdgeAllTextures( t_manager.getTexture( "UIEdge3px.png" ) );
+   b_conditional_area->setEdgeWidth( 3 );
+   gui_manager.registerWidget( "Conditional area", b_conditional_area);
+
+   b_movement_area = new IMEdgeButton();
+   b_movement_area->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
+   b_movement_area->setCornerAllTextures( t_manager.getTexture( "UICorner3px.png" ) );
+   b_movement_area->setEdgeAllTextures( t_manager.getTexture( "UIEdge3px.png" ) );
+   b_movement_area->setEdgeWidth( 3 );
+   gui_manager.registerWidget( "Movement area", b_movement_area);
+
+   b_attack_area = new IMEdgeButton();
+   b_attack_area->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
+   b_attack_area->setCornerAllTextures( t_manager.getTexture( "UICorner3px.png" ) );
+   b_attack_area->setEdgeAllTextures( t_manager.getTexture( "UIEdge3px.png" ) );
+   b_attack_area->setEdgeWidth( 3 );
+   gui_manager.registerWidget( "Attack area", b_attack_area);
+
+   b_control_area = new IMEdgeButton();
+   b_control_area->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
+   b_control_area->setCornerAllTextures( t_manager.getTexture( "UICorner3px.png" ) );
+   b_control_area->setEdgeAllTextures( t_manager.getTexture( "UIEdge3px.png" ) );
+   b_control_area->setEdgeWidth( 3 );
+   gui_manager.registerWidget( "Control area", b_control_area);
+
+   b_pl_cmd_area = new IMEdgeButton();
+   b_pl_cmd_area->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
+   b_pl_cmd_area->setCornerAllTextures( t_manager.getTexture( "UICorner3px.png" ) );
+   b_pl_cmd_area->setEdgeAllTextures( t_manager.getTexture( "UIEdge3px.png" ) );
+   b_pl_cmd_area->setEdgeWidth( 3 );
+   gui_manager.registerWidget( "Player command area", b_pl_cmd_area);
+
+   fitGui_Level();
+   init_level_gui = true;
+   return 0;
+}
+
+int drawOrderButtons()
+{
+   if (init_level_gui == false)
+      initLevelGui();
+
+   if (b_o_move_forward->doWidget())
+      playerAddOrder( MOVE_FORWARD );
+
+   if (b_o_move_backward->doWidget())
+      playerAddOrder( MOVE_BACK );
+      
+   if (b_o_turn_north->doWidget())
+      playerAddOrder( TURN_NORTH );
+      
+   if (b_o_turn_east->doWidget())
+      playerAddOrder( TURN_EAST );
+      
+   if (b_o_turn_south->doWidget())
+      playerAddOrder( TURN_SOUTH );
+      
+   if (b_o_turn_west->doWidget())
+      playerAddOrder( TURN_WEST );
+      
+   if (b_o_attack_smallest->doWidget())
+      playerAddOrder( ATTACK_SMALLEST );
+      
+   if (b_o_attack_biggest->doWidget())
+      playerAddOrder( ATTACK_BIGGEST );
+      
+   if (b_o_attack_closest->doWidget())
+      playerAddOrder( ATTACK_CLOSEST );
+      
+   if (b_o_attack_farthest->doWidget())
+      playerAddOrder( ATTACK_FARTHEST );
+      
+   if (b_o_start_block->doWidget())
+      playerAddOrder( START_BLOCK );
+      
+   if (b_o_end_block->doWidget())
+      playerAddOrder( END_BLOCK );
+      
+   if (b_o_repeat->doWidget())
+      playerAddOrder( REPEAT );
+
+   if (b_o_wait->doWidget())
+      playerAddOrder( WAIT );
+
+   if (b_pl_alert_all->doWidget())
+      playerAddOrder( PL_ALERT_ALL );
+
+   if (b_pl_cmd_go->doWidget())
+      playerAddOrder( PL_CMD_GO );
+
+   if (b_pl_cmd_go_all->doWidget())
+      playerAddOrder( PL_CMD_GO_ALL );
+
+   if (b_count_0->doWidget())
+      playerAddCount( 0 );
+
+   if (b_count_1->doWidget())
+      playerAddCount( 1 );
+
+   if (b_count_2->doWidget())
+      playerAddCount( 2 );
+
+   if (b_count_3->doWidget())
+      playerAddCount( 3 );
+
+   if (b_count_4->doWidget())
+      playerAddCount( 4 );
+
+   if (b_count_5->doWidget())
+      playerAddCount( 5 );
+
+   if (b_count_6->doWidget())
+      playerAddCount( 6 );
+
+   if (b_count_7->doWidget())
+      playerAddCount( 7 );
+
+   if (b_count_8->doWidget())
+      playerAddCount( 8 );
+
+   if (b_count_9->doWidget())
+      playerAddCount( 9 );
+
+   if (b_count_infinite->doWidget())
+      playerAddInfiniteCount();
+
+   b_numpad_area->doWidget();
+   b_pl_cmd_area->doWidget();
+   b_conditional_area->doWidget();
+   b_movement_area->doWidget();
+   b_attack_area->doWidget();
+   b_control_area->doWidget();
+
    return 0;
 }
 
@@ -843,8 +1440,11 @@ int drawOrderQueue()
    if (player) {
       int draw_x = 2;
       for (int i = 0; i < player->order_count; ++i) {
-         drawOrder( player->order_queue[i], draw_x, 2, 32 );
-         draw_x += 36;
+         Order &o = player->order_queue[i];
+         if ( o.action != SKIP ) {
+            drawOrder( player->order_queue[i], draw_x, 2, 32 );
+            draw_x += 36;
+         }
       }
    }
    return 0;
@@ -862,7 +1462,7 @@ int drawSelectedUnit()
 
       Texture *t = selected_unit->getTexture();
       if (t) { 
-         float window_edge = gui_window->getSize().x;
+         float window_edge = config::width();
          RectangleShape select_rect, health_bound_rect, health_rect;
 
          select_rect.setSize( Vector2f( 120, 50 ) );
@@ -897,11 +1497,6 @@ int drawSelectedUnit()
       }
    }
 
-   return 0;
-}
-
-int drawOrderButtons()
-{
    return 0;
 }
 
@@ -1116,7 +1711,8 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
          left_mouse_down = 0;
          int left_mouse_up_time = game_clock->getElapsedTime().asMilliseconds();
 
-         if (left_mouse_up_time - left_mouse_down_time < MOUSE_DOWN_SELECT_TIME)
+         if (left_mouse_up_time - left_mouse_down_time < MOUSE_DOWN_SELECT_TIME
+               && !isMouseOverGui( mbr.x, mbr.y ))
             selectUnit( coordsWindowToView( mbr.x, mbr.y ) );
 
       }

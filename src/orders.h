@@ -1,6 +1,8 @@
 #ifndef ORDERS_H__
 #define ORDERS_H__
 
+namespace sf { class Texture; };
+
 namespace sum
 { 
    enum Order_Action
@@ -41,7 +43,7 @@ namespace sum
       PL_ALERT_BUGS,
 
       PL_CMD_GO,
-      PL_CMD_ALL_GO,
+      PL_CMD_GO_ALL,
 
       // Player spells
       PL_CAST_HEAL,
@@ -59,6 +61,8 @@ namespace sum
       SUMMON_BIRD,
       SUMMON_BUG,
       FAILED_SUMMON,
+
+      SKIP,
 
       NUM_ACTIONS
    };
@@ -91,6 +95,7 @@ namespace sum
       //Order( Order& r );
    };
 
+   sf::Texture *getOrderTexture( Order o );
    void drawOrder( Order o, int x, int y, int size );
 };
 
