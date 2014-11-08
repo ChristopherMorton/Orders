@@ -316,9 +316,9 @@ void optionsMenu()
 // AV OPTIONS
 bool initAVOptionsMenu = false;
 IMButton* b_exit_av_options_menu = NULL;
-IMTextButton* b_800x600 = NULL;
-IMTextButton* b_1200x900 = NULL;
-IMTextButton* b_av_apply = NULL;
+IMEdgeTextButton* b_800x600 = NULL;
+IMEdgeTextButton* b_1200x900 = NULL;
+IMEdgeTextButton* b_av_apply = NULL;
 
 string s_800x600 = "800 x 600";
 string s_1200x900 = "1200 x 900";
@@ -332,11 +332,11 @@ void selectResolution( int selection )
 {
    av_selected_resolution = selection;
    if (av_selected_resolution == 0) {
-      b_800x600->setAllTextures( texture_manager->getTexture( "MapButtonScratch.png" ) );
-      b_1200x900->setAllTextures( texture_manager->getTexture( "OrderButtonBase.png" ) );
+      b_800x600->setAllTextures( texture_manager->getTexture( "UICenterGold.png" ) );
+      b_1200x900->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
    } else if (av_selected_resolution == 1) {
-      b_800x600->setAllTextures( texture_manager->getTexture( "OrderButtonBase.png" ) );
-      b_1200x900->setAllTextures( texture_manager->getTexture( "MapButtonScratch.png" ) );
+      b_800x600->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
+      b_1200x900->setAllTextures( texture_manager->getTexture( "UICenterGold.png" ) );
    }
 }
 
@@ -376,22 +376,31 @@ int initAVOptionsMenuGui()
    b_exit_av_options_menu->setAllTextures( texture_manager->getTexture( "GuiExitX.png" ) );
    gui_manager->registerWidget( "Close AV Options Menu", b_exit_av_options_menu);
 
-   b_800x600 = new IMTextButton();
-   b_800x600->setAllTextures( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   b_800x600 = new IMEdgeTextButton();
+   b_800x600->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
+   b_800x600->setCornerAllTextures( texture_manager->getTexture( "UICorner3px.png" ) );
+   b_800x600->setEdgeAllTextures( texture_manager->getTexture( "UIEdge3px.png" ) );
+   b_800x600->setEdgeWidth( 3 );
    b_800x600->setText( &s_800x600 );
    b_800x600->setFont( menu_font );
    b_800x600->setTextColor( sf::Color::Black );
    gui_manager->registerWidget( "Resolution 800 x 600", b_800x600);
 
-   b_1200x900 = new IMTextButton();
-   b_1200x900->setAllTextures( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   b_1200x900 = new IMEdgeTextButton();
+   b_1200x900->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
+   b_1200x900->setCornerAllTextures( texture_manager->getTexture( "UICorner3px.png" ) );
+   b_1200x900->setEdgeAllTextures( texture_manager->getTexture( "UIEdge3px.png" ) );
+   b_1200x900->setEdgeWidth( 3 );
    b_1200x900->setText( &s_1200x900 );
    b_1200x900->setFont( menu_font );
    b_1200x900->setTextColor( sf::Color::Black );
    gui_manager->registerWidget( "Resolution 1200 x 900", b_1200x900);
 
-   b_av_apply = new IMTextButton();
-   b_av_apply->setAllTextures( texture_manager->getTexture( "OrderButtonBase.png" ) );
+   b_av_apply = new IMEdgeTextButton();
+   b_av_apply->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
+   b_av_apply->setCornerAllTextures( texture_manager->getTexture( "UICorner3px.png" ) );
+   b_av_apply->setEdgeAllTextures( texture_manager->getTexture( "UIEdge3px.png" ) );
+   b_av_apply->setEdgeWidth( 3 );
    b_av_apply->setText( &s_apply_av );
    b_av_apply->setFont( menu_font );
    b_av_apply->setTextColor( sf::Color::Black );
@@ -435,7 +444,7 @@ int progressiveInitMenus()
    static int count = 0;
 
    menu_font = new Font();
-   if (menu_font->loadFromFile("/usr/share/fonts/TTF/LiberationMono-Regular.ttf"))
+   if (menu_font->loadFromFile("/usr/share/fonts/TTF/LiberationSans-Regular.ttf"))
       log("Successfully loaded font");
 
    if (count == 0) { 

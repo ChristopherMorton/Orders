@@ -28,22 +28,31 @@ namespace sum
 
       WAIT,
 
+      SKIP,
+
       // Unit specific
 
       // Magician
       MAG_MEDITATE,
 
       // Player Commands
+      // Alert
       PL_ALERT_ALL,
       PL_ALERT_TEAM,
-      PL_ALERT_TANKS,
-      PL_ALERT_WARRIORS,
+      PL_ALERT_MONSTERS,
+      PL_ALERT_SOLDIERS,
       PL_ALERT_WORMS,
       PL_ALERT_BIRDS,
       PL_ALERT_BUGS,
-
-      PL_CMD_GO,
+      // Activate
+      PL_CMD_GO, // Currently alert units
       PL_CMD_GO_ALL,
+      PL_CMD_GO_TEAM,
+      PL_CMD_GO_MONSTERS,
+      PL_CMD_GO_SOLDIERS,
+      PL_CMD_GO_WORMS,
+      PL_CMD_GO_BIRDS,
+      PL_CMD_GO_BUGS,
 
       // Player spells
       PL_CAST_HEAL,
@@ -61,8 +70,6 @@ namespace sum
       SUMMON_BIRD,
       SUMMON_BUG,
       FAILED_SUMMON,
-
-      SKIP,
 
       NUM_ACTIONS
    };

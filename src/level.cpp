@@ -317,11 +317,13 @@ int addUnit( Unit *u )
 
 int moveUnit( Unit *u, int new_x, int new_y )
 {
-   if (between_turns && u) {
+   if (u && between_turns && canMove( u->x_grid, u->y_grid, new_x, new_y)) {
+
       if (GRID_AT(unit_grid, u->x_grid, u->y_grid) == u)
          GRID_AT(unit_grid, u->x_grid, u->y_grid) = NULL;
 
       GRID_AT(unit_grid, new_x, new_y) = u;
+      return 0;
    }
    return -1;
 }
@@ -394,9 +396,9 @@ Unit* getEnemy( int x, int y, float range, Direction dir, int my_team, int selec
          break;
    }
    if (min_x < 0) min_x = 0;
-   if (min_x >= level_dim_x) min_x = level_dim_x - 1;
+   if (max_x >= level_dim_x) max_x = level_dim_x - 1;
    if (min_y < 0) min_y = 0;
-   if (min_y >= level_dim_y) min_y = level_dim_y - 1;
+   if (max_y >= level_dim_y) max_y = level_dim_y - 1;
 
    float range_squared = range * range;
 
@@ -436,6 +438,22 @@ Unit* getEnemy( int x, int y, float range, Direction dir, int my_team, int selec
 }
 
 //////////////////////////////////////////////////////////////////////
+// Movement interface
+
+bool canMove( int x, int y, int from_x, int from_y )
+{
+   if (x < 0 || y < 0 || x >= level_dim_x || y >= level_dim_y)
+      return true;
+
+   // TODO: terrain, building, unit collision
+
+   // Unit collision - Check units in all adjacent (+2)locationBlocked squares for others
+   // moving into the same location.  Only the BIGGEST succeeds in moving.
+
+   return false;
+}
+
+//////////////////////////////////////////////////////////////////////
 // Player interface
 
 // Choosing player orders
@@ -460,11 +478,12 @@ int playerAddCount( int digit )
    order_prep_last_input = ORDER_PREP_LAST_COUNT;
    return 0;
 }
-
       
-int playerAddInfiniteCount()
+int playerSetCount( int c )
 {
-   order_prep_count = -1;
+   order_prep_count = c;
+   order_prep_last_input = 0;
+
    return 0;
 }
 
@@ -555,6 +574,7 @@ int alert( Unit *u )
 
 int unalert( Unit *u )
 {
+   // Yeah this does nothing
 
    return 0;
 }
@@ -583,15 +603,17 @@ int alertUnits( Order o )
    min_y = y - shout_range;
    max_y = y + shout_range;
    if (min_x < 0) min_x = 0;
-   if (min_x >= level_dim_x) min_x = level_dim_x - 1;
+   if (max_x >= level_dim_x) max_x = level_dim_x - 1;
    if (min_y < 0) min_y = 0;
-   if (min_y >= level_dim_y) min_y = level_dim_y - 1;
+   if (max_y >= level_dim_y) max_y = level_dim_y - 1;
 
    float range_squared = player->attack_range * player->attack_range;
 
    for (int j = min_y; j <= max_y; ++j) {
       for (int i = min_x; i <= max_x; ++i) {
          Unit *u = GRID_AT(unit_grid,i,j);
+         if (u == player) continue;
+
          if (u && u->team == 0) { // On my team
             float u_x = u->x_grid - x, u_y = u->y_grid - y;
             float u_squared = (u_x * u_x) + (u_y * u_y);
@@ -601,9 +623,9 @@ int alertUnits( Order o )
                // Okay so it's in shout range, now what?
                if (o.action == PL_ALERT_ALL) {
                   alert(u);
-               } else if (o.action == PL_ALERT_TANKS && u->type == TANK_T) {
+               } else if (o.action == PL_ALERT_MONSTERS && u->type == MONSTER_T) {
                   alert(u);
-               } else if (o.action == PL_ALERT_WARRIORS && u->type == WARRIOR_T) {
+               } else if (o.action == PL_ALERT_SOLDIERS && u->type == SOLDIER_T) {
                   alert(u);
                } else if (o.action == PL_ALERT_WORMS && u->type == WORM_T) {
                   alert(u);
@@ -621,9 +643,77 @@ int alertUnits( Order o )
 
    return 0;
 }
+         
+int activateUnits( Order o )
+{
+   // Get search box
+   int x = player->x_grid, y = player->y_grid;
+   int shout_range = (int)player->attack_range + 1;
+   int min_x, max_x, min_y, max_y;
+   min_x = x - shout_range;
+   max_x = x + shout_range;
+   min_y = y - shout_range;
+   max_y = y + shout_range;
+   if (min_x < 0) min_x = 0;
+   if (max_x >= level_dim_x) max_x = level_dim_x - 1;
+   if (min_y < 0) min_y = 0;
+   if (max_y >= level_dim_y) max_y = level_dim_y - 1;
+
+   float range_squared = player->attack_range * player->attack_range;
+
+   for (int j = min_y; j <= max_y; ++j) {
+      for (int i = min_x; i <= max_x; ++i) {
+         Unit *u = GRID_AT(unit_grid,i,j);
+         if (u == player) continue;
+
+         if (u && u->team == 0) { // On my team
+            float u_x = u->x_grid - x, u_y = u->y_grid - y;
+            float u_squared = (u_x * u_x) + (u_y * u_y);
+            // Is it really in range?
+            if (u_squared <= range_squared) {
+
+               // Okay so it's in shout range, now what?
+               if (o.action == PL_CMD_GO_ALL) {
+                  u->activate();
+               } else if (o.action == PL_CMD_GO_MONSTERS && u->type == MONSTER_T) {
+                  u->activate();
+               } else if (o.action == PL_CMD_GO_SOLDIERS && u->type == SOLDIER_T) {
+                  u->activate();
+               } else if (o.action == PL_CMD_GO_WORMS && u->type == WORM_T) {
+                  u->activate();
+               } else if (o.action == PL_CMD_GO_BIRDS && u->type == BIRD_T) {
+                  u->activate();
+               } else if (o.action == PL_CMD_GO_BUGS && u->type == BUG_T) {
+                  u->activate();
+               } else if (o.action == PL_CMD_GO_TEAM && u->team == o.count) {
+                  u->activate();
+               }
+            }
+         }
+      }
+   }
+
+   return 0;
+}
+
+int activateAlert()
+{
+   log("Activating alert units");
+
+   for (list<Unit*>::iterator it=listening_units.begin(); it != listening_units.end(); ++it)
+   {
+      Unit* unit = (*it);
+      if (unit) {
+         unit->activate();
+      }
+   }
+   
+   return 0;
+}
 
 int broadcastOrder( Order o )
 {
+   log("Broadcasting order");
    if (NULL == player)
       return -1;
 
@@ -631,6 +721,7 @@ int broadcastOrder( Order o )
    {
       Unit* unit = (*it);
       if (unit) {
+         log("UNIT");
          unit->addOrder( o );
       }
    }
@@ -646,8 +737,8 @@ int startPlayerCommand( Order o )
    switch( o.action ) {
       case PL_ALERT_ALL:
       case PL_ALERT_TEAM:
-      case PL_ALERT_TANKS:
-      case PL_ALERT_WARRIORS:
+      case PL_ALERT_MONSTERS:
+      case PL_ALERT_SOLDIERS:
       case PL_ALERT_WORMS:
       case PL_ALERT_BIRDS:
       case PL_ALERT_BUGS:
@@ -679,6 +770,18 @@ int startPlayerCommand( Order o )
 int completePlayerCommand( Order o )
 {
    switch( o.action ) {
+      case PL_CMD_GO_ALL:
+      case PL_CMD_GO_MONSTERS:
+      case PL_CMD_GO_SOLDIERS:
+      case PL_CMD_GO_WORMS:
+      case PL_CMD_GO_BIRDS:
+      case PL_CMD_GO_BUGS:
+      case PL_CMD_GO_TEAM:
+         activateUnits( o );
+         break;
+      case PL_CMD_GO:
+         activateAlert();
+         break;
       case SUMMON_MONSTER:
       case SUMMON_SOLDIER:
       case SUMMON_WORM:
@@ -772,7 +875,7 @@ int loadLevel( int level_id )
       Unit *bug = new Bug( 4, 4, SOUTH );
       addUnit( bug );
 
-      Unit *targetpractice = new TargetPractice( 4, 7, SOUTH );
+      Unit *targetpractice = new TargetPractice( 2, 3, SOUTH );
       addUnit( targetpractice );
 
       player = Player::initPlayer( 5, 2, SOUTH );
@@ -889,6 +992,8 @@ int updateLevel( int dt )
 
 // The order buttons part of the gui
 
+int selection_box_width = 240, selection_box_height = 50;
+
 bool init_level_gui = false;
 IMImageButton *b_o_move_forward,
               *b_o_move_backward,
@@ -917,8 +1022,10 @@ IMTextButton *b_count_1,
              *b_count_8,
              *b_count_9,
              *b_count_0,
-             *b_count_infinite;
-string s_1 = "1", s_2 = "2", s_3 = "3", s_4 = "4", s_5 = "5", s_6 = "6", s_7 = "7", s_8 = "8", s_9 = "9", s_0 = "0", s_infinite = "∞";
+             *b_count_infinite,
+             *b_count_reset;
+sf::Text *count_text;
+string s_1 = "1", s_2 = "2", s_3 = "3", s_4 = "4", s_5 = "5", s_6 = "6", s_7 = "7", s_8 = "8", s_9 = "9", s_0 = "0", s_infinite = "∞", s_reset = "X";
 // Gui Boxes
 IMEdgeButton *b_numpad_area,
              *b_conditional_area,
@@ -946,7 +1053,7 @@ bool isMouseOverGui( int x, int y )
          && x < ((sec_buffer * 2) + (button_size * 5)))
       return true; // Player command area is tallest of all
 
-   if (selected_unit && (y < 50) && (x > width - 120))
+   if (selected_unit && (y < selection_box_height) && (x > width - selection_box_width))
       return true; // Over the selected unit area
 
    return false;
@@ -959,6 +1066,8 @@ void fitGui_Level()
 
    int sec_buffer = 5;
    float button_size = (((float)width) - (20.0 * sec_buffer)) / 20.0;
+
+   int text_size = floor( button_size / 2);
 
    float sec_start_numpad = 0,
        sec_start_conditionals = sec_start_numpad + (sec_buffer * 2) + (button_size * 3),
@@ -981,46 +1090,78 @@ void fitGui_Level()
    b_count_0->setSize( button_size, button_size );
    b_count_0->setPosition( sec_start_numpad + sec_buffer + button_size,
                            height - (sec_buffer + button_size));
+   b_count_0->setTextSize( text_size );
+   b_count_0->centerText();
    
    b_count_1->setSize( button_size, button_size );
    b_count_1->setPosition( sec_start_numpad + sec_buffer,
                            height - (sec_buffer + button_size * 4) );
+   b_count_1->setTextSize( text_size );
+   b_count_1->centerText();
 
    b_count_2->setSize( button_size, button_size );
    b_count_2->setPosition( sec_start_numpad + sec_buffer + button_size,
                            height - (sec_buffer + button_size * 4) );
+   b_count_2->setTextSize( text_size );
+   b_count_2->centerText();
 
    b_count_3->setSize( button_size, button_size );
    b_count_3->setPosition( sec_start_numpad + sec_buffer + (button_size * 2),
                            height - (sec_buffer + button_size * 4) );
+   b_count_3->setTextSize( text_size );
+   b_count_3->centerText();
 
    b_count_4->setSize( button_size, button_size );
    b_count_4->setPosition( sec_start_numpad + sec_buffer,
                            height - (sec_buffer + button_size * 3) );
+   b_count_4->setTextSize( text_size );
+   b_count_4->centerText();
 
    b_count_5->setSize( button_size, button_size );
    b_count_5->setPosition( sec_start_numpad + sec_buffer + button_size,
                            height - (sec_buffer + button_size * 3) );
+   b_count_5->setTextSize( text_size );
+   b_count_5->centerText();
 
    b_count_6->setSize( button_size, button_size );
    b_count_6->setPosition( sec_start_numpad + sec_buffer + (button_size * 2),
                            height - (sec_buffer + button_size * 3) );
+   b_count_6->setTextSize( text_size );
+   b_count_6->centerText();
 
    b_count_7->setSize( button_size, button_size );
    b_count_7->setPosition( sec_start_numpad + sec_buffer,
                            height - (sec_buffer + button_size * 2) );
+   b_count_7->setTextSize( text_size );
+   b_count_7->centerText();
 
    b_count_8->setSize( button_size, button_size );
    b_count_8->setPosition( sec_start_numpad + sec_buffer + button_size,
                            height - (sec_buffer + button_size * 2) );
+   b_count_8->setTextSize( text_size );
+   b_count_8->centerText();
 
    b_count_9->setSize( button_size, button_size );
    b_count_9->setPosition( sec_start_numpad + sec_buffer + (button_size * 2),
                            height - (sec_buffer + button_size * 2) );
+   b_count_9->setTextSize( text_size );
+   b_count_9->centerText();
 
    b_count_infinite->setSize( button_size, button_size );
    b_count_infinite->setPosition( sec_start_numpad + sec_buffer + (button_size * 2),
                                   height - (sec_buffer + button_size) );
+   b_count_infinite->setTextSize( text_size );
+   b_count_infinite->centerText();
+
+   b_count_reset->setSize( button_size, button_size );
+   b_count_reset->setPosition( sec_start_numpad + sec_buffer,
+                                  height - (sec_buffer + button_size) );
+   b_count_reset->setTextSize( text_size );
+   b_count_reset->centerText();
+
+   count_text->setPosition( sec_start_conditionals + sec_buffer,
+                            height - ((sec_buffer * 3) + (button_size * 4)));
+   count_text->setCharacterSize( text_size );
 
    // Player commands
 
@@ -1227,67 +1368,89 @@ int initLevelGui()
    b_count_1->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
    b_count_1->setText( &s_1 );
    b_count_1->setTextColor( Color::Black );
+   b_count_1->setFont( menu_font );
    gui_manager.registerWidget( "Count: 1", b_count_1);
 
    b_count_2 = new IMTextButton();
    b_count_2->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
    b_count_2->setText( &s_2 );
    b_count_2->setTextColor( Color::Black );
+   b_count_2->setFont( menu_font );
    gui_manager.registerWidget( "Count: 2", b_count_2);
 
    b_count_3 = new IMTextButton();
    b_count_3->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
    b_count_3->setText( &s_3 );
    b_count_3->setTextColor( Color::Black );
+   b_count_3->setFont( menu_font );
    gui_manager.registerWidget( "Count: 3", b_count_3);
 
    b_count_4 = new IMTextButton();
    b_count_4->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
    b_count_4->setText( &s_4 );
    b_count_4->setTextColor( Color::Black );
+   b_count_4->setFont( menu_font );
    gui_manager.registerWidget( "Count: 4", b_count_4);
 
    b_count_5 = new IMTextButton();
    b_count_5->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
    b_count_5->setText( &s_5 );
    b_count_5->setTextColor( Color::Black );
+   b_count_5->setFont( menu_font );
    gui_manager.registerWidget( "Count: 5", b_count_5);
 
    b_count_6 = new IMTextButton();
    b_count_6->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
    b_count_6->setText( &s_6 );
    b_count_6->setTextColor( Color::Black );
+   b_count_6->setFont( menu_font );
    gui_manager.registerWidget( "Count: 6", b_count_6);
 
    b_count_7 = new IMTextButton();
    b_count_7->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
    b_count_7->setText( &s_7 );
    b_count_7->setTextColor( Color::Black );
+   b_count_7->setFont( menu_font );
    gui_manager.registerWidget( "Count: 7", b_count_7);
 
    b_count_8 = new IMTextButton();
    b_count_8->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
    b_count_8->setText( &s_8 );
    b_count_8->setTextColor( Color::Black );
+   b_count_8->setFont( menu_font );
    gui_manager.registerWidget( "Count: 8", b_count_8);
 
    b_count_9 = new IMTextButton();
    b_count_9->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
    b_count_9->setText( &s_9 );
    b_count_9->setTextColor( Color::Black );
+   b_count_9->setFont( menu_font );
    gui_manager.registerWidget( "Count: 9", b_count_9);
 
    b_count_0 = new IMTextButton();
    b_count_0->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
    b_count_0->setText( &s_0 );
    b_count_0->setTextColor( Color::Black );
+   b_count_0->setFont( menu_font );
    gui_manager.registerWidget( "Count: 0", b_count_0);
 
    b_count_infinite = new IMTextButton();
    b_count_infinite->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
    b_count_infinite->setText( &s_infinite );
    b_count_infinite->setTextColor( Color::Black );
+   b_count_infinite->setFont( menu_font );
    gui_manager.registerWidget( "Count: infinite", b_count_infinite);
+
+   b_count_reset = new IMTextButton();
+   b_count_reset->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_reset->setText( &s_reset );
+   b_count_reset->setTextColor( Color::Black );
+   b_count_reset->setFont( menu_font );
+   gui_manager.registerWidget( "Count: reset", b_count_reset);
+
+   count_text = new Text();
+   count_text->setFont( *menu_font );
+   count_text->setColor( Color::Black );
 
    b_numpad_area = new IMEdgeButton();
    b_numpad_area->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
@@ -1423,7 +1586,10 @@ int drawOrderButtons()
       playerAddCount( 9 );
 
    if (b_count_infinite->doWidget())
-      playerAddInfiniteCount();
+      playerSetCount( -1 );
+
+   if (b_count_reset->doWidget())
+      playerSetCount( 1 );
 
    b_numpad_area->doWidget();
    b_pl_cmd_area->doWidget();
@@ -1432,6 +1598,15 @@ int drawOrderButtons()
    b_attack_area->doWidget();
    b_control_area->doWidget();
 
+   // Draw current count
+   if (order_prep_count != 1) {
+      stringstream ss;
+      ss << order_prep_count;
+      count_text->setString( String(ss.str()) );
+
+      SFML_GlobalRenderWindow::get()->draw( *count_text );
+   }
+
    return 0;
 }
 
@@ -1439,7 +1614,9 @@ int drawOrderQueue()
 {
    if (player) {
       int draw_x = 2;
-      for (int i = 0; i < player->order_count; ++i) {
+      for (int i = player->current_order; i != player->final_order; ++i) {
+         if (i == player->max_orders) i = 0;
+
          Order &o = player->order_queue[i];
          if ( o.action != SKIP ) {
             drawOrder( player->order_queue[i], draw_x, 2, 32 );
@@ -1465,34 +1642,70 @@ int drawSelectedUnit()
          float window_edge = config::width();
          RectangleShape select_rect, health_bound_rect, health_rect;
 
-         select_rect.setSize( Vector2f( 120, 50 ) );
-         select_rect.setPosition( window_edge - 120, 0 );
+         select_rect.setSize( Vector2f( selection_box_width, selection_box_height ) );
+         select_rect.setPosition( window_edge - selection_box_width, 0 );
          select_rect.setFillColor( Color::White );
          select_rect.setOutlineColor( Color::Black );
          select_rect.setOutlineThickness( 2.0 );
          gui_window->draw( select_rect );
 
-         health_bound_rect.setSize( Vector2f( 64, 14 ) );
-         health_bound_rect.setPosition( window_edge - 67, 8 );
+         // The image
+         int picture_size = selection_box_height - 10;
+         Sprite unit_image( *t);
+         normalizeTo1x1( &unit_image );
+         unit_image.scale( picture_size, picture_size );
+         unit_image.setPosition( window_edge - selection_box_width + 5, 5 );
+
+         gui_window->draw( unit_image );
+
+         // Health box
+         int health_box_start_x = window_edge - selection_box_width + selection_box_height + 5,
+             health_box_width = window_edge - health_box_start_x - 5,
+             health_box_start_y = selection_box_height - 18,
+             health_box_height = 14;
+         health_bound_rect.setSize( Vector2f( health_box_width, health_box_height ) );
+         health_bound_rect.setPosition( health_box_start_x, health_box_start_y );
          health_bound_rect.setFillColor( Color::White );
          health_bound_rect.setOutlineColor( Color::Black );
          health_bound_rect.setOutlineThickness( 2.0 );
          gui_window->draw( health_bound_rect );
 
-         health_rect.setSize( Vector2f( 60 * (selected_unit->health / selected_unit->max_health), 10 ) );
-         health_rect.setPosition( window_edge - 65, 10 );
+         health_rect.setSize( Vector2f( (health_box_width - 4) * (selected_unit->health / selected_unit->max_health), 10 ) );
+         health_rect.setPosition( health_box_start_x + 2, health_box_start_y + 2 );
          health_rect.setFillColor( Color::Red );
          gui_window->draw( health_rect );
 
-         Sprite unit_image( *t);
-         float x = t->getSize().x;
-         float y = t->getSize().y;
-         float scale_x = 40 / x;
-         float scale_y = 40 / y;
-         unit_image.setScale( scale_x, scale_y );
-         unit_image.setPosition( window_edge - 115, 5 );
+         // Descriptive text
+         Text selected_text;
+         selected_text.setString(String(selected_unit->descriptor()));
+         selected_text.setFont( *menu_font );
+         selected_text.setColor( (selected_unit->team == 0)?Color::Black:Color::Red);
+         selected_text.setCharacterSize( 24 );
+         FloatRect text_size = selected_text.getGlobalBounds();
+         float text_x = ((health_box_width - text_size.width) / 2) + health_box_start_x;
+         selected_text.setPosition( text_x, 0 );
+         gui_window->draw( selected_text );
 
-         gui_window->draw( unit_image );
+         if (selected_unit != player && selected_unit->team == 0)
+         {
+            // Draw selected unit's order queue
+            int draw_x = window_edge - selection_box_width + 1,
+                draw_y = selection_box_height + 2,
+                dx = selection_box_width / 6;
+            for (int i = 0; i < selected_unit->order_count; ++i) {
+               if (i == selected_unit->max_orders) i = 0;
+
+               Order &o = selected_unit->order_queue[i];
+               if ( o.action != SKIP ) {
+                  drawOrder( o, draw_x, draw_y, (dx - 2) );
+                  draw_x += dx;
+                  if (draw_x >= window_edge) {
+                     draw_x = window_edge - selection_box_width + 1;
+                     draw_y += dx;
+                  }
+               }
+            }
+         }
 
       }
    }

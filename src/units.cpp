@@ -42,32 +42,45 @@ int Unit::startBasicOrder( Order &o, bool cond_result )
          // MOVEMENT
 
          case MOVE_BACK:
+            if (cond_result == true) {
+               // Set new next location
+               if (facing == NORTH) { TurnTo(SOUTH); facing = NORTH; }
+               else if (facing == SOUTH) { TurnTo(NORTH); facing = SOUTH; }
+               else if (facing == EAST) { TurnTo(WEST); facing = EAST; }
+               else if (facing == WEST) { TurnTo(EAST); facing = WEST; }
+            }
          case MOVE_FORWARD:
-            if (cond_result == 1) {
+            if (cond_result == true) {
+               // Can we move there?
+               if (canMove( x_next, y_next, x_grid, y_grid )) {
+                  TurnTo(facing);
+                  return 0;
+               }
+
                return 1;
             } else {
                return 0;
             }
          case TURN_NORTH:
-            if (cond_result == 1) {
+            if (cond_result == true) {
                TurnTo(NORTH);
             } else {
             }
             return 0;
          case TURN_EAST:
-            if (cond_result == 1) {
+            if (cond_result == true) {
                TurnTo(EAST);
             } else {
             }
             return 0;
          case TURN_SOUTH:
-            if (cond_result == 1) {
+            if (cond_result == true) {
                TurnTo(SOUTH);
             } else {
             }
             return 0;
          case TURN_WEST:
-            if (cond_result == 1) {
+            if (cond_result == true) {
                TurnTo(WEST);
             } else {
             }
@@ -79,7 +92,7 @@ int Unit::startBasicOrder( Order &o, bool cond_result )
          case ATTACK_FARTHEST:
          case ATTACK_SMALLEST:
          case ATTACK_BIGGEST:
-            if (cond_result == 1) {
+            if (cond_result == true) {
                done_attack = 0;
                return 1;
             } else {
@@ -89,7 +102,7 @@ int Unit::startBasicOrder( Order &o, bool cond_result )
          // CONTROL
 
          case START_BLOCK:
-            if (cond_result == 1 && (o.iteration < o.count || o.count == -1)) {
+            if (cond_result == true && (o.iteration < o.count || o.count == -1)) {
                o.iteration++;
                return 0;
             } else {
@@ -132,7 +145,7 @@ int Unit::startBasicOrder( Order &o, bool cond_result )
             // Ignore it
             return 0;
          case REPEAT:
-            if (cond_result == 1 && (o.iteration < o.count || o.count == -1)) {
+            if (cond_result == true && (o.iteration < o.count || o.count == -1)) {
                o.iteration++;
                current_order = -1; // Goto 0
                return 0;
@@ -155,6 +168,7 @@ int Unit::updateBasicOrder( float dtf, Order o )
    if (o.action <= WAIT) { 
       switch(o.action) {
          case MOVE_BACK:
+            dtf = -dtf;
          case MOVE_FORWARD:
             if (facing == NORTH)
                y_real -= dtf;
@@ -231,13 +245,15 @@ bool Unit::evaluateConditional( Order o )
 
 void Unit::activate()
 {
-   active = 1;
+   current_order = 0;
+   active = 2;
 }
 
 void Unit::clearOrders()
 {
    order_count = 0;
-   current_order = -1;
+   current_order = 0;
+   final_order = 0;
    log("Cleared orders");
 }
 
@@ -276,6 +292,11 @@ void Unit::logOrders()
    log("Unit printOrders:");
    for( int i = 0; i < order_count; i ++ )
    {
+      if (i == current_order)
+         log("CURRENT ORDER:");
+      if (i == final_order)
+         log("FINAL ORDER:");
+
       order_queue[i].logSelf();
    }
 }
@@ -288,6 +309,7 @@ int Unit::addOrder( Order o )
 
       order_queue[order_count] = o;
       order_count++;
+      final_order = order_count;
 
       return 0;
    } else return -1;
@@ -295,7 +317,10 @@ int Unit::addOrder( Order o )
 
 int Unit::startTurn()
 {
-   while (active && current_order < order_count && current_order >= 0) {
+   if (active == 2) active = 1; // Start an active turn
+
+   while (active == 1 && 
+          current_order != final_order) {
       Order &o = order_queue[current_order];
       bool decision = evaluateConditional(o);
       int r = startBasicOrder(o, decision);
@@ -317,7 +342,7 @@ int Unit::update( float dtf )
       return 1;
 
    progress += dtf;
-   if (active && current_order < order_count && current_order >= 0) {
+   if (active == 1 && current_order != final_order) {
       Order &o = order_queue[current_order];
       return updateBasicOrder( dtf, o );
    }
@@ -327,7 +352,7 @@ int Unit::update( float dtf )
 // Run completeBasicOrder, update iterations, select next order
 int Unit::completeTurn()
 {
-   if (active && current_order < order_count && current_order >= 0) {
+   if (active == 1 && current_order != final_order) {
       Order &o = order_queue[current_order];
       int r = completeBasicOrder(o);
       o.iteration++;
@@ -336,11 +361,6 @@ int Unit::completeTurn()
          o.iteration = 0;
       }
       return r;
-   }
-
-   // Prepare to start
-   if (current_order == -1 && active && order_count > 0) {
-      current_order = 0;
    }
 
    return 0;
@@ -356,6 +376,11 @@ int Unit::takeDamage( float damage )
    }
 
    return 0;
+}
+
+string Unit::descriptor()
+{
+   return "BASIC UNIT";
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -411,11 +436,15 @@ int Player::init( int x, int y, Direction face )
 
 int Player::addOrder( Order o )
 {
-   if (order_count >= max_orders) // No more memory
+   // Player uses a looping queue instead of a list
+   if (order_count >= PLAYER_MAX_ORDERS) // No more memory!!
       return -2;
 
-   order_queue[order_count] = o;
+   order_queue[final_order] = o;
    order_count++;
+   final_order++;
+   if (final_order == PLAYER_MAX_ORDERS)
+      final_order = 0;
 
    return 0;
 }
@@ -428,12 +457,18 @@ int Player::doAttack( Order o )
 
 int Player::startTurn()
 {
+   if (current_order == final_order) { // Nothing to do
+      active = 0;
+      return -1;
+   }
+   else active = 1;
+
    // Here is where we shout a new command
    Order o = order_queue[current_order];
    if (o.action < PL_ALERT_ALL)
-      broadcastOrder( order_queue[current_order] );
+      broadcastOrder( o );
    else {
-      if (startPlayerCommand(o) == -1)
+      if (startPlayerCommand( o ) == -2)
          order_queue[current_order].action = FAILED_SUMMON;
    }
 
@@ -443,16 +478,20 @@ int Player::startTurn()
 
 int Player::completeTurn()
 {
-   Order o = order_queue[current_order];
-   if (o.action >= PL_ALERT_ALL)
-      completePlayerCommand(o);
+   if (current_order == final_order) // Nothing to do
+      return -1;
 
-   if (current_order < order_count) 
-      current_order++;
+   if (active) { // started the turn doing something
+      Order o = order_queue[current_order];
+      if (o.action >= PL_ALERT_ALL)
+         completePlayerCommand(o);
 
-   // Prepare to start
-   if (current_order == -1 && active && order_count > 0) {
-      current_order = 0;
+      do {
+         current_order++;
+         order_count--;
+         if (current_order == PLAYER_MAX_ORDERS)
+            current_order = 0; // loop
+      } while (order_queue[current_order].action == SKIP);
    }
 
    return 0;
@@ -487,6 +526,11 @@ int Player::draw()
    SFML_GlobalRenderWindow::get()->draw( *sp_player );
 
    return 0;
+}
+
+string Player::descriptor()
+{
+   return "Sheherezad";
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -539,12 +583,13 @@ Bug::~Bug()
 
 int Bug::addOrder( Order o )
 {
-   if (o.action <= WAIT || (o.action >= MAG_MEDITATE)) {
+   if ((o.action <= WAIT) || (o.action >= MAG_MEDITATE)) {
       if (order_count >= max_orders) // No more memory
          return -2;
 
       order_queue[order_count] = o;
       order_count++;
+      final_order = order_count;
 
       return 0;
    } else return -1;
@@ -641,6 +686,11 @@ int Bug::draw()
    return 0;
 }
 
+string Bug::descriptor()
+{
+   return "Allied Bug";
+}
+
 //////////////////////////////////////////////////////////////////////
 // SummonMarker
 
@@ -734,6 +784,10 @@ SummonMarker::~SummonMarker()
 
 }
 
+string SummonMarker::descriptor()
+{
+   return "Summon Marker";
+}
 
 //////////////////////////////////////////////////////////////////////
 // TargetPractice
@@ -804,6 +858,11 @@ int TargetPractice::draw()
 TargetPractice::~TargetPractice()
 {
 
+}
+
+string TargetPractice::descriptor()
+{
+   return "Target";
 }
 
 };

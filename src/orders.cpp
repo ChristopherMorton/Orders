@@ -1,3 +1,4 @@
+#include "menustate.h"
 #include "orders.h"
 #include "log.h"
 #include "util.h"
@@ -185,10 +186,10 @@ Texture *getOrderTexture( Order o )
       case PL_ALERT_TEAM:
          base_tex = t_manager.getTexture( "PlayerAlert.png" );
          break;
-      case PL_ALERT_TANKS:
+      case PL_ALERT_MONSTERS:
          base_tex = t_manager.getTexture( "PlayerAlertRed.png" );
          break;
-      case PL_ALERT_WARRIORS:
+      case PL_ALERT_SOLDIERS:
          base_tex = t_manager.getTexture( "PlayerAlertGold.png" );
          break;
       case PL_ALERT_WORMS:
@@ -207,6 +208,7 @@ Texture *getOrderTexture( Order o )
       case PL_CMD_GO_ALL:
          base_tex = t_manager.getTexture( "PlayerGoAllButton.png" );
          break;
+// Need unit specific go buttons
 
       case PL_CAST_HEAL:
          base_tex = t_manager.getTexture( "CastHeal.png" );
@@ -257,6 +259,7 @@ Texture *getOrderTexture( Order o )
 
 void drawOrder( Order o, int x, int y, int size )
 {
+   // Base order
    Texture *base_tex = getOrderTexture( o );
    if (NULL == base_tex)
       return;
@@ -267,6 +270,38 @@ void drawOrder( Order o, int x, int y, int size )
    sp_order.setPosition( x, y );
 
    SFML_GlobalRenderWindow::get()->draw( sp_order );
+
+   // Count
+   if (o.count != 1)
+   {
+
+      Text count_text;
+      stringstream ss;
+      ss << o.count;
+      count_text.setString( String(ss.str()) );
+      count_text.setFont( *menu_font );
+      count_text.setColor( Color::Black );
+      count_text.setCharacterSize( 10 );
+      FloatRect text_size = count_text.getGlobalBounds();
+      float text_x = (size - text_size.width) + x,
+            text_y = (size - text_size.height) + y;
+      count_text.setPosition( text_x, text_y );
+
+      RectangleShape count_rect;
+      count_rect.setSize( Vector2f((text_size.width), (text_size.height + 2)) );
+      count_rect.setPosition( text_x - 1, text_y - 1 );
+      count_rect.setFillColor( Color::White );
+      count_rect.setOutlineColor( Color::Black );
+      count_rect.setOutlineThickness( 1.0 );
+
+      SFML_GlobalRenderWindow::get()->draw( count_rect );
+      SFML_GlobalRenderWindow::get()->draw( count_text );
+   }
+
+   // Condition
+   if (o.condition != TRUE) {
+
+   }
 }
 
 };
