@@ -29,7 +29,7 @@
 
 #define TURN_LENGTH 1000
 
-#define MOUSE_DOWN_SELECT_TIME 200
+#define MOUSE_DOWN_SELECT_TIME 150
 
 using namespace sf;
 using namespace std;
@@ -84,6 +84,9 @@ Unit *selected_unit;
 int left_mouse_down = 0;
 int left_mouse_down_time = 0;
 
+int right_mouse_down = 0;
+int right_mouse_down_time = 0;
+
 //////////////////////////////////////////////////////////////////////
 // Utility
 
@@ -107,6 +110,16 @@ Vector2u coordsWindowToLevel( int window_x, int window_y )
    int x = (int)view_coords.x,
        y = (int)view_coords.y;
    return Vector2u(x, y);
+}
+
+Vector2u coordsViewToWindow( float view_x, float view_y )
+{
+   RenderWindow *r_window = SFML_GlobalRenderWindow::get();
+   int window_x = (int)(((view_x - ((level_view->getCenter().x) - (level_view->getSize().x / 2.0)))
+                         / (level_view->getSize().x)) * (r_window->getSize().x));
+   int window_y = (int)(((view_y - ((level_view->getCenter().y) - (level_view->getSize().y / 2.0)))
+                         / (level_view->getSize().y)) * (r_window->getSize().y));
+   return Vector2u( window_x, window_y );
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -287,11 +300,6 @@ int addPlayer()
       // Otherwise, we should be good
       GRID_AT(unit_grid, cx, cy) = player;
 
-      Order o( SUMMON_BUG, TRUE, 1);
-      o.iteration = 1;
-      player->addOrder( o );
-      player->activate();
-
       return 0;
    }
    return -1;
@@ -359,14 +367,17 @@ int selectUnit( Vector2f coords )
 
    std::stringstream ls;
    ls << "Selecting a unit at x=" << cx << ", y=" << cy;
-   log(ls.str());
    Unit *u = GRID_AT(unit_grid, (int)coords.x, (int)coords.y);
 
    if (u) {
-      log("Selected a unit");
+      ls << " - Selected: " << u->descriptor();
+      log(ls.str());
       selected_unit = u;
       return 0;
    }
+
+   ls << " - None found";
+   log(ls.str());
 
    selected_unit = NULL;
    return -1;
@@ -989,6 +1000,162 @@ int updateLevel( int dt )
 
 //////////////////////////////////////////////////////////////////////
 // GUI
+
+// Right Click Menu
+
+int r_click_menu_x_grid, r_click_menu_y_grid;
+int r_click_menu_top_x_left, r_click_menu_top_y_bottom; // Top box
+int r_click_menu_bottom_x_left, r_click_menu_bottom_y_top; // Bottom box
+float r_click_menu_button_size_x, r_click_menu_button_size_y;
+
+int r_click_menu_selection = 0; // -num == top box, +num == bottom box
+
+bool r_click_menu_open = false;
+bool r_click_menu_solid = false;
+
+void initRightClickMenu()
+{
+   r_click_menu_open = false;
+   r_click_menu_solid = false;
+}
+
+void rightClickMenuCreate( int x, int y )
+{
+   Vector2u grid = coordsWindowToLevel( x, y );
+   
+   // TODO: do something so that the menu is always visible
+
+   r_click_menu_x_grid = grid.x;
+   r_click_menu_y_grid = grid.y;
+
+   Vector2u top_left = coordsViewToWindow( grid.x, grid.y );
+   Vector2u bottom_left = coordsViewToWindow( grid.x, grid.y + 1 );
+
+   r_click_menu_top_x_left = top_left.x;
+   r_click_menu_top_y_bottom = top_left.y;
+
+   r_click_menu_bottom_x_left = bottom_left.x;
+   r_click_menu_bottom_y_top = bottom_left.y;
+
+   r_click_menu_selection = 0;
+
+   // Calculate how big to make the buttons
+   float x_dim = config::width(), y_dim = config::height();
+   r_click_menu_button_size_x = x_dim / 6;
+   r_click_menu_button_size_y = y_dim / 30;
+
+   r_click_menu_open = true;
+   r_click_menu_solid = false;
+
+   log("Right click menu created");
+}
+
+int rightClickMenuSelect( int x, int y )
+{
+   if (x < r_click_menu_top_x_left || 
+       x > (r_click_menu_top_x_left + r_click_menu_button_size_x) ||
+       !( (y <= r_click_menu_top_y_bottom && 
+           y >= r_click_menu_top_y_bottom - (r_click_menu_button_size_y * 5))
+          ||
+          (y >= r_click_menu_bottom_y_top && 
+           y <= r_click_menu_bottom_y_top + (r_click_menu_button_size_y * 5))
+        )
+      )
+   {
+      // Not in a selection area
+      r_click_menu_selection = 0;
+   } 
+   else if (y <= r_click_menu_top_y_bottom && 
+       y >= r_click_menu_top_y_bottom - (r_click_menu_button_size_y * 5))
+   {
+      // Top selection area
+      r_click_menu_selection = ((int) ((y - r_click_menu_top_y_bottom) / r_click_menu_button_size_y)) - 1;
+   }
+   else
+   {
+      // Bottom selection area
+      r_click_menu_selection = (int) ((y - r_click_menu_bottom_y_top) / r_click_menu_button_size_y);
+   }
+   return r_click_menu_selection;
+}
+
+void rightClickMenuSolidify()
+{ 
+   r_click_menu_solid = true;
+}
+
+void rightClickMenuClose()
+{
+   r_click_menu_open = false;
+}
+
+void rightClickMenuChoose()
+{
+   switch (r_click_menu_selection) {
+      case -5:
+         Order o( SUMMON_BUG, TRUE, r_click_menu_x_grid);
+         o.iteration = r_click_menu_y_grid;
+         player->addOrder( o ); 
+         break;
+   }
+
+   rightClickMenuClose();
+}
+
+void drawRightClickMenu()
+{
+   if (r_click_menu_open == false) return;
+   RenderWindow *gui_window = SFML_GlobalRenderWindow::get();
+
+   Text text;
+   text.setFont( *menu_font );
+   text.setColor( Color::Black );
+   text.setCharacterSize( 16 );
+
+   text.setString( String("Summon Monster") );
+   text.setPosition( r_click_menu_top_x_left, r_click_menu_top_y_bottom - (r_click_menu_button_size_y) );
+   gui_window->draw( text );
+   text.setString( String("Summon Soldier") );
+   text.setPosition( r_click_menu_top_x_left, r_click_menu_top_y_bottom - (2*r_click_menu_button_size_y) );
+   gui_window->draw( text );
+   text.setString( String("Summon Worm") );
+   text.setPosition( r_click_menu_top_x_left, r_click_menu_top_y_bottom - (3*r_click_menu_button_size_y) );
+   gui_window->draw( text );
+   text.setString( String("Summon Bird") );
+   text.setPosition( r_click_menu_top_x_left, r_click_menu_top_y_bottom - (4*r_click_menu_button_size_y) );
+   gui_window->draw( text );
+   text.setString( String("Summon Bug") );
+   text.setPosition( r_click_menu_top_x_left, r_click_menu_top_y_bottom - (5*r_click_menu_button_size_y) );
+   gui_window->draw( text );
+
+   text.setString( String("Cast Scry") );
+   text.setPosition( r_click_menu_bottom_x_left, r_click_menu_bottom_y_top);
+   gui_window->draw( text );
+   text.setString( String("Cast Lightning") );
+   text.setPosition( r_click_menu_bottom_x_left, r_click_menu_bottom_y_top + (1*r_click_menu_button_size_y) );
+   gui_window->draw( text );
+   text.setString( String("Cast Quake") );
+   text.setPosition( r_click_menu_bottom_x_left, r_click_menu_bottom_y_top + (2*r_click_menu_button_size_y) );
+   gui_window->draw( text );
+   text.setString( String("Cast Heal") );
+   text.setPosition( r_click_menu_bottom_x_left, r_click_menu_bottom_y_top + (3*r_click_menu_button_size_y) );
+   gui_window->draw( text );
+   text.setString( String("Cast Timelock") );
+   text.setPosition( r_click_menu_bottom_x_left, r_click_menu_bottom_y_top + (4*r_click_menu_button_size_y) );
+   gui_window->draw( text );
+   text.setString( String("Cast Telepathy") );
+   text.setPosition( r_click_menu_bottom_x_left, r_click_menu_bottom_y_top + (5*r_click_menu_button_size_y) );
+   gui_window->draw( text );
+
+   RectangleShape grid_select_rect;
+   float rect_size = r_click_menu_bottom_y_top - r_click_menu_top_y_bottom;
+   grid_select_rect.setSize( Vector2f( rect_size, rect_size ) );
+   grid_select_rect.setPosition( r_click_menu_top_x_left, r_click_menu_top_y_bottom );
+   grid_select_rect.setFillColor( Color::Transparent );
+   grid_select_rect.setOutlineColor( Color::White );
+   grid_select_rect.setOutlineThickness( 1.0 );
+   gui_window->draw( grid_select_rect );
+}
 
 // The order buttons part of the gui
 
@@ -1722,6 +1889,8 @@ int drawGui()
    drawSelectedUnit();
    drawOrderButtons();
 
+   drawRightClickMenu();
+
    return 0;
 }
 
@@ -1902,6 +2071,10 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
          shiftView( old_spot.x - new_spot.x, old_spot.y - new_spot.y );
       }
 
+      if (right_mouse_down && r_click_menu_open) {
+         //rightClickMenuSelect( mouse_move.x, mouse_move.y );
+      }
+
       old_mouse_x = mouse_move.x;
       old_mouse_y = mouse_move.y;
 
@@ -1913,7 +2086,20 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
       if (mbp.button == Mouse::Left) {
          left_mouse_down = 1;
          left_mouse_down_time = game_clock->getElapsedTime().asMilliseconds();
+
+         if (r_click_menu_solid) {
+            rightClickMenuSelect( mbp.x, mbp.y );
+            rightClickMenuChoose();
+         }
       }
+
+      if (mbp.button == Mouse::Right) {
+         right_mouse_down = 1;
+         right_mouse_down_time = game_clock->getElapsedTime().asMilliseconds();
+         if (!isMouseOverGui( mbp.x, mbp.y ))
+            rightClickMenuCreate( mbp.x, mbp.y );
+      }
+
 
       return true;
    }
@@ -1928,6 +2114,17 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
                && !isMouseOverGui( mbr.x, mbr.y ))
             selectUnit( coordsWindowToView( mbr.x, mbr.y ) );
 
+      }
+      if (mbr.button == Mouse::Right) {
+         right_mouse_down = 0;
+         int right_mouse_up_time = game_clock->getElapsedTime().asMilliseconds();
+
+         if (right_mouse_up_time - right_mouse_down_time < MOUSE_DOWN_SELECT_TIME)
+            rightClickMenuSolidify();
+         else {
+            rightClickMenuSelect( mbr.x, mbr.y );
+            rightClickMenuChoose();
+         }
       }
 
       return true;

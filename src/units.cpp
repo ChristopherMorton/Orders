@@ -752,7 +752,7 @@ int SummonMarker::doAttack( Order o )
 
 sf::Texture* SummonMarker::getTexture()
 {
-   return SFML_TextureManager::getSingleton().getTexture( "TargetPractice.png" );
+   return SFML_TextureManager::getSingleton().getTexture( "OrderButtonBase.png" );
 }
 
 int SummonMarker::update( float dtf )

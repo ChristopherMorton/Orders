@@ -442,22 +442,27 @@ void AVOptionsMenu()
 int progressiveInitMenus()
 {
    static int count = 0;
-
-   menu_font = new Font();
-   if (menu_font->loadFromFile("/usr/share/fonts/TTF/LiberationSans-Regular.ttf"))
-      log("Successfully loaded font");
+   log("Progressive init - Menus");
 
    if (count == 0) { 
-      initSplashMenuGui();
+      menu_font = new Font();
+      if (menu_font->loadFromFile("/usr/share/fonts/TTF/LiberationSans-Regular.ttf"))
+         log("Successfully loaded font");
       count = 1;
    } else if (count == 1) {
-      initOptionsMenuGui();
+      initSplashMenuGui();
       count = 2;
    } else if (count == 2) {
-      initAVOptionsMenuGui();
+      initOptionsMenuGui();
       count = 3;
    } else if (count == 3) {
+      initAVOptionsMenuGui();
+      count = 4;
+   } else if (count == 4) {
       //initInputOptionsMenuGui();
+
+      count = 5;
+   } else if (count == 5) {
       return 0; // done
    }
 
@@ -537,7 +542,6 @@ int preload()
 int progressiveInit()
 {
    static int progress = 0;
-   log ("Progressive init");
 
    switch (progress) {
       case 0:
