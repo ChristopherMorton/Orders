@@ -446,7 +446,7 @@ int progressiveInitMenus()
 
    if (count == 0) { 
       menu_font = new Font();
-      if (menu_font->loadFromFile("/usr/share/fonts/TTF/LiberationSans-Regular.ttf"))
+      if (menu_font->loadFromFile("./res/LiberationSans-Regular.ttf"))
          log("Successfully loaded font");
       count = 1;
    } else if (count == 1) {
