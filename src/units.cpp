@@ -17,10 +17,30 @@
 #define PLAYER_MAX_HEALTH 100
 #define PLAYER_MAX_ORDERS 500
 
+#define MONSTER_BASE_HEALTH 600
+#define MONSTER_BASE_MEMORY 10
+#define MONSTER_BASE_VISION 5.0
+#define MONSTER_BASE_SPEED 0.1
+
+#define SOLDIER_BASE_HEALTH 300
+#define SOLDIER_BASE_MEMORY 16
+#define SOLDIER_BASE_VISION 7.0
+#define SOLDIER_BASE_SPEED 0.1
+
+#define WORM_BASE_HEALTH 40
+#define WORM_BASE_MEMORY 14
+#define WORM_BASE_VISION 8.0
+#define WORM_BASE_SPEED 0.1
+
+#define BIRD_BASE_HEALTH 300
+#define BIRD_BASE_MEMORY 16
+#define BIRD_BASE_VISION 7.0
+#define BIRD_BASE_SPEED 0.1
+
 #define BUG_BASE_HEALTH 100
 #define BUG_BASE_MEMORY 14
 #define BUG_BASE_VISION 5.0
-#define BUG_BASE_SPEED 0.9
+#define BUG_BASE_SPEED 0.8
 #define BUG_ORB_SPEED 3.0
 
 using namespace sf;
@@ -51,8 +71,8 @@ int Unit::startBasicOrder( Order &o, bool cond_result )
             }
          case MOVE_FORWARD:
             if (cond_result == true) {
-               // Can we move there?
-               if (canMove( x_next, y_next, x_grid, y_grid )) {
+               // Can we move there? If not, reset *_next values and quit
+               if (!canMove( x_next, y_next, x_grid, y_grid )) {
                   TurnTo(facing);
                   return 0;
                }
@@ -534,6 +554,627 @@ string Player::descriptor()
 }
 
 //////////////////////////////////////////////////////////////////////
+// Monster
+
+// *tors
+Monster::Monster()
+{
+   Monster( -1, -1, SOUTH );
+}
+
+Monster::Monster( int x, int y, Direction face )
+{
+   log("Creating Monster");
+
+   type = MONSTER_T;
+
+   alive = true;
+
+   radius = 0.5;
+
+   x_grid = x;
+   y_grid = y;
+   x_real = x + 0.5;
+   y_real = y + 0.5;
+   TurnTo(face);
+
+   health = max_health = MONSTER_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
+
+   attack_range = 1.3;
+
+   speed = MONSTER_BASE_SPEED * ( 1.0 - ( focus_speed * 0.02 ) );
+
+   max_orders = MONSTER_BASE_MEMORY * ( 1.0 + ( focus_memory * 0.08 ) );
+   order_queue = new Order[max_orders];
+   clearOrders();
+
+   active = 0;
+   team = 0;
+}
+
+Monster::~Monster()
+{
+   if (order_queue)
+      delete order_queue;
+}
+
+// Virtual methods
+
+int Monster::addOrder( Order o )
+{
+   if ((o.action <= SKIP) || (o.action >= MONSTER_GUARD && o.action <= MONSTER_BURST)) {
+      if (order_count >= max_orders) // No more memory
+         return -2;
+
+      order_queue[order_count] = o;
+      order_count++;
+      final_order = order_count;
+
+      return 0;
+   } else return -1;
+}
+
+int Monster::doAttack( Order o )
+{
+   log("Monster doAttack");
+   int selector = SELECT_CLOSEST;
+   Unit *target = NULL;
+   switch(o.action) {
+      case ATTACK_CLOSEST:
+         selector = SELECT_CLOSEST;
+         break;
+      case ATTACK_FARTHEST:
+         selector = SELECT_FARTHEST;
+         break;
+      case ATTACK_SMALLEST:
+         selector = SELECT_SMALLEST;
+         break;
+      case ATTACK_BIGGEST:
+         selector = SELECT_BIGGEST;
+         break;
+      default:
+         log("ERROR: doAttack called on non-attack order");
+         return -1;
+   }
+
+   target = getEnemy( x_grid, y_grid, attack_range, facing, team, selector );
+
+   if (target) {
+      log("Monster attack");
+      // TODO: Melee attack
+   }
+
+   done_attack = 1;
+   return 0;
+}
+
+/*
+int Monster::startTurn()
+{
+   if (current_order < order_count) {
+      Order o = order_queue[current_order];
+      startBasicOrder(o);
+   }
+
+   return 0;
+}
+
+int Monster::completeTurn()
+{
+
+   return 0;
+}
+
+int Monster::update( float dtf )
+{
+
+   return 0;
+}
+*/
+
+sf::Texture* Monster::getTexture()
+{
+   return SFML_TextureManager::getSingleton().getTexture( "MonsterScratch.png" );
+}
+
+Sprite *sp_monster = NULL;
+
+int Monster::draw()
+{
+   if (NULL == sp_monster) {
+      sp_monster = new Sprite(*getTexture());
+      Vector2u dim = getTexture()->getSize();
+      sp_monster->setOrigin( dim.x / 2.0, dim.y / 2.0 );
+      normalizeTo1x1( sp_monster );
+      //sp_monster->scale( 0.5, 0.5 );
+   }
+
+   sp_monster->setPosition( x_real, y_real );
+
+   int rotation;
+   if (facing == EAST) rotation = 0;
+   if (facing == SOUTH) rotation = 90;
+   if (facing == WEST) rotation = 180;
+   if (facing == NORTH) rotation = 270;
+   sp_monster->setRotation( rotation );
+
+   SFML_GlobalRenderWindow::get()->draw( *sp_monster );
+
+   return 0;
+}
+
+string Monster::descriptor()
+{
+   return "Allied Monster";
+}
+
+//////////////////////////////////////////////////////////////////////
+// Soldier
+
+// *tors
+Soldier::Soldier()
+{
+   Soldier( -1, -1, SOUTH );
+}
+
+Soldier::Soldier( int x, int y, Direction face )
+{
+   log("Creating Soldier");
+
+   type = SOLDIER_T;
+
+   alive = true;
+
+   radius = 0.2;
+
+   x_grid = x;
+   y_grid = y;
+   x_real = x + 0.5;
+   y_real = y + 0.5;
+   TurnTo(face);
+
+   health = max_health = SOLDIER_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
+
+   attack_range = 1.3;
+
+   speed = SOLDIER_BASE_SPEED * ( 1.0 - ( focus_speed * 0.02 ) );
+
+   max_orders = SOLDIER_BASE_MEMORY * ( 1.0 + ( focus_memory * 0.08 ) );
+   order_queue = new Order[max_orders];
+   clearOrders();
+
+   active = 0;
+   team = 0;
+}
+
+Soldier::~Soldier()
+{
+   if (order_queue)
+      delete order_queue;
+}
+
+// Virtual methods
+
+int Soldier::addOrder( Order o )
+{
+   if ((o.action <= SKIP) || (o.action >= SOLDIER_SWITCH_AXE && o.action <= SOLDIER_SWITCH_BOW)) {
+      if (order_count >= max_orders) // No more memory
+         return -2;
+
+      order_queue[order_count] = o;
+      order_count++;
+      final_order = order_count;
+
+      return 0;
+   } else return -1;
+}
+
+int Soldier::doAttack( Order o )
+{
+   log("Soldier doAttack");
+   int selector = SELECT_CLOSEST;
+   Unit *target = NULL;
+   switch(o.action) {
+      case ATTACK_CLOSEST:
+         selector = SELECT_CLOSEST;
+         break;
+      case ATTACK_FARTHEST:
+         selector = SELECT_FARTHEST;
+         break;
+      case ATTACK_SMALLEST:
+         selector = SELECT_SMALLEST;
+         break;
+      case ATTACK_BIGGEST:
+         selector = SELECT_BIGGEST;
+         break;
+      default:
+         log("ERROR: doAttack called on non-attack order");
+         return -1;
+   }
+
+   target = getEnemy( x_grid, y_grid, attack_range, facing, team, selector );
+
+   if (target) {
+      log("Soldier attack");
+      // TODO: Melee poison attack
+   }
+
+   done_attack = 1;
+   return 0;
+}
+
+/*
+int Soldier::startTurn()
+{
+   if (current_order < order_count) {
+      Order o = order_queue[current_order];
+      startBasicOrder(o);
+   }
+
+   return 0;
+}
+
+int Soldier::completeTurn()
+{
+
+   return 0;
+}
+
+int Soldier::update( float dtf )
+{
+
+   return 0;
+}
+*/
+
+sf::Texture* Soldier::getTexture()
+{
+   return SFML_TextureManager::getSingleton().getTexture( "SoldierScratch.png" );
+}
+
+Sprite *sp_soldier = NULL;
+
+int Soldier::draw()
+{
+   if (NULL == sp_soldier) {
+      sp_soldier = new Sprite(*getTexture());
+      Vector2u dim = getTexture()->getSize();
+      sp_soldier->setOrigin( dim.x / 2.0, dim.y / 2.0 );
+      normalizeTo1x1( sp_soldier );
+      sp_soldier->scale( 0.7, 0.7 );
+   }
+
+   sp_soldier->setPosition( x_real, y_real );
+
+   int rotation;
+   if (facing == EAST) rotation = 0;
+   if (facing == SOUTH) rotation = 90;
+   if (facing == WEST) rotation = 180;
+   if (facing == NORTH) rotation = 270;
+   sp_soldier->setRotation( rotation );
+
+   SFML_GlobalRenderWindow::get()->draw( *sp_soldier );
+
+   return 0;
+}
+
+string Soldier::descriptor()
+{
+   return "Allied Soldier";
+}
+
+
+//////////////////////////////////////////////////////////////////////
+// Worm
+
+// *tors
+Worm::Worm()
+{
+   Worm( -1, -1, SOUTH );
+}
+
+Worm::Worm( int x, int y, Direction face )
+{
+   log("Creating Worm");
+
+   type = WORM_T;
+
+   alive = true;
+
+   radius = 0.2;
+
+   x_grid = x;
+   y_grid = y;
+   x_real = x + 0.5;
+   y_real = y + 0.5;
+   TurnTo(face);
+
+   health = max_health = WORM_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
+
+   attack_range = 1.3;
+
+   speed = WORM_BASE_SPEED * ( 1.0 - ( focus_speed * 0.02 ) );
+
+   max_orders = WORM_BASE_MEMORY * ( 1.0 + ( focus_memory * 0.08 ) );
+   order_queue = new Order[max_orders];
+   clearOrders();
+
+   active = 0;
+   team = 0;
+}
+
+Worm::~Worm()
+{
+   if (order_queue)
+      delete order_queue;
+}
+
+// Virtual methods
+
+int Worm::addOrder( Order o )
+{
+   if ((o.action <= SKIP) || (o.action >= WORM_SPRINT && o.action <= WORM_TRAIL_END)) {
+      if (order_count >= max_orders) // No more memory
+         return -2;
+
+      order_queue[order_count] = o;
+      order_count++;
+      final_order = order_count;
+
+      return 0;
+   } else return -1;
+}
+
+int Worm::doAttack( Order o )
+{
+   log("Worm doAttack");
+   int selector = SELECT_CLOSEST;
+   Unit *target = NULL;
+   switch(o.action) {
+      case ATTACK_CLOSEST:
+         selector = SELECT_CLOSEST;
+         break;
+      case ATTACK_FARTHEST:
+         selector = SELECT_FARTHEST;
+         break;
+      case ATTACK_SMALLEST:
+         selector = SELECT_SMALLEST;
+         break;
+      case ATTACK_BIGGEST:
+         selector = SELECT_BIGGEST;
+         break;
+      default:
+         log("ERROR: doAttack called on non-attack order");
+         return -1;
+   }
+
+   target = getEnemy( x_grid, y_grid, attack_range, facing, team, selector );
+
+   if (target) {
+      log("Bug attack");
+      // TODO: Melee poison attack
+   }
+
+   done_attack = 1;
+   return 0;
+}
+
+/*
+int Worm::startTurn()
+{
+   if (current_order < order_count) {
+      Order o = order_queue[current_order];
+      startBasicOrder(o);
+   }
+
+   return 0;
+}
+
+int Worm::completeTurn()
+{
+
+   return 0;
+}
+
+int Worm::update( float dtf )
+{
+
+   return 0;
+}
+*/
+
+sf::Texture* Worm::getTexture()
+{
+   return SFML_TextureManager::getSingleton().getTexture( "WormScratch.png" );
+}
+
+Sprite *sp_worm = NULL;
+
+int Worm::draw()
+{
+   if (NULL == sp_worm) {
+      sp_worm = new Sprite(*getTexture());
+      Vector2u dim = getTexture()->getSize();
+      sp_worm->setOrigin( dim.x / 2.0, dim.y / 2.0 );
+      normalizeTo1x1( sp_worm );
+      sp_worm->scale( 0.4, 0.4 );
+   }
+
+   sp_worm->setPosition( x_real, y_real );
+
+   int rotation;
+   if (facing == EAST) rotation = 0;
+   if (facing == SOUTH) rotation = 90;
+   if (facing == WEST) rotation = 180;
+   if (facing == NORTH) rotation = 270;
+   sp_worm->setRotation( rotation );
+
+   SFML_GlobalRenderWindow::get()->draw( *sp_worm );
+
+   return 0;
+}
+
+string Worm::descriptor()
+{
+   return "Allied Worm";
+}
+
+//////////////////////////////////////////////////////////////////////
+// Bird
+
+// *tors
+Bird::Bird()
+{
+   Bird( -1, -1, SOUTH );
+}
+
+Bird::Bird( int x, int y, Direction face )
+{
+   log("Creating Bird");
+
+   type = BIRD_T;
+
+   alive = true;
+
+   radius = 0.2;
+
+   x_grid = x;
+   y_grid = y;
+   x_real = x + 0.5;
+   y_real = y + 0.5;
+   TurnTo(face);
+
+   health = max_health = BIRD_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
+
+   attack_range = 1.3;
+
+   speed = BIRD_BASE_SPEED * ( 1.0 - ( focus_speed * 0.02 ) );
+
+   max_orders = BIRD_BASE_MEMORY * ( 1.0 + ( focus_memory * 0.08 ) );
+   order_queue = new Order[max_orders];
+   clearOrders();
+
+   active = 0;
+   team = 0;
+}
+
+Bird::~Bird()
+{
+   if (order_queue)
+      delete order_queue;
+}
+
+// Virtual methods
+
+int Bird::addOrder( Order o )
+{
+   if ((o.action <= SKIP) || (o.action >= BIRD_MEMORIZE_START && o.action <= BIRD_FLY_OFF)) {
+      if (order_count >= max_orders) // No more memory
+         return -2;
+
+      order_queue[order_count] = o;
+      order_count++;
+      final_order = order_count;
+
+      return 0;
+   } else return -1;
+}
+
+int Bird::doAttack( Order o )
+{
+   log("Bird doAttack");
+   int selector = SELECT_CLOSEST;
+   Unit *target = NULL;
+   switch(o.action) {
+      case ATTACK_CLOSEST:
+         selector = SELECT_CLOSEST;
+         break;
+      case ATTACK_FARTHEST:
+         selector = SELECT_FARTHEST;
+         break;
+      case ATTACK_SMALLEST:
+         selector = SELECT_SMALLEST;
+         break;
+      case ATTACK_BIGGEST:
+         selector = SELECT_BIGGEST;
+         break;
+      default:
+         log("ERROR: doAttack called on non-attack order");
+         return -1;
+   }
+
+   target = getEnemy( x_grid, y_grid, attack_range, facing, team, selector );
+
+   if (target) {
+      log("Bird attack");
+      // TODO: Melee poison attack
+   }
+
+   done_attack = 1;
+   return 0;
+}
+
+/*
+int Bird::startTurn()
+{
+   if (current_order < order_count) {
+      Order o = order_queue[current_order];
+      startBasicOrder(o);
+   }
+
+   return 0;
+}
+
+int Bird::completeTurn()
+{
+
+   return 0;
+}
+
+int Bird::update( float dtf )
+{
+
+   return 0;
+}
+*/
+
+sf::Texture* Bird::getTexture()
+{
+   return SFML_TextureManager::getSingleton().getTexture( "BirdScratch.png" );
+}
+
+Sprite *sp_bird = NULL;
+
+int Bird::draw()
+{
+   if (NULL == sp_bird) {
+      sp_bird = new Sprite(*getTexture());
+      Vector2u dim = getTexture()->getSize();
+      sp_bird->setOrigin( dim.x / 2.0, dim.y / 2.0 );
+      normalizeTo1x1( sp_bird );
+      sp_bird->scale( 0.8, 0.8 );
+   }
+
+   sp_bird->setPosition( x_real, y_real );
+
+   int rotation;
+   if (facing == EAST) rotation = 0;
+   if (facing == SOUTH) rotation = 90;
+   if (facing == WEST) rotation = 180;
+   if (facing == NORTH) rotation = 270;
+   sp_bird->setRotation( rotation );
+
+   SFML_GlobalRenderWindow::get()->draw( *sp_bird );
+
+   return 0;
+}
+
+string Bird::descriptor()
+{
+   return "Allied Bird";
+} 
+
+//////////////////////////////////////////////////////////////////////
 // Bug
 
 // *tors
@@ -583,7 +1224,7 @@ Bug::~Bug()
 
 int Bug::addOrder( Order o )
 {
-   if ((o.action <= WAIT) || (o.action >= MAG_MEDITATE)) {
+   if ((o.action <= SKIP) || (o.action >= BUG_MEDITATE && o.action <= BUG_CAST_WARP_TWO)) {
       if (order_count >= max_orders) // No more memory
          return -2;
 

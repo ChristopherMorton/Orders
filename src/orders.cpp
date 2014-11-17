@@ -76,6 +76,9 @@ void Order::logSelf()
       case TURN_WEST:
          s << "TURN_WEST";
          break;
+      case FOLLOW_PATH:
+         s << "FOLLOW_PATH";
+         break;
       case ATTACK_CLOSEST:
          s << "ATTACK_CLOSEST";
          break;
@@ -100,8 +103,149 @@ void Order::logSelf()
       case WAIT:
          s << "WAIT";
          break;
-      case MAG_MEDITATE:
-         s << "MAG_MEDITATE";
+      case SKIP:
+         s << "SKIP";
+         break;
+      case MONSTER_GUARD:
+         s << "MONSTER_GUARD";
+         break;
+      case MONSTER_BURST:
+         s << "MONSTER_BURST";
+         break;
+      case SOLDIER_SWITCH_AXE:
+         s << "SOLDIER_SWITCH_AXE";
+         break;
+      case SOLDIER_SWITCH_LANCE:
+         s << "SOLDIER_SWITCH_LANCE";
+         break;
+      case SOLDIER_SWITCH_BOW:
+         s << "SOLDIER_SWITCH_BOW";
+         break;
+      case WORM_SPRINT:
+         s << "WORM_SPRINT";
+         break;
+      case WORM_TRAIL_START:
+         s << "WORM_TRAIL_START";
+         break;
+      case WORM_TRAIL_END:
+         s << "WORM_TRAIL_END";
+         break;
+      case BIRD_MEMORIZE_START:
+         s << "BIRD_MEMORIZE_START";
+         break;
+      case BIRD_MEMORIZE_END:
+         s << "BIRD_MEMORIZE_END";
+         break;
+      case BIRD_SHOUT:
+         s << "BIRD_SHOUT";
+         break;
+      case BIRD_FLY_ON:
+         s << "BIRD_FLY_ON";
+         break;
+      case BIRD_FLY_OFF:
+         s << "BIRD_FLY_OFF";
+         break;
+      case BUG_MEDITATE:
+         s << "BUG_MEDITATE";
+         break;
+      case BUG_CAST_ZAP:
+         s << "BUG_CAST_ZAP";
+         break;
+      case BUG_CAST_SUNDER:
+         s << "BUG_CAST_SUNDER";
+         break;
+      case BUG_CAST_HEAL:
+         s << "BUG_CAST_HEAL";
+         break;
+      case BUG_CAST_WARP_ONE:
+         s << "BUG_CAST_WARP_ONE";
+         break;
+      case BUG_CAST_WARP_TWO:
+         s << "BUG_CAST_WARP_TWO";
+         break;
+      case PL_ALERT_ALL:
+         s << "PL_ALERT_ALL";
+         break;
+      case PL_ALERT_TEAM:
+         s << "PL_ALERT_TEAM";
+         break;
+      case PL_ALERT_MONSTERS:
+         s << "PL_ALERT_MONSTERS";
+         break;
+      case PL_ALERT_SOLDIERS:
+         s << "PL_ALERT_SOLDIERS";
+         break;
+      case PL_ALERT_WORMS:
+         s << "PL_ALERT_WORMS";
+         break;
+      case PL_ALERT_BIRDS:
+         s << "PL_ALERT_BIRDS";
+         break;
+      case PL_ALERT_BUGS:
+         s << "PL_ALERT_BUGS";
+         break;
+      case PL_CMD_GO:
+         s << "PL_CMD_GO";
+         break;
+      case PL_CMD_GO_ALL:
+         s << "PL_CMD_GO_ALL";
+         break;
+      case PL_CMD_GO_TEAM:
+         s << "PL_CMD_GO_TEAM";
+         break;
+      case PL_CMD_GO_MONSTERS:
+         s << "PL_CMD_GO_MONSTERS";
+         break;
+      case PL_CMD_GO_SOLDIERS:
+         s << "PL_CMD_GO_SOLDIERS";
+         break;
+      case PL_CMD_GO_WORMS:
+         s << "PL_CMD_GO_WORMS";
+         break;
+      case PL_CMD_GO_BIRDS:
+         s << "PL_CMD_GO_BIRDS";
+         break;
+      case PL_CMD_GO_BUGS:
+         s << "PL_CMD_GO_BUGS";
+         break;
+      case PL_CAST_HEAL:
+         s << "PL_CAST_HEAL";
+         break;
+      case PL_CAST_LIGHTNING:
+         s << "PL_CAST_LIGHTNING";
+         break;
+      case PL_CAST_QUAKE:
+         s << "PL_CAST_QUAKE";
+         break;
+      case PL_CAST_TIMELOCK:
+         s << "PL_CAST_TIMELOCK";
+         break;
+      case PL_CAST_SCRY:
+         s << "PL_CAST_SCRY";
+         break;
+      case PL_CAST_TELEPATHY:
+         s << "PL_CAST_TELEPATHY";
+         break;
+      case PL_END_TELEPATHY:
+         s << "PL_END_TELEPATHY";
+         break;
+      case SUMMON_MONSTER:
+         s << "SUMMON_MONSTER";
+         break;
+      case SUMMON_SOLDIER:
+         s << "SUMMON_SOLDIER";
+         break;
+      case SUMMON_WORM:
+         s << "SUMMON_WORM";
+         break;
+      case SUMMON_BIRD:
+         s << "SUMMON_BIRD";
+         break;
+      case SUMMON_BUG:
+         s << "SUMMON_BUG";
+         break;
+      case FAILED_SUMMON:
+         s << "FAILED_SUMMON";
          break;
       case NUM_ACTIONS:
          s << "NUM_ACTIONS";
@@ -248,9 +392,9 @@ Texture *getOrderTexture( Order o )
          base_tex = t_manager.getTexture( "SummonBug.png" );
          break;
 
-      case MAG_MEDITATE:
       case FAILED_SUMMON:
       case SKIP:
+      default:
          base_tex = NULL;
 
    }
@@ -272,7 +416,7 @@ void drawOrder( Order o, int x, int y, int size )
    SFML_GlobalRenderWindow::get()->draw( sp_order );
 
    // Count
-   if (o.count != 1)
+   if (o.count != 1 && o.action < PL_ALERT_ALL)
    {
 
       Text count_text;
@@ -299,7 +443,7 @@ void drawOrder( Order o, int x, int y, int size )
    }
 
    // Condition
-   if (o.condition != TRUE) {
+   if (o.condition != TRUE && o.action < PL_ALERT_ALL) {
 
    }
 }

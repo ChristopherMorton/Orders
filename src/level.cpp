@@ -427,18 +427,27 @@ Unit* getEnemy( int x, int y, float range, Direction dir, int my_team, int selec
                // Compare based on selector
                if (NULL == result) {
                   result = u;
+                  result_r_squared = u_squared;
                } else if (selector == SELECT_CLOSEST) {
-                  if (u_squared < result_r_squared)
+                  if (u_squared < result_r_squared) {
                      result = u;
+                     result_r_squared = u_squared;
+                  }
                } else if (selector == SELECT_FARTHEST) {
-                  if (u_squared > result_r_squared)
+                  if (u_squared > result_r_squared) {
                      result = u;
+                     result_r_squared = u_squared;
+                  }
                } else if (selector == SELECT_SMALLEST) {
-                  if (u->health < result->health)
+                  if (u->health < result->health) {
                      result = u;
+                     result_r_squared = u_squared;
+                  }
                } else if (selector == SELECT_BIGGEST) {
-                  if (u->health > result->health)
+                  if (u->health > result->health) {
                      result = u;
+                     result_r_squared = u_squared;
+                  }
                }
             }
          }
@@ -454,14 +463,14 @@ Unit* getEnemy( int x, int y, float range, Direction dir, int my_team, int selec
 bool canMove( int x, int y, int from_x, int from_y )
 {
    if (x < 0 || y < 0 || x >= level_dim_x || y >= level_dim_y)
-      return true;
+      return false;
 
    // TODO: terrain, building, unit collision
 
    // Unit collision - Check units in all adjacent (+2)locationBlocked squares for others
    // moving into the same location.  Only the BIGGEST succeeds in moving.
 
-   return false;
+   return true;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -565,6 +574,14 @@ int completeSummon( Order o )
          break;
    }
    */
+   if (o.action == SUMMON_MONSTER)
+      u = new Monster( x, y, SOUTH );
+   if (o.action == SUMMON_SOLDIER)
+      u = new Soldier( x, y, SOUTH );
+   if (o.action == SUMMON_WORM)
+      u = new Worm( x, y, SOUTH );
+   if (o.action == SUMMON_BIRD)
+      u = new Bird( x, y, SOUTH );
    if (o.action == SUMMON_BUG)
       u = new Bug( x, y, SOUTH );
 
@@ -878,18 +895,14 @@ int loadLevel( int level_id )
    {
       base_terrain = BASE_TER_GRASS;
       initGrids(15,15);
-      GRID_AT(terrain_grid,6,5) = TER_TREE1;
-      GRID_AT(terrain_grid,2,2) = TER_TREE2;
-      GRID_AT(terrain_grid,11,11) = TER_TREE2;
       setView( 11.9, Vector2f( 6.0, 6.0 ) );
 
-      Unit *bug = new Bug( 4, 4, SOUTH );
-      addUnit( bug );
+      addUnit( new TargetPractice( 9, 1, SOUTH ) );
+      addUnit( new TargetPractice( 9, 3, SOUTH ) );
+      addUnit( new TargetPractice( 9, 5, SOUTH ) );
+      addUnit( new TargetPractice( 9, 7, SOUTH ) );
 
-      Unit *targetpractice = new TargetPractice( 2, 3, SOUTH );
-      addUnit( targetpractice );
-
-      player = Player::initPlayer( 5, 2, SOUTH );
+      player = Player::initPlayer( 1, 4, EAST );
       addPlayer();
    }
 
@@ -1091,10 +1104,28 @@ void rightClickMenuClose()
 
 void rightClickMenuChoose()
 {
+   Order o( SKIP, TRUE, r_click_menu_x_grid );
+   o.iteration = r_click_menu_y_grid;
+
    switch (r_click_menu_selection) {
+      case -1:
+         o.action = SUMMON_MONSTER;
+         player->addOrder( o ); 
+         break;
+      case -2:
+         o.action = SUMMON_SOLDIER;
+         player->addOrder( o ); 
+         break;
+      case -3:
+         o.action = SUMMON_WORM;
+         player->addOrder( o ); 
+         break;
+      case -4:
+         o.action = SUMMON_BIRD;
+         player->addOrder( o ); 
+         break;
       case -5:
-         Order o( SUMMON_BUG, TRUE, r_click_menu_x_grid);
-         o.iteration = r_click_menu_y_grid;
+         o.action = SUMMON_BUG;
          player->addOrder( o ); 
          break;
    }

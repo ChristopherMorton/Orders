@@ -123,21 +123,97 @@ public:
 
 class Monster : public Unit
 {
+private:
+   Monster(); // Disallowed 
+
+public:
+   Monster( int grid_x, int grid_y, Direction face );
+
+   virtual int addOrder( Order o );
+
+   virtual int doAttack( Order o );
+
+   virtual std::string descriptor();
+
+   //virtual int startTurn();
+   //virtual int completeTurn();
+   //virtual int update( float dtf );
+   virtual sf::Texture* getTexture();
+   virtual int draw();
+
+   virtual ~Monster();
 
 };
 
 class Soldier : public Unit
 {
+private:
+   Soldier(); // Disallowed 
+
+public:
+   Soldier( int grid_x, int grid_y, Direction face );
+
+   virtual int addOrder( Order o );
+
+   virtual int doAttack( Order o );
+
+   virtual std::string descriptor();
+
+   //virtual int startTurn();
+   //virtual int completeTurn();
+   //virtual int update( float dtf );
+   virtual sf::Texture* getTexture();
+   virtual int draw();
+
+   virtual ~Soldier();
 
 };
 
 class Worm : public Unit
 {
+private:
+   Worm(); // Disallowed 
+
+public:
+   Worm( int grid_x, int grid_y, Direction face );
+
+   virtual int addOrder( Order o );
+
+   virtual int doAttack( Order o );
+
+   virtual std::string descriptor();
+
+   //virtual int startTurn();
+   //virtual int completeTurn();
+   //virtual int update( float dtf );
+   virtual sf::Texture* getTexture();
+   virtual int draw();
+
+   virtual ~Worm();
 
 };
 
 class Bird : public Unit
 {
+private:
+   Bird(); // Disallowed 
+
+public:
+   Bird( int grid_x, int grid_y, Direction face );
+
+   virtual int addOrder( Order o );
+
+   virtual int doAttack( Order o );
+
+   virtual std::string descriptor();
+
+   //virtual int startTurn();
+   //virtual int completeTurn();
+   //virtual int update( float dtf );
+   virtual sf::Texture* getTexture();
+   virtual int draw();
+
+   virtual ~Bird();
 
 };
 

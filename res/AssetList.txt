@@ -5,6 +5,11 @@ IMAGE GrayRock.png
 IMAGE BasicTree1.png
 IMAGE BasicTree2.png
 IMAGE TargetPractice.png
+// Unit Scratch
+IMAGE MonsterScratch.png
+IMAGE SoldierScratch.png
+IMAGE WormScratch.png
+IMAGE BirdScratch.png
 IMAGE BugScratch.png
 // Map things
 IMAGE MapScratch.png

@@ -15,6 +15,8 @@ namespace sum
       TURN_SOUTH,
       TURN_WEST,
 
+      FOLLOW_PATH,
+
       // Basic Fighting
       ATTACK_CLOSEST,
       ATTACK_FARTHEST,
@@ -32,8 +34,34 @@ namespace sum
 
       // Unit specific
 
-      // Magician
-      MAG_MEDITATE,
+      // Monster
+      MONSTER_GUARD,
+      MONSTER_BURST,
+
+      // Soldier
+      SOLDIER_SWITCH_AXE,
+      SOLDIER_SWITCH_LANCE,
+      SOLDIER_SWITCH_BOW,
+
+      // Worm
+      WORM_SPRINT,
+      WORM_TRAIL_START,
+      WORM_TRAIL_END,
+
+      // Bird
+      BIRD_MEMORIZE_START,
+      BIRD_MEMORIZE_END,
+      BIRD_SHOUT,
+      BIRD_FLY_ON,
+      BIRD_FLY_OFF,
+
+      // Bug
+      BUG_MEDITATE,
+      BUG_CAST_ZAP,
+      BUG_CAST_SUNDER,
+      BUG_CAST_HEAL,
+      BUG_CAST_WARP_ONE,
+      BUG_CAST_WARP_TWO,
 
       // Player Commands
       // Alert
