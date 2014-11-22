@@ -1,4 +1,4 @@
-set(APP_FILES app.cpp map.cpp level.cpp units.cpp projectile.cpp orders.cpp focus.cpp savestate.cpp shutdown.cpp util.cpp config.cpp log.cpp)
+set(APP_FILES app.cpp map.cpp level.cpp units.cpp projectile.cpp orders.cpp focus.cpp savestate.cpp animation.cpp shutdown.cpp util.cpp config.cpp log.cpp)
 
 add_executable(Summoner ${APP_FILES})
 

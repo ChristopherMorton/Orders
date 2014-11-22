@@ -303,7 +303,6 @@ bool blocksVision( int x, int y, Direction ew, Direction ns )
 
 int calculateLineVision( int start_x, int start_y, int end_x, int end_y, float range_squared, int flags )
 {
-   log("Calculating line");
    float dydx;
    if (start_x == end_x)
       dydx = 1000000000.0;
@@ -397,7 +396,6 @@ int calculateLineVision( int start_x, int start_y, int end_x, int end_y, float r
 
 int calculateUnitVision( Unit *unit )
 {
-   log("Vision calculation START");
    int x, y;
    if (unit && unit->team == 0) { // Allied unit
 
@@ -426,7 +424,6 @@ int calculateUnitVision( Unit *unit )
          calculateLineVision( unit->x_grid, unit->y_grid, v_x_max, y, vision_range_squared, 0 );
       }
    }
-   log("Vision calculation END");
 
    return 0;
 }

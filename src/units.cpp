@@ -3,6 +3,7 @@
 #include "focus.h"
 #include "util.h"
 #include "projectile.h"
+#include "animation.h"
 #include "clock.h"
 #include "log.h"
 
@@ -406,6 +407,18 @@ string Unit::descriptor()
 //////////////////////////////////////////////////////////////////////
 // Player ---
 
+// Static
+
+Player *thePlayer = NULL;
+
+Animation anim_idle;
+
+void initPlayerAnimations()
+{
+   Texture *t = SFML_TextureManager::getSingleton().getTexture( "BugScratchWiggleAnimation.png" );
+   anim_idle.load( t, 128, 128, 3, 1000 );
+}
+
 // Private
 Player::Player()
 { }
@@ -414,8 +427,6 @@ Player::~Player()
 {
    type = PLAYER_T;
 }
-
-Player *thePlayer = NULL;
 
 Player* Player::initPlayer( int grid_x, int grid_y, Direction facing )
 {
@@ -448,6 +459,8 @@ int Player::init( int x, int y, Direction face )
    max_orders = PLAYER_MAX_ORDERS;
    order_queue = new Order[max_orders];
    clearOrders();
+
+   initPlayerAnimations();
 
    active = 0;
    team = 0; 
@@ -532,19 +545,21 @@ sf::Texture* Player::getTexture()
    return SFML_TextureManager::getSingleton().getTexture( "BugScratch.png" );
 }
 
-Sprite *sp_player = NULL;
-
 int Player::draw()
-{
-   if (NULL == sp_player) {
-      sp_player = new Sprite(*getTexture());
-      Vector2u dim = getTexture()->getSize();
-      sp_player->setOrigin( dim.x / 2.0, dim.y / 2.0 );
-      normalizeTo1x1( sp_player );
-   }
+{ 
+   Sprite *sp_player = anim_idle.createSprite( (int)(progress * 1000) );
+   if (NULL == sp_player) return -1;
+
+   Vector2u dim (anim_idle.image_size_x, anim_idle.image_size_y);
+   sp_player->setOrigin( dim.x / 2.0, dim.y / 2.0 );
+   float scale_x = 1.0 / dim.x;
+   float scale_y = 1.0 / dim.y;
+   sp_player->setScale( scale_x, scale_y );
 
    sp_player->setPosition( x_real, y_real );
    SFML_GlobalRenderWindow::get()->draw( *sp_player );
+
+   delete sp_player;
 
    return 0;
 }
