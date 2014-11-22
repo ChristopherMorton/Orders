@@ -30,7 +30,7 @@ namespace sum
 {
 
 ///////////////////////////////////////////////////////////////////////////////
-// Data
+// Data ---
 
 Sprite *s_map = NULL;
 View *map_view = NULL;
@@ -65,7 +65,7 @@ Sprite *sp_star_empty_left = NULL;
 Sprite *sp_star_empty_right = NULL;
 
 ///////////////////////////////////////////////////////////////////////////////
-// View
+// View ---
 
 Vector2f coordsWindowToMapView( int window_x, int window_y )
 {
@@ -126,7 +126,7 @@ int selectMapObject( Vector2f coords )
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// API 
+// API ---
 
 void initMapLevels()
 {
@@ -185,8 +185,8 @@ void initMapGui()
 
    b_map_to_options = new IMEdgeTextButton();
    b_map_to_options->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
-   b_map_to_options->setCornerAllTextures( texture_manager->getTexture( "UICorner3px.png" ) );
-   b_map_to_options->setEdgeAllTextures( texture_manager->getTexture( "UIEdge3px.png" ) );
+   b_map_to_options->setCornerAllTextures( texture_manager->getTexture( "UICornerBrown3px.png" ) );
+   b_map_to_options->setEdgeAllTextures( texture_manager->getTexture( "UIEdgeBrown3px.png" ) );
    b_map_to_options->setEdgeWidth( 3 );
    b_map_to_options->setText( &s_map_to_options );
    b_map_to_options->setFont( menu_font );
@@ -195,8 +195,8 @@ void initMapGui()
 
    b_map_to_focus = new IMEdgeTextButton();
    b_map_to_focus->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
-   b_map_to_focus->setCornerAllTextures( texture_manager->getTexture( "UICorner3px.png" ) );
-   b_map_to_focus->setEdgeAllTextures( texture_manager->getTexture( "UIEdge3px.png" ) );
+   b_map_to_focus->setCornerAllTextures( texture_manager->getTexture( "UICornerBrown3px.png" ) );
+   b_map_to_focus->setEdgeAllTextures( texture_manager->getTexture( "UIEdgeBrown3px.png" ) );
    b_map_to_focus->setEdgeWidth( 3 );
    b_map_to_focus->setText( &s_map_to_focus );
    b_map_to_focus->setFont( menu_font );
@@ -205,8 +205,8 @@ void initMapGui()
 
    b_map_to_presets = new IMEdgeTextButton();
    b_map_to_presets->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
-   b_map_to_presets->setCornerAllTextures( texture_manager->getTexture( "UICorner3px.png" ) );
-   b_map_to_presets->setEdgeAllTextures( texture_manager->getTexture( "UIEdge3px.png" ) );
+   b_map_to_presets->setCornerAllTextures( texture_manager->getTexture( "UICornerBrown3px.png" ) );
+   b_map_to_presets->setEdgeAllTextures( texture_manager->getTexture( "UIEdgeBrown3px.png" ) );
    b_map_to_presets->setEdgeWidth( 3 );
    b_map_to_presets->setText( &s_map_to_presets );
    b_map_to_presets->setFont( menu_font );
@@ -215,8 +215,8 @@ void initMapGui()
 
    b_map_start_level = new IMEdgeTextButton();
    b_map_start_level->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
-   b_map_start_level->setCornerAllTextures( texture_manager->getTexture( "UICorner3px.png" ) );
-   b_map_start_level->setEdgeAllTextures( texture_manager->getTexture( "UIEdge3px.png" ) );
+   b_map_start_level->setCornerAllTextures( texture_manager->getTexture( "UICornerBrown3px.png" ) );
+   b_map_start_level->setEdgeAllTextures( texture_manager->getTexture( "UIEdgeBrown3px.png" ) );
    b_map_start_level->setEdgeWidth( 3 );
    b_map_start_level->setText( &s_map_start_level );
    b_map_start_level->setFont( menu_font );
@@ -388,7 +388,7 @@ int drawMap( int dt )
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Listener
+// Listener ---
 
 extern bool left_mouse_down;
 extern int left_mouse_down_time;

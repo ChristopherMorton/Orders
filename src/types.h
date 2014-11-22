@@ -26,6 +26,14 @@ typedef enum {
    NUM_TERRAINS
 } Terrain;
 
+typedef enum {
+   VIS_NONE,
+   VIS_OFFMAP,
+   VIS_NEVER_SEEN,
+   VIS_SEEN_BEFORE,
+   VIS_VISIBLE
+} Vision;
+
 };
 
 #endif 

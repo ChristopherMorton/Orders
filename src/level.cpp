@@ -37,7 +37,7 @@ using namespace std;
 namespace sum {
 
 //////////////////////////////////////////////////////////////////////
-// Global app-state variables
+// Global app-state variables ---
 
 View *level_view;
 float view_rel_x_to_y;
@@ -45,12 +45,12 @@ float view_rel_x_to_y;
 int turn, turn_progress;
 
 //////////////////////////////////////////////////////////////////////
-// Some definitions
+// Some definitions ---
 
 const float c_min_zoom_x = 10;
 
 //////////////////////////////////////////////////////////////////////
-// Level Data
+// Level Data ---
 
 int level_init = 0;
 
@@ -59,6 +59,7 @@ bool between_turns = false;
 int level_num = -1;
 int level_dim_x = -1;
 int level_dim_y = -1;
+float level_fog_dim = 0;
 
 Sprite **terrain_sprites;
 
@@ -73,13 +74,17 @@ Unit** unit_grid;
 list<Unit*> unit_list;
 list<Projectile*> projectile_list;
 
+// Vision
+Vision* vision_grid;
+bool vision_enabled;
+
 list<Unit*> listening_units;
 Unit *player = NULL;
 
 Unit *selected_unit;
 
 //////////////////////////////////////////////////////////////////////
-// UI Data
+// UI Data ---
 
 int left_mouse_down = 0;
 int left_mouse_down_time = 0;
@@ -88,7 +93,7 @@ int right_mouse_down = 0;
 int right_mouse_down_time = 0;
 
 //////////////////////////////////////////////////////////////////////
-// Utility
+// Utility ---
 
 #define GRID_AT(GRID,X,Y) (GRID[((X) + ((Y) * level_dim_x))])
 
@@ -103,13 +108,13 @@ Vector2f coordsWindowToView( int window_x, int window_y )
    return Vector2f( view_x, view_y );
 }
 
-Vector2u coordsWindowToLevel( int window_x, int window_y )
+Vector2i coordsWindowToLevel( int window_x, int window_y )
 {
    Vector2f view_coords = coordsWindowToView( window_x, window_y );
 
-   int x = (int)view_coords.x,
-       y = (int)view_coords.y;
-   return Vector2u(x, y);
+   int x = (view_coords.x < 0)?((int)view_coords.x - 1):(int)view_coords.x,
+       y = (view_coords.y < 0)?((int)view_coords.y - 1):(int)view_coords.y;
+   return Vector2i(x, y);
 }
 
 Vector2u coordsViewToWindow( float view_x, float view_y )
@@ -123,7 +128,7 @@ Vector2u coordsViewToWindow( float view_x, float view_y )
 }
 
 //////////////////////////////////////////////////////////////////////
-// View management
+// View management ---
 
 int setView( float x_size, Vector2f center )
 {
@@ -136,21 +141,22 @@ int setView( float x_size, Vector2f center )
          y_top = center.y + (y_size / 2);
 
    // Don't need to check for: top AND bottom overlap -> failure
-   if (x_base < 0)
-      x_add = -x_base;
+   if (x_base < -level_fog_dim)
+      x_add = -(x_base + level_fog_dim);
 
-   if (x_top > (level_dim_x ))
-      x_add = (level_dim_x ) - x_top;
+   if (x_top > (level_dim_x + level_fog_dim))
+      x_add = (level_dim_x + level_fog_dim) - x_top;
 
-   if (y_base < 0)
-      y_add = -y_base;
+   if (y_base < -level_fog_dim)
+      y_add = -(y_base + level_fog_dim);
 
-   if (y_top > (level_dim_y ))
-      y_add = (level_dim_y ) - y_top;
+   if (y_top > (level_dim_y + level_fog_dim))
+      y_add = (level_dim_y + level_fog_dim) - y_top;
 
    center.x += x_add;
    center.y += y_add;
 
+   level_fog_dim = (y_size / 4);
    level_view->setSize( x_size, y_size );
    level_view->setCenter( center.x, center.y );
 
@@ -165,34 +171,9 @@ int shiftView( float x_shift, float y_shift )
    Vector2f new_center (old_center.x + x_shift, old_center.y + y_shift);
 
    return setView( old_size.x, new_center );
-
-   float x_add = 0, y_add = 0;
-   float x_base = new_center.x - (old_size.x / 2.0);
-   float y_base = new_center.y - (old_size.y / 2.0);
-   float x_top = new_center.x + (old_size.x / 2.0);
-   float y_top = new_center.y + (old_size.y / 2.0);
-
-   // Don't need to check for: top AND bottom overlap -> failure
-   if (x_base < 0)
-      x_add = -x_base;
-
-   if (x_top > (level_dim_x ))
-      x_add = (level_dim_x ) - x_top;
-
-   if (y_base < 0)
-      y_add = -y_base;
-
-   if (y_top > (level_dim_y ))
-      y_add = (level_dim_y ) - y_top;
-
-   new_center.x += x_add;
-   new_center.y += y_add;
-   level_view->setCenter( new_center );
-
-   return 0;
 }
 
-// Positive is zoom ***, negative is zoom **
+// Positive is zoom in negative is zoom out
 int zoomView( int ticks, Vector2f zoom_around )
 {
    float zoom_val = pow(1.5, -ticks);
@@ -202,12 +183,12 @@ int zoomView( int ticks, Vector2f zoom_around )
    Vector2f new_size (old_size*zoom_val);
 
    // Fit map
-   if (new_size.x > level_dim_x) {
-      float x_fit = level_dim_x / new_size.x;
+   if (new_size.x > (level_dim_x + (2*level_fog_dim))) {
+      float x_fit = (level_dim_x + (2*level_fog_dim)) / new_size.x;
       new_size *= x_fit;
    }
-   if (new_size.y > level_dim_y) {
-      float y_fit = level_dim_y / new_size.y;
+   if (new_size.y > (level_dim_y + (2*level_fog_dim))) {
+      float y_fit = (level_dim_y + (2*level_fog_dim)) / new_size.y;
       new_size *= y_fit;
    }
 
@@ -218,60 +199,10 @@ int zoomView( int ticks, Vector2f zoom_around )
    }
 
    return setView( new_size.x, new_center );
-
-   float x_add = 0, y_add = 0;
-   float x_base = new_center.x - (zoom_val * old_size.x / 2.0);
-   float y_base = new_center.y - (zoom_val * old_size.y / 2.0);
-   float x_top = new_center.x + (zoom_val * old_size.x / 2.0);
-   float y_top = new_center.y + (zoom_val * old_size.y / 2.0);
-
-   // Check each edge
-   if (x_base < 0) {
-      x_add = -x_base;
-      x_base = 0;
-      x_top -= x_base;
-   }
-
-   if (x_top > (level_dim_x )) {
-      if (x_add != 0) // In other words, if can't zoom out that much
-         return -1;
-      else {
-         x_add = (level_dim_x ) - x_top;
-         x_top = (level_dim_x );
-         x_base += x_add;
-         if (x_base < 0)
-            return -1;
-      }
-   }
-
-   if (y_base < 0) {
-      y_add = -y_base;
-      y_base = 0;
-      y_top -= y_base;
-   }
-
-   if (y_top > (level_dim_y )) {
-      if (y_add != 0) // In other words, if can't zoom out that much
-         return -1;
-      else {
-         y_add = (level_dim_y ) - y_top;
-         y_top = (level_dim_y );
-         y_base += y_add;
-         if (y_base < 0)
-            return -1;
-      }
-   }
-
-   level_view->setCenter( new_center.x + x_add, new_center.y + y_add ); 
-
-   level_view->setSize( x_top - x_base, y_top - y_base );
-   //level_view->zoom( zoom_val );
-   
-   return 0;
 }
 
 //////////////////////////////////////////////////////////////////////
-// Adding stuff
+// Adding stuff ---
 
 int removeUnit (list<Unit*>::iterator it)
 {
@@ -358,7 +289,174 @@ int addProjectile( Projectile_Type t, int team, float x, float y, float speed, U
 }
 
 //////////////////////////////////////////////////////////////////////
-// Targetting
+// Vision ---
+
+bool blocksVision( int x, int y, Direction ew, Direction ns )
+{
+   Terrain t = GRID_AT(terrain_grid,x,y);
+   if (t == TER_TREE1 || t == TER_TREE2)
+      return true;
+
+   // TODO: everything
+   return false;
+}
+
+int calculateLineVision( int start_x, int start_y, int end_x, int end_y, float range_squared, int flags )
+{
+   log("Calculating line");
+   float dydx;
+   if (start_x == end_x)
+      dydx = 1000000000.0;
+   else
+      dydx = ((float)(start_y - end_y)) / ((float)(start_x - end_x));
+
+   int x = start_x, y = start_y;
+
+   int dx, dy;
+
+   if (end_x < start_x) dx = -1;
+   else if (end_x > start_x) dx = 1;
+   else dx = 0;
+
+   if (end_y < start_y) dy = -1;
+   else if (end_y > start_y) dy = 1;
+   else dy = 0;
+
+   float calculator = 0;
+
+   Direction dir1, dir2;
+   if (dx == -1) dir1 = WEST;
+   else if (dx == 1) dir1 = EAST;
+   else dir1 = ALL_DIR;
+
+   if (dy == -1) dir2 = SOUTH;
+   else if (dy == 1) dir2 = NORTH;
+   else dir2 = ALL_DIR;
+   
+   if (dydx >= 1 || dydx <= -1) { 
+      // steep slope - go up/down 1 each move, calculate x
+      float f_dx = ((float)dy)/dydx; 
+      for (y = start_y + dy; y != end_y + dy; y += dy) {
+         calculator += f_dx;
+         if (calculator >= 0.5) {
+            x += dx;
+            calculator -= 1.0;
+         }
+         else if (calculator <= -0.5) {
+            x += dx;
+            calculator += 1.0;
+         }
+
+         // Check range
+         float r_squared = ((start_y - y)*(start_y - y)) + ((start_x - x)*(start_x - x));
+         if (r_squared > range_squared)
+            break; // Out of sight range
+
+         // Check possible vision-obstructors
+         if (blocksVision(x,y,dir1,dir2)) {
+            GRID_AT(vision_grid,x,y) = VIS_VISIBLE;
+            break; // Vision obstructed beyond here
+         }
+
+         // Otherwise, it's visible, move on
+         GRID_AT(vision_grid,x,y) = VIS_VISIBLE;
+      }
+   }
+   else
+   {
+      // shallow slope, go left/right 1 each move, calculate y
+      float f_dy = dydx*((float)dx);
+      for (x = start_x + dx; x != end_x + dx; x += dx) {
+         calculator += f_dy;
+         if (calculator >= 0.5) {
+            y += dy;
+            calculator -= 1.0;
+         }
+         else if (calculator <= -0.5) {
+            y += dy;
+            calculator += 1.0;
+         }
+
+         // Check range
+         float r_squared = ((start_y - y)*(start_y - y)) + ((start_x - x)*(start_x - x));
+         if (r_squared > range_squared)
+            break; // Out of sight range
+
+         // Check possible vision-obstructors
+         if (blocksVision(x,y,dir1,dir2)) {
+            GRID_AT(vision_grid,x,y) = VIS_VISIBLE;
+            break; // Vision obstructed beyond here
+         }
+
+         // Otherwise, it's visible, move on
+         GRID_AT(vision_grid,x,y) = VIS_VISIBLE;
+      }
+   }
+   return 0;
+}
+
+int calculateUnitVision( Unit *unit )
+{
+   log("Vision calculation START");
+   int x, y;
+   if (unit && unit->team == 0) { // Allied unit
+
+      int v_x_min = (int)(unit->x_grid - unit->vision_range) - 1;
+      int v_x_max = (int)(unit->x_grid + unit->vision_range) + 1;
+      int v_y_min = (int)(unit->y_grid - unit->vision_range) - 1;
+      int v_y_max = (int)(unit->y_grid + unit->vision_range) + 1;
+      if (v_x_min < 0) v_x_min = 0;
+      if (v_x_max >= level_dim_x) v_x_max = level_dim_x - 1;
+      if (v_y_min < 0) v_y_min = 0;
+      if (v_y_max >= level_dim_y) v_y_max = level_dim_y - 1; 
+
+      float vision_range_squared = unit->vision_range * unit->vision_range;
+
+      // Strategy: go around the outside of the possible vision box,
+      // from each edge square make a line back to the middle,
+      // and determine visibility along that line for all squares in the line
+      GRID_AT(vision_grid,unit->x_grid,unit->y_grid) = VIS_VISIBLE;
+
+      for (x = v_x_min; x <= v_x_max; ++x) {
+         calculateLineVision( unit->x_grid, unit->y_grid, x, v_y_min, vision_range_squared, 0 );
+         calculateLineVision( unit->x_grid, unit->y_grid, x, v_y_max, vision_range_squared, 0 );
+      }
+      for (y = v_y_min + 1; y < v_y_max; ++y) {
+         calculateLineVision( unit->x_grid, unit->y_grid, v_x_min, y, vision_range_squared, 0 );
+         calculateLineVision( unit->x_grid, unit->y_grid, v_x_max, y, vision_range_squared, 0 );
+      }
+   }
+   log("Vision calculation END");
+
+   return 0;
+}
+
+int calculateVision()
+{
+   int x, y;
+   for (x = 0; x < level_dim_x; ++x) {
+      for (y = 0; y < level_dim_y; ++y) {
+         if (GRID_AT(vision_grid,x,y) >= VIS_SEEN_BEFORE)
+            GRID_AT(vision_grid,x,y) = VIS_SEEN_BEFORE;
+         else
+            GRID_AT(vision_grid,x,y) = VIS_NEVER_SEEN;
+      }
+   }
+   
+   if (player)
+      calculateUnitVision( player );
+ 
+   for (list<Unit*>::iterator it=unit_list.begin(); it != unit_list.end(); ++it)
+   {
+      Unit* unit = (*it);
+      calculateUnitVision( unit );
+   }
+
+   return 0;
+}
+
+//////////////////////////////////////////////////////////////////////
+// Targetting ---
 
 int selectUnit( Vector2f coords )
 {
@@ -458,7 +556,7 @@ Unit* getEnemy( int x, int y, float range, Direction dir, int my_team, int selec
 }
 
 //////////////////////////////////////////////////////////////////////
-// Movement interface
+// Movement interface ---
 
 bool canMove( int x, int y, int from_x, int from_y )
 {
@@ -474,7 +572,7 @@ bool canMove( int x, int y, int from_x, int from_y )
 }
 
 //////////////////////////////////////////////////////////////////////
-// Player interface
+// Player interface ---
 
 // Choosing player orders
 
@@ -484,13 +582,14 @@ Order_Conditional order_prep_cond = TRUE;
 #define ORDER_PREP_LAST_COUNT 0x1
 #define ORDER_PREP_LAST_COND 0x2
 #define ORDER_PREP_LAST_ORDER 0x4
+#define ORDER_PREP_MAX_COUNT 10000
 int order_prep_last_input = 0;
 
 int playerAddCount( int digit )
 {
    if (order_prep_last_input == ORDER_PREP_LAST_COUNT) {
       // Add another digit to the count
-      order_prep_count = (order_prep_count * 10) + digit;
+      order_prep_count = ((order_prep_count * 10) + digit) % ORDER_PREP_MAX_COUNT;
    }
    else
       order_prep_count = digit;
@@ -824,7 +923,7 @@ int completePlayerCommand( Order o )
 }
 
 //////////////////////////////////////////////////////////////////////
-// Loading
+// Loading ---
 
 void initTextures()
 {
@@ -863,6 +962,8 @@ void clearGrids()
       delete terrain_grid;
    if (unit_grid)
       delete unit_grid;
+   if (vision_grid)
+      delete vision_grid;
 }
 
 int initGrids(int x, int y)
@@ -871,6 +972,7 @@ int initGrids(int x, int y)
 
    level_dim_x = x;
    level_dim_y = y;
+   level_fog_dim = 3;
 
    int dim = x * y;
 
@@ -879,6 +981,9 @@ int initGrids(int x, int y)
 
    unit_grid = new Unit*[dim];
    for (int i = 0; i < dim; ++i) unit_grid[i] = NULL;
+
+   vision_grid = new Vision[dim];
+   for (int i = 0; i < dim; ++i) vision_grid[i] = VIS_NEVER_SEEN;
 
    log("initGrids succeeded");
 
@@ -897,6 +1002,11 @@ int loadLevel( int level_id )
       initGrids(15,15);
       setView( 11.9, Vector2f( 6.0, 6.0 ) );
 
+      GRID_AT(terrain_grid,10,10) = TER_TREE2;
+      GRID_AT(terrain_grid,10,9) = TER_TREE2;
+      GRID_AT(terrain_grid,10,8) = TER_TREE2;
+      GRID_AT(terrain_grid,11,10) = TER_TREE2;
+
       addUnit( new TargetPractice( 9, 1, SOUTH ) );
       addUnit( new TargetPractice( 9, 3, SOUTH ) );
       addUnit( new TargetPractice( 9, 5, SOUTH ) );
@@ -908,11 +1018,13 @@ int loadLevel( int level_id )
 
    menu_state = MENU_MAIN | MENU_PRI_INGAME;
    setLevelListener(true);
+   calculateVision();
+
    return 0;
 }
 
 //////////////////////////////////////////////////////////////////////
-// Update
+// Update ---
 
 int startTurnAll( )
 {
@@ -1000,7 +1112,10 @@ int updateLevel( int dt )
 
       between_turns = true;
       completeTurnAll();
+
       turn++;
+      calculateVision();
+
       startTurnAll();
       between_turns = false;
 
@@ -1012,7 +1127,7 @@ int updateLevel( int dt )
 }
 
 //////////////////////////////////////////////////////////////////////
-// GUI
+// GUI ---
 
 // Right Click Menu
 
@@ -1032,9 +1147,12 @@ void initRightClickMenu()
    r_click_menu_solid = false;
 }
 
-void rightClickMenuCreate( int x, int y )
+int rightClickMenuCreate( int x, int y )
 {
-   Vector2u grid = coordsWindowToLevel( x, y );
+   Vector2i grid = coordsWindowToLevel( x, y );
+
+   if (grid.x < 0 || grid.x >= level_dim_x || grid.y < 0 || grid.y >= level_dim_y)
+      return -1;
    
    // TODO: do something so that the menu is always visible
 
@@ -1061,6 +1179,8 @@ void rightClickMenuCreate( int x, int y )
    r_click_menu_solid = false;
 
    log("Right click menu created");
+
+   return 0;
 }
 
 int rightClickMenuSelect( int x, int y )
@@ -1223,14 +1343,19 @@ IMTextButton *b_count_1,
              *b_count_infinite,
              *b_count_reset;
 sf::Text *count_text;
-string s_1 = "1", s_2 = "2", s_3 = "3", s_4 = "4", s_5 = "5", s_6 = "6", s_7 = "7", s_8 = "8", s_9 = "9", s_0 = "0", s_infinite = "∞", s_reset = "X";
+string s_1 = "1", s_2 = "2", s_3 = "3", s_4 = "4", s_5 = "5", s_6 = "6", s_7 = "7", s_8 = "8", s_9 = "9", s_0 = "0", s_infinite = "inf", s_reset = "X";
 // Gui Boxes
 IMEdgeButton *b_numpad_area,
              *b_conditional_area,
              *b_movement_area,
              *b_attack_area,
              *b_control_area,
-             *b_pl_cmd_area;
+             *b_pl_cmd_area,
+             *b_monster_area,
+             *b_soldier_area,
+             *b_worm_area,
+             *b_bird_area,
+             *b_bug_area;
 
 bool isMouseOverGui( int x, int y )
 {
@@ -1273,16 +1398,16 @@ void fitGui_Level()
        sec_start_attack = sec_start_movement + (sec_buffer * 2) + (button_size * 3),
        sec_start_control = sec_start_attack + (sec_buffer * 2) + (button_size * 2),
        sec_start_monster = sec_start_control + (sec_buffer * 2) + (button_size * 1),
-       sec_start_soldier = sec_start_monster + (sec_buffer * 2) + (button_size * 2),
+       sec_start_soldier = sec_start_monster + (sec_buffer * 2) + (button_size * 1),
        sec_start_worm = sec_start_soldier + (sec_buffer * 2) + (button_size * 2),
        sec_start_bird = sec_start_worm + (sec_buffer * 2) + (button_size * 2),
        sec_start_bug = sec_start_bird + (sec_buffer * 2) + (button_size * 2);
 
    // Numpad
 
-   b_numpad_area->setSize( (sec_buffer * 2) + (button_size * 3),
-                           (sec_buffer * 2) + (button_size * 4));
-   b_numpad_area->setPosition( sec_start_numpad, 
+   b_numpad_area->setSize( (sec_buffer * 3) + (button_size * 3),
+                           (sec_buffer * 3) + (button_size * 4));
+   b_numpad_area->setPosition( sec_start_numpad - sec_buffer,
                                height - ((sec_buffer * 2) + (button_size * 4)));
    
    b_count_0->setSize( button_size, button_size );
@@ -1363,9 +1488,9 @@ void fitGui_Level()
 
    // Player commands
 
-   b_pl_cmd_area->setSize( (sec_buffer * 2) + (button_size * 3),
-                           (sec_buffer * 2) + (button_size * 1));
-   b_pl_cmd_area->setPosition( sec_start_numpad, 
+   b_pl_cmd_area->setSize( (sec_buffer * 3) + (button_size * 3),
+                           (sec_buffer * 3) + (button_size * 1));
+   b_pl_cmd_area->setPosition( sec_start_numpad - sec_buffer,
                                height - ((sec_buffer * 4) + (button_size * 5)));
 
    b_pl_alert_all->setSize( button_size, button_size );
@@ -1383,16 +1508,16 @@ void fitGui_Level()
    // Conditionals
    // TODO
 
-   b_conditional_area->setSize( (sec_buffer * 2) + (button_size * 1),
-                                (sec_buffer * 2) + (button_size * 3));
-   b_conditional_area->setPosition( sec_start_conditionals,
+   b_conditional_area->setSize( (sec_buffer * 3) + (button_size * 1),
+                                (sec_buffer * 3) + (button_size * 3));
+   b_conditional_area->setPosition( sec_start_conditionals - sec_buffer,
                                     height - ((sec_buffer * 2) + (button_size * 3)));
 
    // Movement
 
-   b_movement_area->setSize( (sec_buffer * 2) + (button_size * 3),
-                             (sec_buffer * 2) + (button_size * 3));
-   b_movement_area->setPosition( sec_start_movement,
+   b_movement_area->setSize( (sec_buffer * 3) + (button_size * 3),
+                             (sec_buffer * 3) + (button_size * 3));
+   b_movement_area->setPosition( sec_start_movement - sec_buffer,
                                  height - ((sec_buffer * 2) + (button_size * 3)));
 
    b_o_move_forward->setSize( button_size, button_size );
@@ -1425,9 +1550,9 @@ void fitGui_Level()
 
    // Attack
 
-   b_attack_area->setSize( (sec_buffer * 2) + (button_size * 2),
-                           (sec_buffer * 2) + (button_size * 3));
-   b_attack_area->setPosition( sec_start_attack,
+   b_attack_area->setSize( (sec_buffer * 3) + (button_size * 2),
+                           (sec_buffer * 3) + (button_size * 3));
+   b_attack_area->setPosition( sec_start_attack - sec_buffer,
                                height - ((sec_buffer * 2) + (button_size * 3)));
 
    b_o_attack_smallest->setSize( button_size, button_size );
@@ -1448,9 +1573,9 @@ void fitGui_Level()
 
    // Control
 
-   b_control_area->setSize( (sec_buffer * 2) + (button_size * 1),
-                           (sec_buffer * 2) + (button_size * 3));
-   b_control_area->setPosition( sec_start_control,
+   b_control_area->setSize( (sec_buffer * 3) + (button_size * 1),
+                           (sec_buffer * 3) + (button_size * 3));
+   b_control_area->setPosition( sec_start_control - sec_buffer,
                                 height - ((sec_buffer * 2) + (button_size * 3)));
 
    b_o_start_block->setSize( button_size, button_size );
@@ -1464,6 +1589,39 @@ void fitGui_Level()
    b_o_repeat->setSize( button_size, button_size );
    b_o_repeat->setPosition( sec_start_control + sec_buffer,
                             height - (sec_buffer + (button_size * 1)));
+
+   // Units
+
+   // Monster
+   b_monster_area->setSize( (sec_buffer * 3) + (button_size * 1),
+                           (sec_buffer * 3) + (button_size * 4));
+   b_monster_area->setPosition( sec_start_monster,
+                                height - ((sec_buffer * 2) + (button_size * 4)));
+
+   // Soldier
+   b_soldier_area->setSize( (sec_buffer * 3) + (button_size * 2),
+                           (sec_buffer * 3) + (button_size * 4));
+   b_soldier_area->setPosition( sec_start_soldier,
+                                height - ((sec_buffer * 2) + (button_size * 4)));
+
+   // Worm
+   b_worm_area->setSize( (sec_buffer * 3) + (button_size * 2),
+                           (sec_buffer * 3) + (button_size * 4));
+   b_worm_area->setPosition( sec_start_worm,
+                                height - ((sec_buffer * 2) + (button_size * 4)));
+
+   // Bird
+   b_bird_area->setSize( (sec_buffer * 3) + (button_size * 2),
+                           (sec_buffer * 3) + (button_size * 4));
+   b_bird_area->setPosition( sec_start_bird,
+                                height - ((sec_buffer * 2) + (button_size * 4)));
+
+   // Bug
+   b_bug_area->setSize( (sec_buffer * 3) + (button_size * 3),
+                           (sec_buffer * 3) + (button_size * 4));
+   b_bug_area->setPosition( sec_start_bug,
+                                height - ((sec_buffer * 2) + (button_size * 4)));
+
 
    view_rel_x_to_y = ((float)height) / ((float)width);
 }
@@ -1652,45 +1810,80 @@ int initLevelGui()
 
    b_numpad_area = new IMEdgeButton();
    b_numpad_area->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
-   b_numpad_area->setCornerAllTextures( t_manager.getTexture( "UICorner3px.png" ) );
-   b_numpad_area->setEdgeAllTextures( t_manager.getTexture( "UIEdge3px.png" ) );
+   b_numpad_area->setCornerAllTextures( t_manager.getTexture( "UICornerBrown3px.png" ) );
+   b_numpad_area->setEdgeAllTextures( t_manager.getTexture( "UIEdgeBrown3px.png" ) );
    b_numpad_area->setEdgeWidth( 3 );
    gui_manager.registerWidget( "Numpad area", b_numpad_area);
 
    b_conditional_area = new IMEdgeButton();
    b_conditional_area->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
-   b_conditional_area->setCornerAllTextures( t_manager.getTexture( "UICorner3px.png" ) );
-   b_conditional_area->setEdgeAllTextures( t_manager.getTexture( "UIEdge3px.png" ) );
+   b_conditional_area->setCornerAllTextures( t_manager.getTexture( "UICornerBrown3px.png" ) );
+   b_conditional_area->setEdgeAllTextures( t_manager.getTexture( "UIEdgeBrown3px.png" ) );
    b_conditional_area->setEdgeWidth( 3 );
    gui_manager.registerWidget( "Conditional area", b_conditional_area);
 
    b_movement_area = new IMEdgeButton();
    b_movement_area->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
-   b_movement_area->setCornerAllTextures( t_manager.getTexture( "UICorner3px.png" ) );
-   b_movement_area->setEdgeAllTextures( t_manager.getTexture( "UIEdge3px.png" ) );
+   b_movement_area->setCornerAllTextures( t_manager.getTexture( "UICornerBrown3px.png" ) );
+   b_movement_area->setEdgeAllTextures( t_manager.getTexture( "UIEdgeBrown3px.png" ) );
    b_movement_area->setEdgeWidth( 3 );
    gui_manager.registerWidget( "Movement area", b_movement_area);
 
    b_attack_area = new IMEdgeButton();
    b_attack_area->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
-   b_attack_area->setCornerAllTextures( t_manager.getTexture( "UICorner3px.png" ) );
-   b_attack_area->setEdgeAllTextures( t_manager.getTexture( "UIEdge3px.png" ) );
+   b_attack_area->setCornerAllTextures( t_manager.getTexture( "UICornerBrown3px.png" ) );
+   b_attack_area->setEdgeAllTextures( t_manager.getTexture( "UIEdgeBrown3px.png" ) );
    b_attack_area->setEdgeWidth( 3 );
    gui_manager.registerWidget( "Attack area", b_attack_area);
 
    b_control_area = new IMEdgeButton();
    b_control_area->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
-   b_control_area->setCornerAllTextures( t_manager.getTexture( "UICorner3px.png" ) );
-   b_control_area->setEdgeAllTextures( t_manager.getTexture( "UIEdge3px.png" ) );
+   b_control_area->setCornerAllTextures( t_manager.getTexture( "UICornerBrown3px.png" ) );
+   b_control_area->setEdgeAllTextures( t_manager.getTexture( "UIEdgeBrown3px.png" ) );
    b_control_area->setEdgeWidth( 3 );
    gui_manager.registerWidget( "Control area", b_control_area);
 
    b_pl_cmd_area = new IMEdgeButton();
    b_pl_cmd_area->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
-   b_pl_cmd_area->setCornerAllTextures( t_manager.getTexture( "UICorner3px.png" ) );
-   b_pl_cmd_area->setEdgeAllTextures( t_manager.getTexture( "UIEdge3px.png" ) );
+   b_pl_cmd_area->setCornerAllTextures( t_manager.getTexture( "UICornerBrown3px.png" ) );
+   b_pl_cmd_area->setEdgeAllTextures( t_manager.getTexture( "UIEdgeBrown3px.png" ) );
    b_pl_cmd_area->setEdgeWidth( 3 );
    gui_manager.registerWidget( "Player command area", b_pl_cmd_area);
+
+   b_monster_area = new IMEdgeButton();
+   b_monster_area->setAllTextures( t_manager.getTexture( "UICenterGrey.png" ) );
+   b_monster_area->setCornerAllTextures( t_manager.getTexture( "UICornerGrey3px.png" ) );
+   b_monster_area->setEdgeAllTextures( t_manager.getTexture( "UIEdgeGrey3px.png" ) );
+   b_monster_area->setEdgeWidth( 3 );
+   gui_manager.registerWidget( "Monster area", b_monster_area);
+
+   b_soldier_area = new IMEdgeButton();
+   b_soldier_area->setAllTextures( t_manager.getTexture( "UICenterGrey.png" ) );
+   b_soldier_area->setCornerAllTextures( t_manager.getTexture( "UICornerGrey3px.png" ) );
+   b_soldier_area->setEdgeAllTextures( t_manager.getTexture( "UIEdgeGrey3px.png" ) );
+   b_soldier_area->setEdgeWidth( 3 );
+   gui_manager.registerWidget( "Soldier area", b_soldier_area);
+
+   b_worm_area = new IMEdgeButton();
+   b_worm_area->setAllTextures( t_manager.getTexture( "UICenterGrey.png" ) );
+   b_worm_area->setCornerAllTextures( t_manager.getTexture( "UICornerGrey3px.png" ) );
+   b_worm_area->setEdgeAllTextures( t_manager.getTexture( "UIEdgeGrey3px.png" ) );
+   b_worm_area->setEdgeWidth( 3 );
+   gui_manager.registerWidget( "Worm area", b_worm_area);
+
+   b_bird_area = new IMEdgeButton();
+   b_bird_area->setAllTextures( t_manager.getTexture( "UICenterGrey.png" ) );
+   b_bird_area->setCornerAllTextures( t_manager.getTexture( "UICornerGrey3px.png" ) );
+   b_bird_area->setEdgeAllTextures( t_manager.getTexture( "UIEdgeGrey3px.png" ) );
+   b_bird_area->setEdgeWidth( 3 );
+   gui_manager.registerWidget( "Bird area", b_bird_area);
+
+   b_bug_area = new IMEdgeButton();
+   b_bug_area->setAllTextures( t_manager.getTexture( "UICenterGrey.png" ) );
+   b_bug_area->setCornerAllTextures( t_manager.getTexture( "UICornerGrey3px.png" ) );
+   b_bug_area->setEdgeAllTextures( t_manager.getTexture( "UIEdgeGrey3px.png" ) );
+   b_bug_area->setEdgeWidth( 3 );
+   gui_manager.registerWidget( "Bug area", b_bug_area);
 
    fitGui_Level();
    init_level_gui = true;
@@ -1794,12 +1987,20 @@ int drawOrderButtons()
    b_conditional_area->doWidget();
    b_movement_area->doWidget();
    b_attack_area->doWidget();
-   b_control_area->doWidget();
+   b_monster_area->doWidget();
+   b_soldier_area->doWidget();
+   b_worm_area->doWidget();
+   b_bird_area->doWidget();
+   b_bug_area->doWidget();
+   b_control_area->doWidget(); // at the end for overlap reasons
 
    // Draw current count
    if (order_prep_count != 1) {
       stringstream ss;
-      ss << order_prep_count;
+      if (order_prep_count == -1)
+         ss << "indefinitely";
+      else
+         ss << order_prep_count;
       count_text->setString( String(ss.str()) );
 
       SFML_GlobalRenderWindow::get()->draw( *count_text );
@@ -1926,7 +2127,7 @@ int drawGui()
 }
 
 //////////////////////////////////////////////////////////////////////
-// Draw
+// Draw ---
 
 void drawBaseTerrain()
 {
@@ -1989,6 +2190,63 @@ void drawProjectiles()
    }
 }
 
+int drawFog()
+{
+   SFML_TextureManager &t_manager = SFML_TextureManager::getSingleton();
+   RenderWindow *r_window = SFML_GlobalRenderWindow::get();
+
+   Sprite s_unseen( *(t_manager.getTexture( "FogCloudSolid.png" )) ),
+          s_fog_base( *(t_manager.getTexture( "Fog.png" )) ),
+          s_fog_left( *(t_manager.getTexture( "FogCloudTransparentLeft.png" )) ),
+          s_fog_right( *(t_manager.getTexture( "FogCloudTransparentRight.png" )) ),
+          s_fog_top( *(t_manager.getTexture( "FogCloudTransparentTop.png" )) ),
+          s_fog_bottom( *(t_manager.getTexture( "FogCloudTransparentBottom.png" )) );
+   normalizeTo1x1( &s_unseen );
+   s_unseen.scale( 1.3, 1.3 );
+   normalizeTo1x1( &s_fog_base );
+   normalizeTo1x1( &s_fog_left );
+   normalizeTo1x1( &s_fog_right );
+   normalizeTo1x1( &s_fog_top );
+   normalizeTo1x1( &s_fog_bottom );
+   int x, y;
+   for (x = 0; x < level_dim_x; ++x) {
+      for (y = 0; y < level_dim_y; ++y) {
+         Vision v = GRID_AT(vision_grid,x,y);
+      
+         if (v == VIS_NONE || v == VIS_OFFMAP || v == VIS_NEVER_SEEN) {
+            s_unseen.setPosition( x - 0.17, y - 0.17 );
+            r_window->draw( s_unseen );
+         }
+         else if (v == VIS_SEEN_BEFORE) {
+            s_fog_base.setPosition( x, y );
+            r_window->draw( s_fog_base );
+         }
+         else
+         {
+            // Draw fog edges for adjacent semi-fogged areas
+            if (x != 0 && GRID_AT(vision_grid,(x-1),y) == VIS_SEEN_BEFORE) {
+               s_fog_right.setPosition( x, y );
+               r_window->draw( s_fog_right );
+            }
+            if (y != 0 && GRID_AT(vision_grid,x,(y-1)) == VIS_SEEN_BEFORE) {
+               s_fog_bottom.setPosition( x, y );
+               r_window->draw( s_fog_bottom );
+            }
+            if (x != level_dim_x - 1 && GRID_AT(vision_grid,(x+1),y) == VIS_SEEN_BEFORE) {
+               s_fog_left.setPosition( x, y );
+               r_window->draw( s_fog_left );
+            }
+            if (y != level_dim_y - 1 && GRID_AT(vision_grid,x,(y+1)) == VIS_SEEN_BEFORE) {
+               s_fog_top.setPosition( x, y );
+               r_window->draw( s_fog_top );
+            }
+         }
+      }
+   }
+
+   // TODO: Draw fog within the surrounding level buffer
+}
+
 int drawLevel()
 {
    SFML_GlobalRenderWindow::get()->setView(*level_view);
@@ -1997,6 +2255,7 @@ int drawLevel()
    drawTerrain();
    drawUnits();
    drawProjectiles();
+   drawFog();
 
    // Gui
    drawGui();
@@ -2005,7 +2264,7 @@ int drawLevel()
 } 
 
 //////////////////////////////////////////////////////////////////////
-// Event listener
+// Event listener ---
 
 struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListener
 {

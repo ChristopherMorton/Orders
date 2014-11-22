@@ -12,7 +12,7 @@
 #include <SFML/Graphics.hpp>
 
 //////////////////////////////////////////////////////////////////////
-// Definitions
+// Definitions ---
 
 #define PLAYER_MAX_HEALTH 100
 #define PLAYER_MAX_ORDERS 500
@@ -50,7 +50,7 @@ namespace sum
 {
 
 //////////////////////////////////////////////////////////////////////
-// Base Unit
+// Base Unit ---
 
 int Unit::startBasicOrder( Order &o, bool cond_result )
 {
@@ -404,7 +404,7 @@ string Unit::descriptor()
 }
 
 //////////////////////////////////////////////////////////////////////
-// Player
+// Player ---
 
 // Private
 Player::Player()
@@ -440,7 +440,8 @@ int Player::init( int x, int y, Direction face )
 
    health = max_health = PLAYER_MAX_HEALTH;
 
-   attack_range = 10;
+   vision_range = 5;
+   attack_range = 5;
 
    speed = 0.99;
 
@@ -554,7 +555,7 @@ string Player::descriptor()
 }
 
 //////////////////////////////////////////////////////////////////////
-// Monster
+// Monster ---
 
 // *tors
 Monster::Monster()
@@ -580,6 +581,7 @@ Monster::Monster( int x, int y, Direction face )
 
    health = max_health = MONSTER_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
 
+   vision_range = MONSTER_BASE_VISION;
    attack_range = 1.3;
 
    speed = MONSTER_BASE_SPEED * ( 1.0 - ( focus_speed * 0.02 ) );
@@ -709,7 +711,7 @@ string Monster::descriptor()
 }
 
 //////////////////////////////////////////////////////////////////////
-// Soldier
+// Soldier ---
 
 // *tors
 Soldier::Soldier()
@@ -735,6 +737,7 @@ Soldier::Soldier( int x, int y, Direction face )
 
    health = max_health = SOLDIER_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
 
+   vision_range = SOLDIER_BASE_VISION;
    attack_range = 1.3;
 
    speed = SOLDIER_BASE_SPEED * ( 1.0 - ( focus_speed * 0.02 ) );
@@ -865,7 +868,7 @@ string Soldier::descriptor()
 
 
 //////////////////////////////////////////////////////////////////////
-// Worm
+// Worm ---
 
 // *tors
 Worm::Worm()
@@ -891,6 +894,7 @@ Worm::Worm( int x, int y, Direction face )
 
    health = max_health = WORM_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
 
+   vision_range = WORM_BASE_VISION;
    attack_range = 1.3;
 
    speed = WORM_BASE_SPEED * ( 1.0 - ( focus_speed * 0.02 ) );
@@ -1020,7 +1024,7 @@ string Worm::descriptor()
 }
 
 //////////////////////////////////////////////////////////////////////
-// Bird
+// Bird ---
 
 // *tors
 Bird::Bird()
@@ -1046,6 +1050,7 @@ Bird::Bird( int x, int y, Direction face )
 
    health = max_health = BIRD_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
 
+   vision_range = BIRD_BASE_VISION;
    attack_range = 1.3;
 
    speed = BIRD_BASE_SPEED * ( 1.0 - ( focus_speed * 0.02 ) );
@@ -1175,7 +1180,7 @@ string Bird::descriptor()
 } 
 
 //////////////////////////////////////////////////////////////////////
-// Bug
+// Bug ---
 
 // *tors
 Bug::Bug()
@@ -1200,6 +1205,8 @@ Bug::Bug( int x, int y, Direction face )
    TurnTo(face);
 
    health = max_health = BUG_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
+
+   vision_range = BUG_BASE_VISION;
 
    attack_range = BUG_BASE_VISION;
    orb_speed = BUG_ORB_SPEED * ( 1.0 + ( focus_speed * 0.01) );
@@ -1333,7 +1340,7 @@ string Bug::descriptor()
 }
 
 //////////////////////////////////////////////////////////////////////
-// SummonMarker
+// SummonMarker ---
 
 SummonMarker::SummonMarker( )
 {
@@ -1349,6 +1356,7 @@ SummonMarker::SummonMarker( )
 
    health = max_health = 0;
 
+   vision_range = 0;
    attack_range = 0;
 
    radius = 0.45;
@@ -1431,7 +1439,7 @@ string SummonMarker::descriptor()
 }
 
 //////////////////////////////////////////////////////////////////////
-// TargetPractice
+// TargetPractice ---
 
 TargetPractice::TargetPractice( int x, int y, Direction face )
 {
@@ -1447,6 +1455,7 @@ TargetPractice::TargetPractice( int x, int y, Direction face )
 
    health = max_health = 200;
 
+   vision_range = 0;
    attack_range = 0;
 
    radius = 0.45;

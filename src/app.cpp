@@ -34,7 +34,7 @@
 using namespace sf;
 
 ///////////////////////////////////////////////////////////////////////////////
-// Data
+// Data ---
 
 Font *menu_font;
 
@@ -70,12 +70,12 @@ void resetWindow()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Definitions
+// Definitions ---
 
 void refitGuis(); // Predeclared
 
 ///////////////////////////////////////////////////////////////////////////////
-// Menus
+// Menus ---
 
 // Here's what the various menu buttons can DO
 
@@ -203,8 +203,8 @@ int initSplashMenuGui()
 
    b_splash_to_map = new IMEdgeTextButton();
    b_splash_to_map->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
-   b_splash_to_map->setCornerAllTextures( texture_manager->getTexture( "UICorner3px.png" ) );
-   b_splash_to_map->setEdgeAllTextures( texture_manager->getTexture( "UIEdge3px.png" ) );
+   b_splash_to_map->setCornerAllTextures( texture_manager->getTexture( "UICornerBrown3px.png" ) );
+   b_splash_to_map->setEdgeAllTextures( texture_manager->getTexture( "UIEdgeBrown3px.png" ) );
    b_splash_to_map->setEdgeWidth( 3 );
    b_splash_to_map->setText( &s_splash_to_map );
    b_splash_to_map->setFont( menu_font );
@@ -378,8 +378,8 @@ int initAVOptionsMenuGui()
 
    b_800x600 = new IMEdgeTextButton();
    b_800x600->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
-   b_800x600->setCornerAllTextures( texture_manager->getTexture( "UICorner3px.png" ) );
-   b_800x600->setEdgeAllTextures( texture_manager->getTexture( "UIEdge3px.png" ) );
+   b_800x600->setCornerAllTextures( texture_manager->getTexture( "UICornerBrown3px.png" ) );
+   b_800x600->setEdgeAllTextures( texture_manager->getTexture( "UIEdgeBrown3px.png" ) );
    b_800x600->setEdgeWidth( 3 );
    b_800x600->setText( &s_800x600 );
    b_800x600->setFont( menu_font );
@@ -388,8 +388,8 @@ int initAVOptionsMenuGui()
 
    b_1200x900 = new IMEdgeTextButton();
    b_1200x900->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
-   b_1200x900->setCornerAllTextures( texture_manager->getTexture( "UICorner3px.png" ) );
-   b_1200x900->setEdgeAllTextures( texture_manager->getTexture( "UIEdge3px.png" ) );
+   b_1200x900->setCornerAllTextures( texture_manager->getTexture( "UICornerBrown3px.png" ) );
+   b_1200x900->setEdgeAllTextures( texture_manager->getTexture( "UIEdgeBrown3px.png" ) );
    b_1200x900->setEdgeWidth( 3 );
    b_1200x900->setText( &s_1200x900 );
    b_1200x900->setFont( menu_font );
@@ -398,8 +398,8 @@ int initAVOptionsMenuGui()
 
    b_av_apply = new IMEdgeTextButton();
    b_av_apply->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
-   b_av_apply->setCornerAllTextures( texture_manager->getTexture( "UICorner3px.png" ) );
-   b_av_apply->setEdgeAllTextures( texture_manager->getTexture( "UIEdge3px.png" ) );
+   b_av_apply->setCornerAllTextures( texture_manager->getTexture( "UICornerBrown3px.png" ) );
+   b_av_apply->setEdgeAllTextures( texture_manager->getTexture( "UIEdgeBrown3px.png" ) );
    b_av_apply->setEdgeWidth( 3 );
    b_av_apply->setText( &s_apply_av );
    b_av_apply->setFont( menu_font );
@@ -470,7 +470,7 @@ int progressiveInitMenus()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Loading
+// Loading ---
 
 #define PROGRESS_CAP 100
 
@@ -623,7 +623,7 @@ int loadingAnimation(int dt)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Propogation
+// Propogation ---
 
 void refitGuis()
 {
@@ -639,7 +639,7 @@ void refitGuis()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Main Listeners
+// Main Listeners ---
 
 struct MainWindowListener : public My_SFML_WindowListener
 {
@@ -734,7 +734,7 @@ bool MainKeyListener::keyReleased( const Event::KeyEvent &key_release )
 
 
 ///////////////////////////////////////////////////////////////////////////////
-// Main loop
+// Main loop ---
 
 int mainLoop( int dt )
 {
@@ -777,7 +777,7 @@ int mainLoop( int dt )
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Execution starts here
+// Execution starts here ---
 
 int runApp()
 {

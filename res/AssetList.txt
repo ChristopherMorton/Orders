@@ -5,6 +5,14 @@ IMAGE GrayRock.png
 IMAGE BasicTree1.png
 IMAGE BasicTree2.png
 IMAGE TargetPractice.png
+// Vision-related
+IMAGE Fog.png
+IMAGE FogCloudSolid.png
+IMAGE FogCloudTransparent.png 
+IMAGE FogCloudTransparentBottom.png 
+IMAGE FogCloudTransparentTop.png 
+IMAGE FogCloudTransparentLeft.png 
+IMAGE FogCloudTransparentRight.png 
 // Unit Scratch
 IMAGE MonsterScratch.png
 IMAGE SoldierScratch.png
@@ -20,10 +28,15 @@ IMAGE StarFullRight.png
 IMAGE StarEmpty.png
 IMAGE StarEmptyLeft.png
 IMAGE StarEmptyRight.png
-// General UI
-IMAGE UICorner3px.png
-IMAGE UIEdge3px.png
+// Edge button pieces
+IMAGE UICornerBrown3px.png
+IMAGE UICornerGrey3px.png
+IMAGE UIEdgeBrown3px.png
+IMAGE UIEdgeGrey3px.png
 IMAGE UICenterBrown.png
+IMAGE UICenterGrey.png
+IMAGE UICenterGold.png
+// General UI
 IMAGE GoBackButtonScratch.png
 IMAGE GuiExitX.png
 IMAGE GearIcon.png
