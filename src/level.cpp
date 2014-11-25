@@ -25,6 +25,7 @@
 #include "stdio.h"
 #include "math.h"
 #include <sstream>
+#include <fstream>
 #include <list>
 
 #define TURN_LENGTH 1000
@@ -963,6 +964,16 @@ void clearGrids()
       delete vision_grid;
 }
 
+void clearAll()
+{
+   clearGrids();
+   if (player) delete player;
+
+   unit_list.clear();
+   projectile_list.clear();
+   listening_units.clear();
+}
+
 int initGrids(int x, int y)
 {
    clearGrids();
@@ -987,6 +998,116 @@ int initGrids(int x, int y)
    return 0;
 }
 
+//////////////////////////////////////////////////////////////////////
+// Loading Level --- 
+
+Terrain parseTerrain( char c )
+{
+   switch (c)
+   {
+      case 't':
+         return TER_TREE1;
+      default:
+         return TER_NONE;
+   }
+}
+
+int parseAndCreateUnit( char c1, char c2, char x, char y )
+{
+   log("In parseAndCreateUnit");
+   Direction facing;
+   switch ((c2 & 0x3))
+   {
+      case 0x0:
+         facing = EAST;
+         break;
+      case 0x1:
+         facing = SOUTH;
+         break;
+      case 0x2:
+         facing = WEST;
+         break;
+      case 0x3:
+         facing = NORTH;
+         break;
+   }
+
+   switch (c1)
+   {
+      case 'p':
+         // Create player
+         if (NULL != player) return -1;
+         player = Player::initPlayer( (int)x, (int)y, facing );
+         addPlayer();
+         log("Created player");
+         break;
+      case 't':
+         // Create TargetPractice
+         addUnit( new TargetPractice( (int)x, (int)y, facing ) );
+         log("Created TargetPractice");
+         break;
+      default:
+         break;
+   }
+
+   return 0;
+}
+
+int createLevelFromFile( string filename )
+{
+   ifstream level_file( filename.c_str(), ios::in | ios::binary | ios::ate );
+   ifstream::pos_type fileSize;
+   char* fileContents;
+   if(level_file.is_open())
+   {
+      fileSize = level_file.tellg();
+      fileContents = new char[fileSize];
+      level_file.seekg(0, ios::beg);
+      if(!level_file.read(fileContents, fileSize))
+      {
+         log("Failed to read level file");
+      }
+      else
+      {
+         int x, y, i;
+         int counter = 0;
+
+         int dim_x = (int)fileContents[counter++];
+         int dim_y = (int)fileContents[counter++];
+         initGrids(dim_x,dim_y);
+
+         for (x = 0; x < dim_x; ++x) {
+            for (y = 0; y < dim_y; ++y) {
+               GRID_AT(terrain_grid,x,y) = parseTerrain( fileContents[counter] );
+               counter++;
+            }
+         }
+
+         int num_units = (int)fileContents[counter++];
+
+         for (i = 0; i < num_units; ++i) {
+            char c1 = fileContents[counter++],
+                 c2 = fileContents[counter++],
+                 ux = fileContents[counter++],
+                 uy = fileContents[counter++];
+            parseAndCreateUnit( c1, c2, ux, uy );
+         }
+
+         stringstream ss;
+         ss << "X: " << dim_x << ", Y: " << dim_y;
+         log(ss.str());
+      }
+      level_file.close();
+   }
+   return 0;
+
+levelLoadFailure:
+   log("ERROR reading level file - aborted");
+   level_file.close();
+   clearAll();
+   return -1;
+}
+
 int loadLevel( int level_id )
 {
    if (!level_init)
@@ -996,21 +1117,17 @@ int loadLevel( int level_id )
    if (level_id == 0 || true)
    {
       base_terrain = BASE_TER_GRASS;
-      initGrids(15,15);
+      if (createLevelFromFile( "res/testlevel.txt" ) == -1)
+         return -1;
       setView( 11.9, Vector2f( 6.0, 6.0 ) );
 
-      GRID_AT(terrain_grid,10,10) = TER_TREE2;
-      GRID_AT(terrain_grid,10,9) = TER_TREE2;
-      GRID_AT(terrain_grid,10,8) = TER_TREE2;
-      GRID_AT(terrain_grid,11,10) = TER_TREE2;
+      //addUnit( new TargetPractice( 9, 1, SOUTH ) );
+      //addUnit( new TargetPractice( 9, 3, SOUTH ) );
+      //addUnit( new TargetPractice( 9, 5, SOUTH ) );
+      //addUnit( new TargetPractice( 9, 7, SOUTH ) );
 
-      addUnit( new TargetPractice( 9, 1, SOUTH ) );
-      addUnit( new TargetPractice( 9, 3, SOUTH ) );
-      addUnit( new TargetPractice( 9, 5, SOUTH ) );
-      addUnit( new TargetPractice( 9, 7, SOUTH ) );
-
-      player = Player::initPlayer( 1, 4, EAST );
-      addPlayer();
+      //player = Player::initPlayer( 1, 4, EAST );
+      //addPlayer();
    }
 
    menu_state = MENU_MAIN | MENU_PRI_INGAME;
