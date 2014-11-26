@@ -1076,6 +1076,11 @@ int createLevelFromFile( string filename )
          int dim_y = (int)fileContents[counter++];
          initGrids(dim_x,dim_y);
 
+         float view_size_x = (float)(int)fileContents[counter++];
+         float view_pos_x = (float)(int)fileContents[counter++];
+         float view_pos_y = (float)(int)fileContents[counter++];
+         setView( view_size_x, Vector2f( view_pos_x, view_pos_y ) );
+
          for (x = 0; x < dim_x; ++x) {
             for (y = 0; y < dim_y; ++y) {
                GRID_AT(terrain_grid,x,y) = parseTerrain( fileContents[counter] );
@@ -1119,7 +1124,6 @@ int loadLevel( int level_id )
       base_terrain = BASE_TER_GRASS;
       if (createLevelFromFile( "res/testlevel.txt" ) == -1)
          return -1;
-      setView( 11.9, Vector2f( 6.0, 6.0 ) );
 
       //addUnit( new TargetPractice( 9, 1, SOUTH ) );
       //addUnit( new TargetPractice( 9, 3, SOUTH ) );
