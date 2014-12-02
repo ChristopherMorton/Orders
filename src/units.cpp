@@ -20,27 +20,27 @@
 
 #define MONSTER_BASE_HEALTH 600
 #define MONSTER_BASE_MEMORY 10
-#define MONSTER_BASE_VISION 5.0
+#define MONSTER_BASE_VISION 3.5
 #define MONSTER_BASE_SPEED 0.1
 
 #define SOLDIER_BASE_HEALTH 300
 #define SOLDIER_BASE_MEMORY 16
-#define SOLDIER_BASE_VISION 7.0
+#define SOLDIER_BASE_VISION 6.5
 #define SOLDIER_BASE_SPEED 0.1
 
 #define WORM_BASE_HEALTH 40
 #define WORM_BASE_MEMORY 14
-#define WORM_BASE_VISION 8.0
+#define WORM_BASE_VISION 8.5
 #define WORM_BASE_SPEED 0.1
 
 #define BIRD_BASE_HEALTH 300
 #define BIRD_BASE_MEMORY 16
-#define BIRD_BASE_VISION 7.0
+#define BIRD_BASE_VISION 6.5
 #define BIRD_BASE_SPEED 0.1
 
 #define BUG_BASE_HEALTH 100
 #define BUG_BASE_MEMORY 14
-#define BUG_BASE_VISION 5.0
+#define BUG_BASE_VISION 5.5
 #define BUG_BASE_SPEED 0.8
 #define BUG_ORB_SPEED 3.0
 
@@ -451,8 +451,8 @@ int Player::init( int x, int y, Direction face )
 
    health = max_health = PLAYER_MAX_HEALTH;
 
-   vision_range = 5;
-   attack_range = 5;
+   vision_range = 3.5;
+   attack_range = 3.5;
 
    speed = 0.99;
 

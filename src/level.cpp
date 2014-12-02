@@ -292,25 +292,25 @@ int addProjectile( Projectile_Type t, int team, float x, float y, float speed, U
 //////////////////////////////////////////////////////////////////////
 // Vision ---
 
-bool blocksVision( int x, int y, Direction ew, Direction ns )
+bool blocksVision( int from_x, int from_y, int to_x, int to_y, Direction ew, Direction ns, int flags )
 {
-   Terrain t = GRID_AT(terrain_grid,x,y);
+   Terrain t = GRID_AT(terrain_grid,from_x,from_y);
 
    if (t == TER_TREE1 || t == TER_TREE2)
       return true;
 
    // Cliffs
    if ((t == CLIFF_SOUTH || t == CLIFF_SOUTH_EAST_EDGE || t == CLIFF_SOUTH_WEST_EDGE)
-      && ns == NORTH)
+      && ns == NORTH && (to_y < from_y))
       return true;
    if ((t == CLIFF_NORTH || t == CLIFF_NORTH_EAST_EDGE || t == CLIFF_NORTH_WEST_EDGE)
-      && ns == SOUTH)
+      && ns == SOUTH && (to_y > from_y))
       return true;
    if ((t == CLIFF_EAST || t == CLIFF_EAST_NORTH_EDGE || t == CLIFF_EAST_SOUTH_EDGE)
-      && ew == WEST)
+      && ew == WEST && (to_x < from_x))
       return true;
    if ((t == CLIFF_WEST || t == CLIFF_WEST_SOUTH_EDGE || t == CLIFF_WEST_NORTH_EDGE)
-      && ew == EAST)
+      && ew == EAST && (to_x > from_x))
       return true;
    // Cliff corners
    if ((t == CLIFF_CORNER_SOUTHEAST_90 || t == CLIFF_CORNER_SOUTHEAST_270)
@@ -331,96 +331,174 @@ bool blocksVision( int x, int y, Direction ew, Direction ns )
    return false;
 }
 
-int calculateLineVision( int start_x, int start_y, int end_x, int end_y, float range_squared, int flags )
+
+int calculatePointVision( int start_x, int start_y, int end_x, int end_y, int flags )
 {
+   // Eight quadrants:
+   //. \2|3/
+   //. 1\|/4
+   //.---s---
+   //. 5/|\8
+   //. /6|7\
+
    float dydx;
    if (start_x == end_x)
-      dydx = 1000000000.0;
+      dydx = 100000000;
    else
       dydx = ((float)(start_y - end_y)) / ((float)(start_x - end_x));
 
-   int x = start_x, y = start_y;
-
-   int dx, dy;
-
+   int x, y, dx = 1, dy = 1;
    if (end_x < start_x) dx = -1;
-   else if (end_x > start_x) dx = 1;
-   else dx = 0;
-
    if (end_y < start_y) dy = -1;
-   else if (end_y > start_y) dy = 1;
-   else dy = 0;
 
    float calculator = 0;
 
-   Direction dir1, dir2;
+   Direction dir1 = EAST, dir2 = SOUTH;
    if (dx == -1) dir1 = WEST;
-   else if (dx == 1) dir1 = EAST;
-   else dir1 = ALL_DIR;
+   if (dy == -1) dir2 = NORTH;
 
-   if (dy == -1) dir2 = SOUTH;
-   else if (dy == 1) dir2 = NORTH;
-   else dir2 = ALL_DIR;
+   int previous_x = start_x, previous_y = start_y;
    
    if (dydx >= 1 || dydx <= -1) { 
       // steep slope - go up/down 1 each move, calculate x
       float f_dx = ((float)dy)/dydx; 
-      for (y = start_y + dy; y != end_y + dy; y += dy) {
+      x = start_x;
+      for (y = start_y; y != end_y; y += dy) {
          calculator += f_dx;
-         if (calculator >= 0.5) {
+         if (calculator >= 1.05) {
             x += dx;
             calculator -= 1.0;
          }
-         else if (calculator <= -0.5) {
+         else if (calculator <= -1.05) {
             x += dx;
             calculator += 1.0;
          }
 
-         // Check range
-         float r_squared = ((start_y - y)*(start_y - y)) + ((start_x - x)*(start_x - x));
-         if (r_squared > range_squared)
-            break; // Out of sight range
-
-         // Check possible vision-obstructors
-         if (blocksVision(x,y,dir1,dir2)) {
-            GRID_AT(vision_grid,x,y) = VIS_VISIBLE;
-            break; // Vision obstructed beyond here
+         // Check if vision to this square is obstructed by the last square
+         if (blocksVision(previous_x, previous_y, x, y, dir1, dir2, flags)) {
+            return -1; // Vision obstructed
          }
 
          // Otherwise, it's visible, move on
          GRID_AT(vision_grid,x,y) = VIS_VISIBLE;
+         previous_x = x;
+         previous_y = y;
       }
    }
    else
    {
       // shallow slope, go left/right 1 each move, calculate y
       float f_dy = dydx*((float)dx);
-      for (x = start_x + dx; x != end_x + dx; x += dx) {
+      y = start_y;
+      for (x = start_x; x != end_x; x += dx) {
          calculator += f_dy;
-         if (calculator >= 0.5) {
+         if (calculator >= 1.05) {
             y += dy;
             calculator -= 1.0;
          }
-         else if (calculator <= -0.5) {
+         else if (calculator <= -1.05) {
             y += dy;
             calculator += 1.0;
          }
 
-         // Check range
-         float r_squared = ((start_y - y)*(start_y - y)) + ((start_x - x)*(start_x - x));
-         if (r_squared > range_squared)
-            break; // Out of sight range
-
          // Check possible vision-obstructors
-         if (blocksVision(x,y,dir1,dir2)) {
-            GRID_AT(vision_grid,x,y) = VIS_VISIBLE;
-            break; // Vision obstructed beyond here
+         if (blocksVision(previous_x, previous_y, x, y, dir1, dir2, flags)) {
+            return -1; // Vision obstructed beyond here
          }
 
          // Otherwise, it's visible, move on
          GRID_AT(vision_grid,x,y) = VIS_VISIBLE;
+         previous_x = x;
+         previous_y = y;
       }
    }
+   return 0;
+}
+
+int calculateVerticalLineVision( int x, int start_y, int end_y, int flags )
+{
+   int dy = 1;
+   if (start_y > end_y) dy = -1;
+
+   Direction dir = SOUTH; 
+   if (dy == -1) dir = NORTH;
+
+   for ( int y = start_y + dy; y != end_y + dy; y += dy) {
+      // Check possible vision-obstructors
+      if (blocksVision(x, y - dy, x, y, ALL_DIR, dir, flags)) {
+         return -1; // Vision obstructed beyond here
+      }
+
+      // Otherwise, it's visible, move on
+      GRID_AT(vision_grid,x,y) = VIS_VISIBLE;
+   }
+   return 0;
+}
+
+int calculateHorizintalLineVision( int start_x, int end_x, int y, int flags )
+{
+   int dx = 1;
+   if (start_x > end_x) dx = -1;
+
+   Direction dir = EAST;
+   if (dx == -1) dir = WEST;
+
+   for ( int x = start_x + dx; x != end_x + dx; x += dx) {
+      // Check possible vision-obstructors
+      if (blocksVision(x - dx, y, x, y, dir, ALL_DIR, flags)) {
+         return -1; // Vision obstructed beyond here
+      }
+
+      // Otherwise, it's visible, move on
+      GRID_AT(vision_grid,x,y) = VIS_VISIBLE;
+   }
+   return 0;
+}
+
+int calculateLineVision( int start_x, int start_y, int end_x, int end_y, float range_squared, int flags )
+{
+   // First things first, if it's out of range it's not visible
+   int dx = (end_x - start_x), dy = (end_y - start_y);
+   if (range_squared < ((dx*dx)+(dy*dy)))
+      return -2;
+
+   if (start_x == end_x)
+      return calculateVerticalLineVision( start_x, start_y, end_y, flags );
+   if (start_y == end_y)
+      return calculateHorizintalLineVision( start_x, end_x, start_y, flags );
+
+   float dydx;
+   if (start_x == end_x)
+      dydx = 100000000;
+   else
+      dydx = ((float)(start_y - end_y)) / ((float)(start_x - end_x));
+
+   int quadrant;
+   if (end_x < start_x) {
+      if (dydx >= 1 || dydx <= -1)
+         quadrant = 2;
+      else
+         quadrant = 1;
+   } else {
+      if (dydx >= 1 || dydx <= -1)
+         quadrant = 3;
+      else
+         quadrant = 4;
+   }
+   if (end_y > start_y)
+      quadrant += 4;
+
+   if (quadrant == 1 || quadrant == 2) 
+      return calculatePointVision( start_x-1, start_y-1, end_x-1, end_y-1, flags );
+   if (quadrant == 3 || quadrant == 4) 
+      return calculatePointVision( start_x+1, start_y-1, end_x+1, end_y-1, flags );
+   if (quadrant == 5 || quadrant == 6) 
+      return calculatePointVision( start_x-1, start_y+1, end_x-1, end_y+1, flags );
+   if (quadrant == 7 || quadrant == 8) 
+      return calculatePointVision( start_x+1, start_y+1, end_x+1, end_y+1, flags );
+
+   // We must have seen it to get this result
+   GRID_AT(vision_grid,end_x,end_y) = VIS_VISIBLE;
    return 0;
 }
 
@@ -428,7 +506,9 @@ int calculateUnitVision( Unit *unit )
 {
    int x, y;
    if (unit && unit->team == 0) { // Allied unit
+      // TODO: all units should provide vision for their team - or at least for themselves
 
+      /*
       int v_x_min = (int)(unit->x_grid - unit->vision_range) - 1;
       int v_x_max = (int)(unit->x_grid + unit->vision_range) + 1;
       int v_y_min = (int)(unit->y_grid - unit->vision_range) - 1;
@@ -437,21 +517,46 @@ int calculateUnitVision( Unit *unit )
       if (v_x_max >= level_dim_x) v_x_max = level_dim_x - 1;
       if (v_y_min < 0) v_y_min = 0;
       if (v_y_max >= level_dim_y) v_y_max = level_dim_y - 1; 
+      */
 
       float vision_range_squared = unit->vision_range * unit->vision_range;
 
-      // Strategy: go around the outside of the possible vision box,
-      // from each edge square make a line back to the middle,
+      // Strategy: go around in boxes, skipping already visible squares,
+      // and from each square make a line back to the middle,
       // and determine visibility along that line for all squares in the line
+      // GOAL: be generous in what is visible, to avoid intuitive problems
       GRID_AT(vision_grid,unit->x_grid,unit->y_grid) = VIS_VISIBLE;
 
-      for (x = v_x_min; x <= v_x_max; ++x) {
-         calculateLineVision( unit->x_grid, unit->y_grid, x, v_y_min, vision_range_squared, 0 );
-         calculateLineVision( unit->x_grid, unit->y_grid, x, v_y_max, vision_range_squared, 0 );
-      }
-      for (y = v_y_min + 1; y < v_y_max; ++y) {
-         calculateLineVision( unit->x_grid, unit->y_grid, v_x_min, y, vision_range_squared, 0 );
-         calculateLineVision( unit->x_grid, unit->y_grid, v_x_max, y, vision_range_squared, 0 );
+      for (int radius = unit->vision_range; radius > 0; --radius)
+      {
+         if (unit->y_grid - radius >= 0)
+            for (x = unit->x_grid - radius; x <= unit->x_grid + radius; ++x) {
+               if (x < 0 || x >= level_dim_x) continue;
+               if (GRID_AT(vision_grid, x, unit->y_grid - radius) == VIS_VISIBLE) continue;
+               calculateLineVision( unit->x_grid, unit->y_grid, x, (unit->y_grid - radius), vision_range_squared, 0 );
+            }
+
+         if (unit->y_grid + radius < level_dim_y)
+            for (x = unit->x_grid - radius; x <= unit->x_grid + radius; ++x) {
+               if (x < 0 || x >= level_dim_x) continue;
+               if (GRID_AT(vision_grid, x, unit->y_grid + radius) == VIS_VISIBLE) continue;
+               calculateLineVision( unit->x_grid, unit->y_grid, x, (unit->y_grid + radius), vision_range_squared, 0 );
+            }
+
+         if (unit->x_grid - radius >= 0)
+            for (y = unit->y_grid - radius; y <= unit->y_grid + radius; ++y) {
+               if (y < 0 || y >= level_dim_y) continue;
+               if (GRID_AT(vision_grid, unit->x_grid - radius, y) == VIS_VISIBLE) continue;
+               calculateLineVision( unit->x_grid, unit->y_grid, (unit->x_grid - radius), y, vision_range_squared, 0 );
+            }
+
+         if (unit->x_grid + radius < level_dim_x)
+            for (y = unit->y_grid - radius; y <= unit->y_grid + radius; ++y) {
+               if (y < 0 || y >= level_dim_y) continue;
+               if (GRID_AT(vision_grid, unit->x_grid + radius, y) == VIS_VISIBLE) continue;
+               calculateLineVision( unit->x_grid, unit->y_grid, (unit->x_grid + radius), y, vision_range_squared, 0 );
+            }
+
       }
    }
 
@@ -668,7 +773,7 @@ int startSummon( Order o )
 
    if (GRID_AT(unit_grid, x, y) != NULL) // Summon fails, obvi
       return -1;
-   if (!canMove( x, y ))
+   if (!canMove( x, y, x, y ))
       return -1;
 
    summonMarker = SummonMarker::get( x, y );
@@ -1320,6 +1425,8 @@ int loadLevel( int level_id )
       base_terrain = BASE_TER_GRASS;
       if (createLevelFromFile( "res/testlevel.txt" ) == -1)
          return -1;
+
+      //GRID_AT(terrain_grid,0,0) = TER_NONE;
 
       writeLevelToFile( "res/testlevel.txt" );
    }
