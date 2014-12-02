@@ -295,8 +295,37 @@ int addProjectile( Projectile_Type t, int team, float x, float y, float speed, U
 bool blocksVision( int x, int y, Direction ew, Direction ns )
 {
    Terrain t = GRID_AT(terrain_grid,x,y);
+
    if (t == TER_TREE1 || t == TER_TREE2)
       return true;
+
+   // Cliffs
+   if ((t == CLIFF_SOUTH || t == CLIFF_SOUTH_EAST_EDGE || t == CLIFF_SOUTH_WEST_EDGE)
+      && ns == NORTH)
+      return true;
+   if ((t == CLIFF_NORTH || t == CLIFF_NORTH_EAST_EDGE || t == CLIFF_NORTH_WEST_EDGE)
+      && ns == SOUTH)
+      return true;
+   if ((t == CLIFF_EAST || t == CLIFF_EAST_NORTH_EDGE || t == CLIFF_EAST_SOUTH_EDGE)
+      && ew == WEST)
+      return true;
+   if ((t == CLIFF_WEST || t == CLIFF_WEST_SOUTH_EDGE || t == CLIFF_WEST_NORTH_EDGE)
+      && ew == EAST)
+      return true;
+   // Cliff corners
+   if ((t == CLIFF_CORNER_SOUTHEAST_90 || t == CLIFF_CORNER_SOUTHEAST_270)
+         && ns == NORTH && ew == WEST)
+      return true;
+   if ((t == CLIFF_CORNER_SOUTHWEST_90 || t == CLIFF_CORNER_SOUTHWEST_270)
+         && ns == NORTH && ew == EAST)
+      return true;
+   if ((t == CLIFF_CORNER_NORTHWEST_90 || t == CLIFF_CORNER_NORTHWEST_270)
+         && ns == SOUTH && ew == EAST)
+      return true;
+   if ((t == CLIFF_CORNER_NORTHEAST_90 || t == CLIFF_CORNER_NORTHEAST_270)
+         && ns == SOUTH && ew == WEST)
+      return true;
+
 
    // TODO: everything
    return false;
@@ -562,6 +591,9 @@ bool canMove( int x, int y, int from_x, int from_y )
       return false;
 
    // TODO: terrain, building, unit collision
+   Terrain t = GRID_AT(terrain_grid,x,y);
+   if (t >= CLIFF_SOUTH && t <= CLIFF_CORNER_NORTHWEST_270)
+      return false; // cliffs impassable
 
    // Unit collision - Check units in all adjacent (+2)locationBlocked squares for others
    // moving into the same location.  Only the BIGGEST succeeds in moving.
@@ -636,6 +668,8 @@ int startSummon( Order o )
 
    if (GRID_AT(unit_grid, x, y) != NULL) // Summon fails, obvi
       return -1;
+   if (!canMove( x, y ))
+      return -1;
 
    summonMarker = SummonMarker::get( x, y );
    GRID_AT(unit_grid, x, y) = summonMarker;
@@ -652,25 +686,7 @@ int completeSummon( Order o )
    summonMarker = NULL;
 
    Unit *u;
-   /*
-   switch( o.action ) {
-      case SUMMON_MONSTER:
-         //u = new Monster();
-         //break;
-      case SUMMON_SOLDIER:
-         //u = new Soldier();
-         //break;
-      case SUMMON_WORM:
-         //u = new Worm();
-         //break;
-      case SUMMON_BIRD:
-         //u = new Bird();
-         //break;
-      case SUMMON_BUG:
-         u = new Bug( x, y, SOUTH );
-         break;
-   }
-   */
+
    if (o.action == SUMMON_MONSTER)
       u = new Monster( x, y, SOUTH );
    if (o.action == SUMMON_SOLDIER)
@@ -931,11 +947,93 @@ void initTextures()
 
    terrain_sprites[TER_NONE] = NULL;
    terrain_sprites[TER_TREE1] = new Sprite( *(t_manager.getTexture( "BasicTree1.png" )));
-   terrain_sprites[TER_TREE2] = new Sprite( *(t_manager.getTexture( "BasicTree2.png" )));
-         
    normalizeTo1x1( terrain_sprites[TER_TREE1] );
+   terrain_sprites[TER_TREE2] = new Sprite( *(t_manager.getTexture( "BasicTree2.png" )));
    normalizeTo1x1( terrain_sprites[TER_TREE2] );
+
+   // CLIFF
+   // straight
+   Vector2u dim = t_manager.getTexture( "CliffStraight.png" )->getSize();
+   terrain_sprites[CLIFF_SOUTH] = new Sprite( *(t_manager.getTexture( "CliffStraight.png" )));
+   normalizeTo1x1( terrain_sprites[CLIFF_SOUTH] );
+   terrain_sprites[CLIFF_WEST] = new Sprite( *(t_manager.getTexture( "CliffStraight.png" )));
+   normalizeTo1x1( terrain_sprites[CLIFF_WEST] );
+   terrain_sprites[CLIFF_WEST]->setRotation( 90 );
+   terrain_sprites[CLIFF_WEST]->setOrigin( 0, dim.y );
+   terrain_sprites[CLIFF_NORTH] = new Sprite( *(t_manager.getTexture( "CliffStraight.png" )));
+   normalizeTo1x1( terrain_sprites[CLIFF_NORTH] );
+   terrain_sprites[CLIFF_NORTH]->setRotation( 180 );
+   terrain_sprites[CLIFF_NORTH]->setOrigin( dim.x, dim.y );
+   terrain_sprites[CLIFF_EAST] = new Sprite( *(t_manager.getTexture( "CliffStraight.png" )));
+   normalizeTo1x1( terrain_sprites[CLIFF_EAST] );
+   terrain_sprites[CLIFF_EAST]->setRotation( 270 );
+   terrain_sprites[CLIFF_EAST]->setOrigin( dim.x, 0 );
+
+   // edge
+   terrain_sprites[CLIFF_SOUTH_WEST_EDGE] = new Sprite( *(t_manager.getTexture( "CliffEndLeft.png" )));
+   normalizeTo1x1( terrain_sprites[CLIFF_SOUTH_WEST_EDGE] );
+   terrain_sprites[CLIFF_SOUTH_EAST_EDGE] = new Sprite( *(t_manager.getTexture( "CliffEndRight.png" )));
+   normalizeTo1x1( terrain_sprites[CLIFF_SOUTH_EAST_EDGE] );
+
+   terrain_sprites[CLIFF_WEST_NORTH_EDGE] = new Sprite( *(t_manager.getTexture( "CliffEndLeft.png" )));
+   normalizeTo1x1( terrain_sprites[CLIFF_WEST_NORTH_EDGE] );
+   terrain_sprites[CLIFF_WEST_SOUTH_EDGE] = new Sprite( *(t_manager.getTexture( "CliffEndRight.png" )));
+   normalizeTo1x1( terrain_sprites[CLIFF_WEST_SOUTH_EDGE] );
+   terrain_sprites[CLIFF_WEST_NORTH_EDGE]->setRotation( 90 );
+   terrain_sprites[CLIFF_WEST_NORTH_EDGE]->setOrigin( 0, dim.y );
+   terrain_sprites[CLIFF_WEST_SOUTH_EDGE]->setRotation( 90 );
+   terrain_sprites[CLIFF_WEST_SOUTH_EDGE]->setOrigin( 0, dim.y );
+
+   terrain_sprites[CLIFF_NORTH_EAST_EDGE] = new Sprite( *(t_manager.getTexture( "CliffEndLeft.png" )));
+   normalizeTo1x1( terrain_sprites[CLIFF_NORTH_EAST_EDGE] );
+   terrain_sprites[CLIFF_NORTH_WEST_EDGE] = new Sprite( *(t_manager.getTexture( "CliffEndRight.png" )));
+   normalizeTo1x1( terrain_sprites[CLIFF_NORTH_WEST_EDGE] );
+   terrain_sprites[CLIFF_NORTH_EAST_EDGE]->setRotation( 180 );
+   terrain_sprites[CLIFF_NORTH_EAST_EDGE]->setOrigin( dim.x, dim.y );
+   terrain_sprites[CLIFF_NORTH_WEST_EDGE]->setRotation( 180 );
+   terrain_sprites[CLIFF_NORTH_WEST_EDGE]->setOrigin( dim.x, dim.y );
+
+   terrain_sprites[CLIFF_EAST_SOUTH_EDGE] = new Sprite( *(t_manager.getTexture( "CliffEndLeft.png" )));
+   normalizeTo1x1( terrain_sprites[CLIFF_EAST_SOUTH_EDGE] );
+   terrain_sprites[CLIFF_EAST_NORTH_EDGE] = new Sprite( *(t_manager.getTexture( "CliffEndRight.png" )));
+   normalizeTo1x1( terrain_sprites[CLIFF_EAST_NORTH_EDGE] );
+   terrain_sprites[CLIFF_EAST_SOUTH_EDGE]->setRotation( 270 );
+   terrain_sprites[CLIFF_EAST_SOUTH_EDGE]->setOrigin( dim.x, 0 );
+   terrain_sprites[CLIFF_EAST_NORTH_EDGE]->setRotation( 270 );
+   terrain_sprites[CLIFF_EAST_NORTH_EDGE]->setOrigin( dim.x, 0 );
+
+   // corner
+   terrain_sprites[CLIFF_CORNER_SOUTHEAST_90] = new Sprite( *(t_manager.getTexture( "CliffCorner90.png" )));
+   normalizeTo1x1( terrain_sprites[CLIFF_CORNER_SOUTHEAST_90] );
+   terrain_sprites[CLIFF_CORNER_SOUTHWEST_90] = new Sprite( *(t_manager.getTexture( "CliffCorner90.png" )));
+   normalizeTo1x1( terrain_sprites[CLIFF_CORNER_SOUTHWEST_90] );
+   terrain_sprites[CLIFF_CORNER_SOUTHWEST_90]->setRotation( 90 );
+   terrain_sprites[CLIFF_CORNER_SOUTHWEST_90]->setOrigin( 0, dim.y );
+   terrain_sprites[CLIFF_CORNER_NORTHWEST_90] = new Sprite( *(t_manager.getTexture( "CliffCorner90.png" )));
+   normalizeTo1x1( terrain_sprites[CLIFF_CORNER_NORTHWEST_90] );
+   terrain_sprites[CLIFF_CORNER_NORTHWEST_90]->setRotation( 180 ); 
+   terrain_sprites[CLIFF_CORNER_NORTHWEST_90]->setOrigin( dim.x, dim.y );
+   terrain_sprites[CLIFF_CORNER_NORTHEAST_90] = new Sprite( *(t_manager.getTexture( "CliffCorner90.png" )));
+   normalizeTo1x1( terrain_sprites[CLIFF_CORNER_NORTHEAST_90] );
+   terrain_sprites[CLIFF_CORNER_NORTHEAST_90]->setRotation( 270 );
+   terrain_sprites[CLIFF_CORNER_NORTHEAST_90]->setOrigin( dim.x, 0 );
+
+   terrain_sprites[CLIFF_CORNER_SOUTHEAST_270] = new Sprite( *(t_manager.getTexture( "CliffCorner270.png" )));
+   normalizeTo1x1( terrain_sprites[CLIFF_CORNER_SOUTHEAST_270] );
+   terrain_sprites[CLIFF_CORNER_SOUTHWEST_270] = new Sprite( *(t_manager.getTexture( "CliffCorner270.png" )));
+   normalizeTo1x1( terrain_sprites[CLIFF_CORNER_SOUTHWEST_270] );
+   terrain_sprites[CLIFF_CORNER_SOUTHWEST_270]->setRotation( 90 );
+   terrain_sprites[CLIFF_CORNER_SOUTHWEST_270]->setOrigin( 0, dim.y );
+   terrain_sprites[CLIFF_CORNER_NORTHWEST_270] = new Sprite( *(t_manager.getTexture( "CliffCorner270.png" )));
+   normalizeTo1x1( terrain_sprites[CLIFF_CORNER_NORTHWEST_270] );
+   terrain_sprites[CLIFF_CORNER_NORTHWEST_270]->setRotation( 180 ); 
+   terrain_sprites[CLIFF_CORNER_NORTHWEST_270]->setOrigin( dim.x, dim.y );
+   terrain_sprites[CLIFF_CORNER_NORTHEAST_270] = new Sprite( *(t_manager.getTexture( "CliffCorner270.png" )));
+   normalizeTo1x1( terrain_sprites[CLIFF_CORNER_NORTHEAST_270] );
+   terrain_sprites[CLIFF_CORNER_NORTHEAST_270]->setRotation( 270 );
+   terrain_sprites[CLIFF_CORNER_NORTHEAST_270]->setOrigin( dim.x, 0 );
    
+
    base_grass_sprite = new Sprite( *(t_manager.getTexture( "GreenGrass.png" )));
    base_mountain_sprite = new Sprite( *(t_manager.getTexture( "GrayRock.png" )));
    base_underground_sprite = new Sprite( *(t_manager.getTexture( "BrownRock.png" )));
@@ -1003,13 +1101,14 @@ int initGrids(int x, int y)
 
 Terrain parseTerrain( char c )
 {
-   switch (c)
-   {
-      case 't':
-         return TER_TREE1;
-      default:
-         return TER_NONE;
-   }
+   return (Terrain)(int)c;
+}
+
+// Mirrors parseTerrain
+int terrainToCharData( Terrain t, char&c )
+{
+   c = (char)(int)t;
+   return 0;
 }
 
 int parseAndCreateUnit( char c1, char c2, char x, char y )
@@ -1032,17 +1131,15 @@ int parseAndCreateUnit( char c1, char c2, char x, char y )
          break;
    }
 
-   switch (c1)
+   switch ((UnitType)(int)c1)
    {
-      case 'p':
-         // Create player
+      case PLAYER_T:
          if (NULL != player) return -1;
          player = Player::initPlayer( (int)x, (int)y, facing );
          addPlayer();
          log("Created player");
          break;
-      case 't':
-         // Create TargetPractice
+      case TARGETPRACTICE_T:
          addUnit( new TargetPractice( (int)x, (int)y, facing ) );
          log("Created TargetPractice");
          break;
@@ -1051,6 +1148,34 @@ int parseAndCreateUnit( char c1, char c2, char x, char y )
    }
 
    return 0;
+}
+
+// Mirrors parseAndCreateUnit
+int unitToCharData( Unit *u, char &c1, char &c2, char &x, char &y )
+{
+   if (NULL == u)
+      return -1;
+
+   c2 = 0; // clear
+   switch (u->facing) {
+      case EAST:
+         c2 |= 0x0;
+         break;
+      case SOUTH:
+         c2 |= 0x1;
+         break;
+      case WEST:
+         c2 |= 0x2;
+         break;
+      case NORTH:
+         c2 |= 0x3;
+         break;
+   }
+
+   c1 = (char)(int)u->type;
+
+   x = u->x_grid;
+   y = u->y_grid;
 }
 
 int createLevelFromFile( string filename )
@@ -1113,6 +1238,77 @@ levelLoadFailure:
    return -1;
 }
 
+// Mirrors createLevelFromFile
+int writeLevelToFile( string filename )
+{
+   ofstream level_file( filename.c_str(), ios::out | ios::binary | ios::ate );
+   int unitcount = unit_list.size() + 1; // 1 = player
+   int writesize = 2 // dimensions
+                 + 3 // view
+                 // Could be some other metadata here
+                 + (level_dim_x * level_dim_y) // terrain data
+                 + 1 // count of units
+                 + (4 * unitcount) // unit descriptions
+                 // Should be something here for buildings
+                 ;
+   char *fileContents = new char[writesize];
+   if(level_file.is_open())
+   {
+      int i = 0, x, y;
+      // Dimensions
+      fileContents[i++] = (char)level_dim_x;
+      fileContents[i++] = (char)level_dim_y;
+
+      // View
+      fileContents[i++] = (char)(int)level_view->getSize().x;
+      fileContents[i++] = (char)(int)level_view->getCenter().x;
+      fileContents[i++] = (char)(int)level_view->getCenter().y;
+
+      for (x = 0; x < level_dim_x; ++x) {
+         for (y = 0; y < level_dim_y; ++y) {
+            terrainToCharData( GRID_AT(terrain_grid,x,y), fileContents[i] );
+            i++;
+         }
+      }
+
+      // Units
+      fileContents[i++] = unitcount + 1;
+
+      if (player)
+      {
+         char c1, c2, ux, uy;
+         unitToCharData( player, c1, c2, ux, uy );
+         fileContents[i++] = c1;
+         fileContents[i++] = c2;
+         fileContents[i++] = ux;
+         fileContents[i++] = uy;
+      }
+
+      for (list<Unit*>::iterator it=unit_list.begin(); it != unit_list.end(); ++it)
+      {
+         Unit* unit = (*it);
+         if (unit) {
+            char c1, c2, ux, uy;
+            unitToCharData( unit, c1, c2, ux, uy );
+            fileContents[i++] = c1;
+            fileContents[i++] = c2;
+            fileContents[i++] = ux;
+            fileContents[i++] = uy;
+         }
+      }
+
+      level_file.write(fileContents, writesize);
+
+      log("Wrote current level to file");
+      delete fileContents;
+      return 0;
+   }
+
+   log("Write level to file error: file failed to open");
+   delete fileContents;
+   return -1;
+}
+
 int loadLevel( int level_id )
 {
    if (!level_init)
@@ -1125,13 +1321,7 @@ int loadLevel( int level_id )
       if (createLevelFromFile( "res/testlevel.txt" ) == -1)
          return -1;
 
-      //addUnit( new TargetPractice( 9, 1, SOUTH ) );
-      //addUnit( new TargetPractice( 9, 3, SOUTH ) );
-      //addUnit( new TargetPractice( 9, 5, SOUTH ) );
-      //addUnit( new TargetPractice( 9, 7, SOUTH ) );
-
-      //player = Player::initPlayer( 1, 4, EAST );
-      //addPlayer();
+      writeLevelToFile( "res/testlevel.txt" );
    }
 
    menu_state = MENU_MAIN | MENU_PRI_INGAME;
