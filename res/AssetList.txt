@@ -13,6 +13,7 @@ IMAGE CliffCorner270.png
 // Vision-related
 IMAGE Fog.png
 IMAGE FogCloudSolid.png
+IMAGE FogCloudDark.png
 IMAGE FogCloudTransparent.png 
 IMAGE FogCloudTransparentBottom.png 
 IMAGE FogCloudTransparentTop.png 

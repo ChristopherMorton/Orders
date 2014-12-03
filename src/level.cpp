@@ -27,6 +27,7 @@
 #include <sstream>
 #include <fstream>
 #include <list>
+#include <set>
 
 #define TURN_LENGTH 1000
 
@@ -327,19 +328,20 @@ bool blocksVision( int from_x, int from_y, int to_x, int to_y, Direction ew, Dir
       return true;
 
 
-   // TODO: everything
+   // TODO: everything else
    return false;
 }
 
 
 int calculatePointVision( int start_x, int start_y, int end_x, int end_y, int flags )
 {
-   // Eight quadrants:
-   //. \2|3/
-   //. 1\|/4
-   //.---s---
-   //. 5/|\8
-   //. /6|7\
+   /* Eight quadrants:
+    * \2|3/
+    * 1\|/4
+    * --s-- 
+    * 5/|\8
+    * /6|7\
+    */
 
    float dydx;
    if (start_x == end_x)
@@ -695,13 +697,73 @@ bool canMove( int x, int y, int from_x, int from_y )
    if (x < 0 || y < 0 || x >= level_dim_x || y >= level_dim_y)
       return false;
 
-   // TODO: terrain, building, unit collision
+   // TODO: building collision
    Terrain t = GRID_AT(terrain_grid,x,y);
    if (t >= CLIFF_SOUTH && t <= CLIFF_CORNER_NORTHWEST_270)
       return false; // cliffs impassable
 
-   // Unit collision - Check units in all adjacent (+2)locationBlocked squares for others
-   // moving into the same location.  Only the BIGGEST succeeds in moving.
+   return true;
+}
+
+set<Unit*> unit_collision_set;
+
+bool canMoveUnit( int x, int y, int from_x, int from_y )
+{
+   // Ignores terrain/buildings - do that stuff first
+   //
+   // This only figures out:
+   //
+   // 1) Is there a unit in the square you're going to?
+   // 1.5) If so, will it move out in another direction?
+   // 
+   // 2) Are there any other units planning to move into this square?
+   // 2.5) If so, are they bigger than you?
+
+   // 1)
+   Unit *u_next = GRID_AT(unit_grid,x,y);
+   if (NULL != u_next) {
+      // Check for loops
+      set<Unit*>::iterator it = unit_collision_set.find( u_next );
+      if (it != unit_collision_set.end()) { // found it
+         // We have a collision loop. Nobody's moving today.
+         log("Collision loop");
+         return false;
+      }
+         
+      // There's a unit. Let's see if it's moving?
+      if (u_next->active != 1) // He aint moving
+         return false;
+
+      Order o = u_next->this_turn_order;
+      if (o.action == MOVE_FORWARD || o.action == MOVE_BACK) {
+         // Is he moving to THIS square?
+         if (u_next->x_next == x && u_next->y_next == y) {
+            // Well fuck it, we're both gonna bump
+            return false;
+         }
+         // Move bitch get out the WAAAAY
+         
+         // Oh wait what if he can't move b/c of other units?
+         unit_collision_set.insert( u_next );
+         bool r = testUnitCanMove( *u_next );
+         unit_collision_set.erase( u_next );
+
+         if (r == false) // He aint moving
+            return false;
+
+      }
+      else
+      {
+         // He aint moving
+         return false;
+      }
+   }
+   
+   // Still here? Then this location is available to move into,
+   // but you might not be the only one trying
+
+   // TODO
+   // 2)
 
    return true;
 }
@@ -1218,7 +1280,6 @@ int terrainToCharData( Terrain t, char&c )
 
 int parseAndCreateUnit( char c1, char c2, char x, char y )
 {
-   log("In parseAndCreateUnit");
    Direction facing;
    switch ((c2 & 0x3))
    {
@@ -1242,11 +1303,9 @@ int parseAndCreateUnit( char c1, char c2, char x, char y )
          if (NULL != player) return -1;
          player = Player::initPlayer( (int)x, (int)y, facing );
          addPlayer();
-         log("Created player");
          break;
       case TARGETPRACTICE_T:
          addUnit( new TargetPractice( (int)x, (int)y, facing ) );
-         log("Created TargetPractice");
          break;
       default:
          break;
@@ -1281,6 +1340,8 @@ int unitToCharData( Unit *u, char &c1, char &c2, char &x, char &y )
 
    x = u->x_grid;
    y = u->y_grid;
+
+   return 0;
 }
 
 int createLevelFromFile( string filename )
@@ -1296,6 +1357,8 @@ int createLevelFromFile( string filename )
       if(!level_file.read(fileContents, fileSize))
       {
          log("Failed to read level file");
+         level_file.close();
+         return -1;
       }
       else
       {
@@ -1328,19 +1391,10 @@ int createLevelFromFile( string filename )
             parseAndCreateUnit( c1, c2, ux, uy );
          }
 
-         stringstream ss;
-         ss << "X: " << dim_x << ", Y: " << dim_y;
-         log(ss.str());
       }
       level_file.close();
    }
    return 0;
-
-levelLoadFailure:
-   log("ERROR reading level file - aborted");
-   level_file.close();
-   clearAll();
-   return -1;
 }
 
 // Mirrors createLevelFromFile
@@ -1428,7 +1482,10 @@ int loadLevel( int level_id )
 
       //GRID_AT(terrain_grid,0,0) = TER_NONE;
 
-      writeLevelToFile( "res/testlevel.txt" );
+ //     player->x_grid = 1;
+//      player->y_grid = 4;
+
+  //    writeLevelToFile( "res/testlevel.txt" );
    }
 
    menu_state = MENU_MAIN | MENU_PRI_INGAME;
@@ -1440,6 +1497,22 @@ int loadLevel( int level_id )
 
 //////////////////////////////////////////////////////////////////////
 // Update ---
+
+int prepareTurnAll()
+{
+   if (NULL != player)
+      player->prepareTurn();
+
+   for (list<Unit*>::iterator it=unit_list.begin(); it != unit_list.end(); ++it)
+   {
+      Unit* unit = (*it);
+      if (unit) {
+         unit->prepareTurn();
+      }
+   }
+
+   return 0;
+}
 
 int startTurnAll( )
 {
@@ -1531,6 +1604,7 @@ int updateLevel( int dt )
       turn++;
       calculateVision();
 
+      prepareTurnAll();
       startTurnAll();
       between_turns = false;
 
@@ -1921,7 +1995,6 @@ void fitGui_Level()
                                  height - ((sec_buffer * 3) + (button_size * 5)) );
 
    // Conditionals
-   // TODO
 
    b_conditional_area->setSize( (sec_buffer * 3) + (button_size * 1),
                                 (sec_buffer * 3) + (button_size * 3));
@@ -2611,6 +2684,7 @@ int drawFog()
    RenderWindow *r_window = SFML_GlobalRenderWindow::get();
 
    Sprite s_unseen( *(t_manager.getTexture( "FogCloudSolid.png" )) ),
+          s_dark( *(t_manager.getTexture( "FogCloudDark.png" )) ),
           s_fog_base( *(t_manager.getTexture( "Fog.png" )) ),
           s_fog_left( *(t_manager.getTexture( "FogCloudTransparentLeft.png" )) ),
           s_fog_right( *(t_manager.getTexture( "FogCloudTransparentRight.png" )) ),
@@ -2618,6 +2692,8 @@ int drawFog()
           s_fog_bottom( *(t_manager.getTexture( "FogCloudTransparentBottom.png" )) );
    normalizeTo1x1( &s_unseen );
    s_unseen.scale( 1.3, 1.3 );
+   normalizeTo1x1( &s_dark );
+   s_dark.scale( 1.3, 1.3 );
    normalizeTo1x1( &s_fog_base );
    normalizeTo1x1( &s_fog_left );
    normalizeTo1x1( &s_fog_right );
@@ -2659,12 +2735,27 @@ int drawFog()
       }
    }
 
-   // TODO: Draw fog within the surrounding level buffer
+   // TODO: Draw something to delineate the level boundaries
+   for (x = -1; x <= level_dim_x; ++x) {
+      s_dark.setPosition( x - 0.17, -1 );
+      r_window->draw( s_dark );
+      s_dark.setPosition( x - 0.17, level_dim_y - 0.17 );
+      r_window->draw( s_dark );
+   }
+   for (y = 0; y < level_dim_y; ++y) {
+      s_dark.setPosition( -1.17, y - 0.17 );
+      r_window->draw( s_dark );
+      s_dark.setPosition( level_dim_x - 0.17, y - 0.17 );
+      r_window->draw( s_dark );
+   }
+
+   return 0;
 }
 
 int drawLevel()
 {
    SFML_GlobalRenderWindow::get()->setView(*level_view);
+   SFML_GlobalRenderWindow::get()->clear( Color( 64, 64, 64 ) );
    // Level
    drawBaseTerrain();
    drawTerrain();

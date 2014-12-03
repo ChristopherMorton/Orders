@@ -30,6 +30,8 @@ namespace sum
 
       WAIT,
 
+      BUMP,
+
       SKIP,
 
       // Unit specific
@@ -97,6 +99,7 @@ namespace sum
       SUMMON_WORM,
       SUMMON_BIRD,
       SUMMON_BUG,
+
       FAILED_SUMMON,
 
       NUM_ACTIONS

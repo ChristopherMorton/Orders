@@ -53,7 +53,7 @@ namespace sum
 //////////////////////////////////////////////////////////////////////
 // Base Unit ---
 
-int Unit::startBasicOrder( Order &o, bool cond_result )
+int Unit::prepareBasicOrder( Order &o, bool cond_result )
 {
    int nest;
 
@@ -182,6 +182,29 @@ int Unit::startBasicOrder( Order &o, bool cond_result )
 
    }
    else return -1;
+
+}
+
+bool testUnitCanMove( Unit &u )
+{
+   bool r = canMoveUnit( u.x_next, u.y_next, u.x_grid, u.y_grid );
+   if (false == r) {
+      u.this_turn_order = Order( BUMP );
+   }
+   return r;
+}
+
+int Unit::startBasicOrder( )
+{
+   if (this_turn_order.action > WAIT) return -1;
+
+   if (this_turn_order.action == MOVE_FORWARD || 
+       this_turn_order.action == MOVE_BACK)
+   {
+      testUnitCanMove( *this );
+   }
+
+   return 0;
 }
 
 int Unit::updateBasicOrder( float dtf, Order o )
@@ -235,6 +258,7 @@ int Unit::updateBasicOrder( float dtf, Order o )
 
 int Unit::completeBasicOrder( Order &o )
 {
+   o.logSelf();
    if (o.action <= WAIT) {
       switch (o.action) {
          case MOVE_BACK:
@@ -336,24 +360,36 @@ int Unit::addOrder( Order o )
    } else return -1;
 }
 
-int Unit::startTurn()
+int Unit::prepareTurn()
 {
    if (active == 2) active = 1; // Start an active turn
 
+   this_turn_order = Order( WAIT );
+
    while (active == 1 && 
           current_order != final_order) {
-      Order &o = order_queue[current_order];
-      bool decision = evaluateConditional(o);
-      int r = startBasicOrder(o, decision);
-      // if startBasicOrder returns 0, it's a 0-length instruction (e.g. turn)
+      this_turn_order = order_queue[current_order];
+      bool decision = evaluateConditional(this_turn_order);
+      int r = prepareBasicOrder(this_turn_order, decision);
+      // if prepareBasicOrder returns 0, it's a 0-length instruction (e.g. turn)
       if (r == 0) {
          current_order++;
          continue;
       }
-      else break;
+      else 
+         break;
    }
 
+   if (current_order == final_order)
+      this_turn_order = Order( WAIT );
+
    progress = 0;
+   return 0;
+}
+
+int Unit::startTurn()
+{
+   startBasicOrder();
    return 0;
 }
 
@@ -364,7 +400,7 @@ int Unit::update( float dtf )
 
    progress += dtf;
    if (active == 1 && current_order != final_order) {
-      Order &o = order_queue[current_order];
+      Order &o = this_turn_order;
       return updateBasicOrder( dtf, o );
    }
    return 0;
@@ -374,8 +410,8 @@ int Unit::update( float dtf )
 int Unit::completeTurn()
 {
    if (active == 1 && current_order != final_order) {
+      int r = completeBasicOrder(this_turn_order);
       Order &o = order_queue[current_order];
-      int r = completeBasicOrder(o);
       o.iteration++;
       if (o.iteration >= o.count && o.count != -1) { 
          current_order++;
@@ -460,6 +496,8 @@ int Player::init( int x, int y, Direction face )
    order_queue = new Order[max_orders];
    clearOrders();
 
+   this_turn_order = Order( WAIT );
+
    initPlayerAnimations();
 
    active = 0;
@@ -489,7 +527,7 @@ int Player::doAttack( Order o )
    return 0;
 }
 
-int Player::startTurn()
+int Player::prepareTurn()
 {
    if (current_order == final_order) { // Nothing to do
       active = 0;
@@ -507,6 +545,12 @@ int Player::startTurn()
    }
 
    progress = 0;
+   return 0;
+}
+
+int Player::startTurn()
+{
+
    return 0;
 }
 
@@ -604,6 +648,8 @@ Monster::Monster( int x, int y, Direction face )
    max_orders = MONSTER_BASE_MEMORY * ( 1.0 + ( focus_memory * 0.08 ) );
    order_queue = new Order[max_orders];
    clearOrders();
+
+   this_turn_order = Order( WAIT );
 
    active = 0;
    team = 0;
@@ -760,6 +806,8 @@ Soldier::Soldier( int x, int y, Direction face )
    max_orders = SOLDIER_BASE_MEMORY * ( 1.0 + ( focus_memory * 0.08 ) );
    order_queue = new Order[max_orders];
    clearOrders();
+
+   this_turn_order = Order( WAIT );
 
    active = 0;
    team = 0;
@@ -918,6 +966,8 @@ Worm::Worm( int x, int y, Direction face )
    order_queue = new Order[max_orders];
    clearOrders();
 
+   this_turn_order = Order( WAIT );
+
    active = 0;
    team = 0;
 }
@@ -1073,6 +1123,8 @@ Bird::Bird( int x, int y, Direction face )
    max_orders = BIRD_BASE_MEMORY * ( 1.0 + ( focus_memory * 0.08 ) );
    order_queue = new Order[max_orders];
    clearOrders();
+
+   this_turn_order = Order( WAIT );
 
    active = 0;
    team = 0;
@@ -1232,6 +1284,8 @@ Bug::Bug( int x, int y, Direction face )
    order_queue = new Order[max_orders];
    clearOrders();
 
+   this_turn_order = Order( WAIT );
+
    active = 0;
    team = 0;
 }
@@ -1382,6 +1436,8 @@ SummonMarker::SummonMarker( )
    order_queue = NULL;
    clearOrders();
 
+   this_turn_order = Order( WAIT );
+
    active = 0;
    team = 0;
 }
@@ -1480,6 +1536,8 @@ TargetPractice::TargetPractice( int x, int y, Direction face )
    max_orders = 0;
    order_queue = NULL;
    clearOrders();
+
+   this_turn_order = Order( WAIT );
 
    active = 0;
    team = 99;

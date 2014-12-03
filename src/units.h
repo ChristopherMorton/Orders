@@ -45,13 +45,15 @@ public:
    int done_attack; // One attack per turn!
 
    Order *order_queue;
+   Order this_turn_order;
    int current_order, final_order, max_orders, order_count;
    int current_iteration;
    int active;
 
    int TurnTo( Direction face );
 
-   int startBasicOrder( Order &o, bool cond );
+   int prepareBasicOrder( Order &o, bool cond );
+   int startBasicOrder( );
    int updateBasicOrder( float dtf, Order o );
    int completeBasicOrder( Order &o );
 
@@ -69,6 +71,7 @@ public:
 
    virtual std::string descriptor();
 
+   virtual int prepareTurn();
    virtual int startTurn();
    virtual int completeTurn();
    virtual int update( float dtf );
@@ -78,6 +81,7 @@ public:
    virtual ~Unit();
 };
 
+bool testUnitCanMove( Unit &u );
 
 class Player : public Unit
 {
@@ -94,6 +98,7 @@ public:
 
    virtual std::string descriptor();
 
+   virtual int prepareTurn();
    virtual int startTurn();
    virtual int completeTurn();
    virtual int update( float dtf );

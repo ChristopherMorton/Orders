@@ -103,6 +103,9 @@ void Order::logSelf()
       case WAIT:
          s << "WAIT";
          break;
+      case BUMP:
+         s << "BUMP";
+         break;
       case SKIP:
          s << "SKIP";
          break;
@@ -266,7 +269,7 @@ void Order::logSelf()
          s << "NUM_CONDITIONALS";
          break;
    }
-   s <<  " - " << count << "." << iteration;
+   s <<  " - " << count << "(" << iteration << ")";
 
    log(s.str());
 }
