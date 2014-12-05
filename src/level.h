@@ -21,7 +21,7 @@ namespace sum
    Unit* getEnemy( int x, int y, float range, Direction dir, int team, int selector);
 
    bool canMove( int x, int y, int from_x, int from_y );
-   bool canMoveUnit( int x, int y, int from_x, int from_y );
+   bool canMoveUnit( int x, int y, int from_x, int from_y, Unit* u );
 
    int moveUnit( Unit *u, int new_x, int new_y );
    int addProjectile( Projectile_Type t, int team, float x, float y, float speed, Unit* target );

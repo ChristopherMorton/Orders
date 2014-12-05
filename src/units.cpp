@@ -185,11 +185,13 @@ int Unit::prepareBasicOrder( Order &o, bool cond_result )
 
 }
 
-bool testUnitCanMove( Unit &u )
+bool testUnitCanMove( Unit *u )
 {
-   bool r = canMoveUnit( u.x_next, u.y_next, u.x_grid, u.y_grid );
+   if (NULL == u) return false;
+
+   bool r = canMoveUnit( u->x_next, u->y_next, u->x_grid, u->y_grid, u );
    if (false == r) {
-      u.this_turn_order = Order( BUMP );
+      u->this_turn_order = Order( BUMP );
    }
    return r;
 }
@@ -201,7 +203,7 @@ int Unit::startBasicOrder( )
    if (this_turn_order.action == MOVE_FORWARD || 
        this_turn_order.action == MOVE_BACK)
    {
-      testUnitCanMove( *this );
+      testUnitCanMove( this );
    }
 
    return 0;

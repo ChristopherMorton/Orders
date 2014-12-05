@@ -79,6 +79,7 @@ list<Projectile*> projectile_list;
 // Vision
 Vision* vision_grid;
 bool vision_enabled;
+Vision* ai_vision_grid;
 
 list<Unit*> listening_units;
 Unit *player = NULL;
@@ -333,7 +334,7 @@ bool blocksVision( int from_x, int from_y, int to_x, int to_y, Direction ew, Dir
 }
 
 
-int calculatePointVision( int start_x, int start_y, int end_x, int end_y, int flags )
+int calculatePointVision( int start_x, int start_y, int end_x, int end_y, int flags, Vision *v_grid )
 {
    /* Eight quadrants:
     * \2|3/
@@ -382,7 +383,7 @@ int calculatePointVision( int start_x, int start_y, int end_x, int end_y, int fl
          }
 
          // Otherwise, it's visible, move on
-         GRID_AT(vision_grid,x,y) = VIS_VISIBLE;
+         GRID_AT(v_grid,x,y) = VIS_VISIBLE;
          previous_x = x;
          previous_y = y;
       }
@@ -409,7 +410,7 @@ int calculatePointVision( int start_x, int start_y, int end_x, int end_y, int fl
          }
 
          // Otherwise, it's visible, move on
-         GRID_AT(vision_grid,x,y) = VIS_VISIBLE;
+         GRID_AT(v_grid,x,y) = VIS_VISIBLE;
          previous_x = x;
          previous_y = y;
       }
@@ -417,7 +418,7 @@ int calculatePointVision( int start_x, int start_y, int end_x, int end_y, int fl
    return 0;
 }
 
-int calculateVerticalLineVision( int x, int start_y, int end_y, int flags )
+int calculateVerticalLineVision( int x, int start_y, int end_y, int flags, Vision *v_grid )
 {
    int dy = 1;
    if (start_y > end_y) dy = -1;
@@ -432,12 +433,12 @@ int calculateVerticalLineVision( int x, int start_y, int end_y, int flags )
       }
 
       // Otherwise, it's visible, move on
-      GRID_AT(vision_grid,x,y) = VIS_VISIBLE;
+      GRID_AT(v_grid,x,y) = VIS_VISIBLE;
    }
    return 0;
 }
 
-int calculateHorizintalLineVision( int start_x, int end_x, int y, int flags )
+int calculateHorizintalLineVision( int start_x, int end_x, int y, int flags, Vision *v_grid )
 {
    int dx = 1;
    if (start_x > end_x) dx = -1;
@@ -452,12 +453,12 @@ int calculateHorizintalLineVision( int start_x, int end_x, int y, int flags )
       }
 
       // Otherwise, it's visible, move on
-      GRID_AT(vision_grid,x,y) = VIS_VISIBLE;
+      GRID_AT(v_grid,x,y) = VIS_VISIBLE;
    }
    return 0;
 }
 
-int calculateLineVision( int start_x, int start_y, int end_x, int end_y, float range_squared, int flags )
+int calculateLineVision( int start_x, int start_y, int end_x, int end_y, float range_squared, int flags, Vision *v_grid )
 {
    // First things first, if it's out of range it's not visible
    int dx = (end_x - start_x), dy = (end_y - start_y);
@@ -465,9 +466,9 @@ int calculateLineVision( int start_x, int start_y, int end_x, int end_y, float r
       return -2;
 
    if (start_x == end_x)
-      return calculateVerticalLineVision( start_x, start_y, end_y, flags );
+      return calculateVerticalLineVision( start_x, start_y, end_y, flags, v_grid );
    if (start_y == end_y)
-      return calculateHorizintalLineVision( start_x, end_x, start_y, flags );
+      return calculateHorizintalLineVision( start_x, end_x, start_y, flags, v_grid );
 
    float dydx;
    if (start_x == end_x)
@@ -491,35 +492,27 @@ int calculateLineVision( int start_x, int start_y, int end_x, int end_y, float r
       quadrant += 4;
 
    if (quadrant == 1 || quadrant == 2) 
-      return calculatePointVision( start_x-1, start_y-1, end_x-1, end_y-1, flags );
+      return calculatePointVision( start_x-1, start_y-1, end_x-1, end_y-1, flags, v_grid );
    if (quadrant == 3 || quadrant == 4) 
-      return calculatePointVision( start_x+1, start_y-1, end_x+1, end_y-1, flags );
+      return calculatePointVision( start_x+1, start_y-1, end_x+1, end_y-1, flags, v_grid );
    if (quadrant == 5 || quadrant == 6) 
-      return calculatePointVision( start_x-1, start_y+1, end_x-1, end_y+1, flags );
+      return calculatePointVision( start_x-1, start_y+1, end_x-1, end_y+1, flags, v_grid );
    if (quadrant == 7 || quadrant == 8) 
-      return calculatePointVision( start_x+1, start_y+1, end_x+1, end_y+1, flags );
+      return calculatePointVision( start_x+1, start_y+1, end_x+1, end_y+1, flags, v_grid );
 
    // We must have seen it to get this result
-   GRID_AT(vision_grid,end_x,end_y) = VIS_VISIBLE;
+   GRID_AT(v_grid,end_x,end_y) = VIS_VISIBLE;
    return 0;
 }
 
 int calculateUnitVision( Unit *unit )
 {
    int x, y;
-   if (unit && unit->team == 0) { // Allied unit
-      // TODO: all units should provide vision for their team - or at least for themselves
-
-      /*
-      int v_x_min = (int)(unit->x_grid - unit->vision_range) - 1;
-      int v_x_max = (int)(unit->x_grid + unit->vision_range) + 1;
-      int v_y_min = (int)(unit->y_grid - unit->vision_range) - 1;
-      int v_y_max = (int)(unit->y_grid + unit->vision_range) + 1;
-      if (v_x_min < 0) v_x_min = 0;
-      if (v_x_max >= level_dim_x) v_x_max = level_dim_x - 1;
-      if (v_y_min < 0) v_y_min = 0;
-      if (v_y_max >= level_dim_y) v_y_max = level_dim_y - 1; 
-      */
+   if (unit) {
+      
+      Vision *v_grid = vision_grid;
+      if (unit->team != 0)
+         v_grid = ai_vision_grid;
 
       float vision_range_squared = unit->vision_range * unit->vision_range;
 
@@ -527,36 +520,36 @@ int calculateUnitVision( Unit *unit )
       // and from each square make a line back to the middle,
       // and determine visibility along that line for all squares in the line
       // GOAL: be generous in what is visible, to avoid intuitive problems
-      GRID_AT(vision_grid,unit->x_grid,unit->y_grid) = VIS_VISIBLE;
+      GRID_AT(v_grid,unit->x_grid,unit->y_grid) = VIS_VISIBLE;
 
       for (int radius = unit->vision_range; radius > 0; --radius)
       {
          if (unit->y_grid - radius >= 0)
             for (x = unit->x_grid - radius; x <= unit->x_grid + radius; ++x) {
                if (x < 0 || x >= level_dim_x) continue;
-               if (GRID_AT(vision_grid, x, unit->y_grid - radius) == VIS_VISIBLE) continue;
-               calculateLineVision( unit->x_grid, unit->y_grid, x, (unit->y_grid - radius), vision_range_squared, 0 );
+               if (GRID_AT(v_grid, x, unit->y_grid - radius) == VIS_VISIBLE) continue;
+               calculateLineVision( unit->x_grid, unit->y_grid, x, (unit->y_grid - radius), vision_range_squared, 0, v_grid );
             }
 
          if (unit->y_grid + radius < level_dim_y)
             for (x = unit->x_grid - radius; x <= unit->x_grid + radius; ++x) {
                if (x < 0 || x >= level_dim_x) continue;
-               if (GRID_AT(vision_grid, x, unit->y_grid + radius) == VIS_VISIBLE) continue;
-               calculateLineVision( unit->x_grid, unit->y_grid, x, (unit->y_grid + radius), vision_range_squared, 0 );
+               if (GRID_AT(v_grid, x, unit->y_grid + radius) == VIS_VISIBLE) continue;
+               calculateLineVision( unit->x_grid, unit->y_grid, x, (unit->y_grid + radius), vision_range_squared, 0, v_grid );
             }
 
          if (unit->x_grid - radius >= 0)
             for (y = unit->y_grid - radius; y <= unit->y_grid + radius; ++y) {
                if (y < 0 || y >= level_dim_y) continue;
-               if (GRID_AT(vision_grid, unit->x_grid - radius, y) == VIS_VISIBLE) continue;
-               calculateLineVision( unit->x_grid, unit->y_grid, (unit->x_grid - radius), y, vision_range_squared, 0 );
+               if (GRID_AT(v_grid, unit->x_grid - radius, y) == VIS_VISIBLE) continue;
+               calculateLineVision( unit->x_grid, unit->y_grid, (unit->x_grid - radius), y, vision_range_squared, 0, v_grid );
             }
 
          if (unit->x_grid + radius < level_dim_x)
             for (y = unit->y_grid - radius; y <= unit->y_grid + radius; ++y) {
                if (y < 0 || y >= level_dim_y) continue;
-               if (GRID_AT(vision_grid, unit->x_grid + radius, y) == VIS_VISIBLE) continue;
-               calculateLineVision( unit->x_grid, unit->y_grid, (unit->x_grid + radius), y, vision_range_squared, 0 );
+               if (GRID_AT(v_grid, unit->x_grid + radius, y) == VIS_VISIBLE) continue;
+               calculateLineVision( unit->x_grid, unit->y_grid, (unit->x_grid + radius), y, vision_range_squared, 0, v_grid );
             }
 
       }
@@ -583,7 +576,8 @@ int calculateVision()
    for (list<Unit*>::iterator it=unit_list.begin(); it != unit_list.end(); ++it)
    {
       Unit* unit = (*it);
-      calculateUnitVision( unit );
+      if (unit->team == 0) // Allied unit
+         calculateUnitVision( unit );
    }
 
    return 0;
@@ -707,7 +701,20 @@ bool canMove( int x, int y, int from_x, int from_y )
 
 set<Unit*> unit_collision_set;
 
-bool canMoveUnit( int x, int y, int from_x, int from_y )
+Unit* unitIncoming( int to_x, int to_y, int from_x, int from_y )
+{
+   Unit *u = GRID_AT(unit_grid,from_x,from_y);
+   if (NULL != u && u->active == 1)
+   {
+      Order o = u->this_turn_order;
+      if ((o.action == MOVE_FORWARD || o.action == MOVE_BACK)
+            && (u->x_next == to_x && u->y_next == to_y))
+         return u;
+   }
+   return NULL;
+}
+
+bool canMoveUnit( int x, int y, int from_x, int from_y, Unit *u )
 {
    // Ignores terrain/buildings - do that stuff first
    //
@@ -745,7 +752,7 @@ bool canMoveUnit( int x, int y, int from_x, int from_y )
          
          // Oh wait what if he can't move b/c of other units?
          unit_collision_set.insert( u_next );
-         bool r = testUnitCanMove( *u_next );
+         bool r = testUnitCanMove( u_next );
          unit_collision_set.erase( u_next );
 
          if (r == false) // He aint moving
@@ -764,6 +771,23 @@ bool canMoveUnit( int x, int y, int from_x, int from_y )
 
    // TODO
    // 2)
+   Unit *u_biggest = u;
+
+   u_next = unitIncoming( x, y, x - 1, y );
+   if (u_next && u_next->max_health > u_biggest->max_health)
+      u_biggest = u_next;
+   u_next = unitIncoming( x, y, x + 1, y );
+   if (u_next && u_next->max_health > u_biggest->max_health)
+      u_biggest = u_next;
+   u_next = unitIncoming( x, y, x, y - 1 );
+   if (u_next && u_next->max_health > u_biggest->max_health)
+      u_biggest = u_next;
+   u_next = unitIncoming( x, y, x, y + 1 );
+   if (u_next && u_next->max_health > u_biggest->max_health)
+      u_biggest = u_next;
+
+   if (u_biggest != u)
+      return false;
 
    return true;
 }
@@ -1227,6 +1251,8 @@ void clearGrids()
       delete unit_grid;
    if (vision_grid)
       delete vision_grid;
+   if (ai_vision_grid)
+      delete ai_vision_grid;
 }
 
 void clearAll()
@@ -1257,6 +1283,9 @@ int initGrids(int x, int y)
 
    vision_grid = new Vision[dim];
    for (int i = 0; i < dim; ++i) vision_grid[i] = VIS_NEVER_SEEN;
+
+   ai_vision_grid = new Vision[dim];
+   for (int i = 0; i < dim; ++i) ai_vision_grid[i] = VIS_NEVER_SEEN;
 
    log("initGrids succeeded");
 

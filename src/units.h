@@ -81,7 +81,7 @@ public:
    virtual ~Unit();
 };
 
-bool testUnitCanMove( Unit &u );
+bool testUnitCanMove( Unit *u );
 
 class Player : public Unit
 {
