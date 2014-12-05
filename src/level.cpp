@@ -774,17 +774,48 @@ bool canMoveUnit( int x, int y, int from_x, int from_y, Unit *u )
    Unit *u_biggest = u;
 
    u_next = unitIncoming( x, y, x - 1, y );
-   if (u_next && u_next->max_health > u_biggest->max_health)
-      u_biggest = u_next;
+   if (u_next && u_next != u) {
+      if (u_next->max_health > u_biggest->max_health) {
+         u_biggest = u_next;
+      } else {
+         u_next->this_turn_order = Order(BUMP);
+         if (u_next->max_health == u_biggest->max_health)
+            u_biggest->this_turn_order = Order(BUMP);
+      }
+   }
+
    u_next = unitIncoming( x, y, x + 1, y );
-   if (u_next && u_next->max_health > u_biggest->max_health)
-      u_biggest = u_next;
+   if (u_next && u_next != u) {
+      if (u_next->max_health > u_biggest->max_health) {
+         u_biggest = u_next;
+      } else {
+         u_next->this_turn_order = Order(BUMP);
+         if (u_next->max_health == u_biggest->max_health)
+            u_biggest->this_turn_order = Order(BUMP);
+      }
+   }
+
    u_next = unitIncoming( x, y, x, y - 1 );
-   if (u_next && u_next->max_health > u_biggest->max_health)
-      u_biggest = u_next;
+   if (u_next && u_next != u) {
+      if (u_next->max_health > u_biggest->max_health) {
+         u_biggest = u_next;
+      } else {
+         u_next->this_turn_order = Order(BUMP);
+         if (u_next->max_health == u_biggest->max_health)
+            u_biggest->this_turn_order = Order(BUMP);
+      }
+   }
+
    u_next = unitIncoming( x, y, x, y + 1 );
-   if (u_next && u_next->max_health > u_biggest->max_health)
-      u_biggest = u_next;
+   if (u_next && u_next != u) {
+      if (u_next->max_health > u_biggest->max_health) {
+         u_biggest = u_next;
+      } else {
+         u_next->this_turn_order = Order(BUMP);
+         if (u_next->max_health == u_biggest->max_health)
+            u_biggest->this_turn_order = Order(BUMP);
+      }
+   }
 
    if (u_biggest != u)
       return false;
