@@ -45,6 +45,8 @@ View *level_view;
 float view_rel_x_to_y;
 
 int turn, turn_progress;
+int pause_state = 0;
+#define FULLY_PAUSED 20
 
 //////////////////////////////////////////////////////////////////////
 // Some definitions ---
@@ -1555,6 +1557,40 @@ int loadLevel( int level_id )
    return 0;
 }
 
+
+//////////////////////////////////////////////////////////////////////
+// Pause ---
+
+void pause()
+{
+   pause_state = -1;
+}
+
+void unpause()
+{
+   pause_state = FULLY_PAUSED - 1;
+}
+
+void togglePause()
+{
+   if (pause_state == 0)
+      pause();
+   else
+      unpause();
+}
+
+void drawPause()
+{
+   if (pause_state == 0) return;
+
+   int transparency = (128 * abs(pause_state)) / FULLY_PAUSED;
+   Color c( 128, 128, 128, transparency );
+   RectangleShape r( Vector2f(config::width(), config::height()) );
+   r.setFillColor( c );
+   r.setPosition( 0, 0 );
+   SFML_GlobalRenderWindow::get()->draw( r );
+}
+
 //////////////////////////////////////////////////////////////////////
 // Update ---
 
@@ -1650,6 +1686,25 @@ int completeTurnAll( )
 
 int updateLevel( int dt )
 {
+   if (pause_state == FULLY_PAUSED)
+      return 2;
+   else if (pause_state < 0) {
+      float factor = (float)(FULLY_PAUSED + pause_state) / (float)FULLY_PAUSED;
+      int d_pause = dt / 10;
+      dt *= factor;
+      pause_state -= d_pause;
+      if (pause_state <= -FULLY_PAUSED)
+         pause_state = FULLY_PAUSED;
+   }
+   else if (pause_state > 0) {
+      float factor = (float)(FULLY_PAUSED + pause_state) / (float)FULLY_PAUSED;
+      int d_pause = dt / 10;
+      dt *= factor;
+      pause_state -= d_pause;
+      if (pause_state <= 0)
+         pause_state = 0;
+   }
+
    int til_end = TURN_LENGTH - turn_progress;
    turn_progress += dt;
 
@@ -1891,7 +1946,7 @@ IMTextButton *b_count_1,
              *b_count_0,
              *b_count_infinite,
              *b_count_reset;
-sf::Text *count_text;
+Text *count_text;
 string s_1 = "1", s_2 = "2", s_3 = "3", s_4 = "4", s_5 = "5", s_6 = "6", s_7 = "7", s_8 = "8", s_9 = "9", s_0 = "0", s_infinite = "inf", s_reset = "X";
 // Gui Boxes
 IMEdgeButton *b_numpad_area,
@@ -2557,10 +2612,70 @@ int drawOrderButtons()
    return 0;
 }
 
+Sprite *s_clock_face,
+       *s_clock_half_red,
+       *s_clock_half_white;
+bool init_tick_clock = false;
+
+void initTickClock()
+{
+   s_clock_face = new Sprite( *SFML_TextureManager::getSingleton().getTexture( "ClockFace.png" ) );
+   normalizeTo1x1( s_clock_face );
+   s_clock_face->scale( 32, 32 );
+   s_clock_face->setPosition( 2, 2 );
+
+   s_clock_half_red = new Sprite( *SFML_TextureManager::getSingleton().getTexture( "ClockHalfRed.png" ) );
+   normalizeTo1x1( s_clock_half_red );
+   s_clock_half_red->scale( 32, 32 );
+   s_clock_half_red->setOrigin( 64, 64 );
+   s_clock_half_red->setPosition( 18, 18 );
+
+   s_clock_half_white = new Sprite( *SFML_TextureManager::getSingleton().getTexture( "ClockHalfWhite.png" ) );
+   normalizeTo1x1( s_clock_half_white );
+   s_clock_half_white->setOrigin( 64, 64 );
+   s_clock_half_white->scale( 32, 32 );
+   s_clock_half_white->setPosition( 18, 18 );
+
+   init_tick_clock = true;
+}
+
+int drawClock()
+{
+   RenderWindow *gui_window = SFML_GlobalRenderWindow::get();
+
+   if (!init_tick_clock)
+      initTickClock();
+
+   Sprite *s_1, *s_2;
+   if (turn % 2 == 0) {
+      s_1 = s_clock_half_red;
+      s_2 = s_clock_half_white;
+   } else {
+      s_1 = s_clock_half_white;
+      s_2 = s_clock_half_red;
+   }
+
+   s_1->setRotation( 0 );
+   gui_window->draw( *s_1 );
+   s_2->setRotation( 180 );
+   gui_window->draw( *s_2 );
+   if (turn_progress < (TURN_LENGTH / 2)) {
+      s_2->setRotation( 360 * ( (float)turn_progress / (float)TURN_LENGTH ) );
+      gui_window->draw( *s_2 );
+   } else {
+      s_1->setRotation( 360 * ( ((float)turn_progress / (float)TURN_LENGTH ) - 0.5) );
+      gui_window->draw( *s_1 );
+   }
+
+   gui_window->draw( *s_clock_face );
+
+   return 0;
+}
+
 int drawOrderQueue()
 {
    if (player) {
-      int draw_x = 2;
+      int draw_x = 38;
       for (int i = player->current_order; i != player->final_order; ++i) {
          if (i == player->max_orders) i = 0;
 
@@ -2665,6 +2780,9 @@ int drawGui()
    RenderWindow *gui_window = SFML_GlobalRenderWindow::get();
    gui_window->setView(gui_window->getDefaultView());
 
+   drawPause();
+
+   drawClock();
    drawOrderQueue();
    drawSelectedUnit();
    drawOrderButtons();
@@ -2834,77 +2952,84 @@ int drawLevel()
 
 struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListener
 {
-   virtual bool keyPressed( const sf::Event::KeyEvent &key_press )
+   virtual bool keyPressed( const Event::KeyEvent &key_press )
    {
-      if (key_press.code == sf::Keyboard::Q)
+      if (key_press.code == Keyboard::Q)
          shutdown(1,1);
-      if (key_press.code == sf::Keyboard::Right)
+
+      // View movement
+      if (key_press.code == Keyboard::Right)
          shiftView( 2, 0 );
-      if (key_press.code == sf::Keyboard::Left)
+      if (key_press.code == Keyboard::Left)
          shiftView( -2, 0 );
-      if (key_press.code == sf::Keyboard::Down)
+      if (key_press.code == Keyboard::Down)
          shiftView( 0, 2 );
-      if (key_press.code == sf::Keyboard::Up)
+      if (key_press.code == Keyboard::Up)
          shiftView( 0, -2 );
-      if (key_press.code == sf::Keyboard::Add)
+      if (key_press.code == Keyboard::Add)
          zoomView( 1 , level_view->getCenter());
-      if (key_press.code == sf::Keyboard::Subtract)
+      if (key_press.code == Keyboard::Subtract)
          zoomView( -1 , level_view->getCenter());
 
-      if (key_press.code == sf::Keyboard::W) {
+      // Pause
+      if (key_press.code == Keyboard::Space)
+         togglePause();
+
+      // For testing purposes
+      if (key_press.code == Keyboard::W) {
          log("Pressed W");
          unit_list.back()->addOrder( Order( TURN_NORTH, TRUE, 1 ) );
          unit_list.back()->addOrder( Order( MOVE_FORWARD, TRUE, 1 ) ); 
       }
-      if (key_press.code == sf::Keyboard::A) {
+      if (key_press.code == Keyboard::A) {
          log("Pressed A");
          unit_list.back()->addOrder( Order( TURN_WEST, TRUE, 1 ) );
          unit_list.back()->addOrder( Order( MOVE_FORWARD, TRUE, 1 ) ); 
       }
-      if (key_press.code == sf::Keyboard::R) {
+      if (key_press.code == Keyboard::R) {
          log("Pressed R");
          unit_list.back()->addOrder( Order( TURN_SOUTH, TRUE, 1 ) );
          unit_list.back()->addOrder( Order( MOVE_FORWARD, TRUE, 1 ) ); 
       }
-      if (key_press.code == sf::Keyboard::S) {
+      if (key_press.code == Keyboard::S) {
          log("Pressed S");
          unit_list.back()->addOrder( Order( TURN_EAST, TRUE, 1 ) );
          unit_list.back()->addOrder( Order( MOVE_FORWARD, TRUE, 1 ) ); 
       }
-      if (key_press.code == sf::Keyboard::Space) {
+      if (key_press.code == Keyboard::Space) {
          unit_list.back()->activate();
       }
-      if (key_press.code == sf::Keyboard::D) {
+      if (key_press.code == Keyboard::D) {
          unit_list.back()->clearOrders();
          unit_list.back()->active = 0;
       }
-      if (key_press.code == sf::Keyboard::P) {
+      if (key_press.code == Keyboard::P) {
          unit_list.back()->logOrders();
       }
 
-      if (key_press.code == sf::Keyboard::LBracket) {
+      if (key_press.code == Keyboard::LBracket) {
          log("Pressed LBracket");
          unit_list.back()->addOrder( Order( START_BLOCK, TRUE, 2 ) );
       }
-      if (key_press.code == sf::Keyboard::RBracket) {
+      if (key_press.code == Keyboard::RBracket) {
          log("Pressed RBracket");
          unit_list.back()->addOrder( Order( END_BLOCK ) );
       }
-      if (key_press.code == sf::Keyboard::O) {
+      if (key_press.code == Keyboard::O) {
          log("Pressed O");
          unit_list.back()->addOrder( Order( REPEAT, TRUE, -1 ) );
       }
-      if (key_press.code == sf::Keyboard::M) {
+      if (key_press.code == Keyboard::M) {
          log("Pressed M");
          unit_list.back()->addOrder( Order( ATTACK_CLOSEST, TRUE, 1 ) );
       }
-      if (key_press.code == sf::Keyboard::N) {
+      if (key_press.code == Keyboard::N) {
          log("Pressed N");
          Order o( SUMMON_BUG, TRUE, 6);
          o.iteration = 6;
          player->addOrder( o );
       }
-      if (key_press.code == sf::Keyboard::E) {
+      if (key_press.code == Keyboard::E) {
          log("Pressed E");
          player->activate();
       }
@@ -2912,12 +3037,12 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
       return true;
    }
     
-   virtual bool keyReleased( const sf::Event::KeyEvent &key_release )
+   virtual bool keyReleased( const Event::KeyEvent &key_release )
    {
       return true;
    }
 
-   virtual bool mouseMoved( const sf::Event::MouseMoveEvent &mouse_move )
+   virtual bool mouseMoved( const Event::MouseMoveEvent &mouse_move )
    {
       static int old_mouse_x, old_mouse_y;
 
@@ -2937,7 +3062,7 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
       return true;
    }
 
-   virtual bool mouseButtonPressed( const sf::Event::MouseButtonEvent &mbp )
+   virtual bool mouseButtonPressed( const Event::MouseButtonEvent &mbp )
    {
       if (mbp.button == Mouse::Left) {
          left_mouse_down = 1;
@@ -2960,7 +3085,7 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
       return true;
    }
 
-   virtual bool mouseButtonReleased( const sf::Event::MouseButtonEvent &mbr )
+   virtual bool mouseButtonReleased( const Event::MouseButtonEvent &mbr )
    {
       if (mbr.button == Mouse::Left) {
          left_mouse_down = 0;
@@ -2986,7 +3111,7 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
       return true;
    }
 
-   virtual bool mouseWheelMoved( const sf::Event::MouseWheelEvent &mwm )
+   virtual bool mouseWheelMoved( const Event::MouseWheelEvent &mwm )
    {
       zoomView( mwm.delta, coordsWindowToView( mwm.x, mwm.y ) );
       return true;

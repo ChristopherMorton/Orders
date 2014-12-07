@@ -50,6 +50,7 @@ IMAGE FingerCursor.png
 IMAGE FingerCursorClick.png
 IMAGE TestCursor.png
 IMAGE SplashScreen0.png
+IMAGE ClockFace.png
 // Order Buttons
 IMAGE OrderButtonBase.png
 IMAGE OrderMoveForward.png
