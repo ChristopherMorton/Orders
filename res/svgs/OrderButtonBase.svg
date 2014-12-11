@@ -13,7 +13,7 @@
    height="64px"
    id="svg2816"
    version="1.1"
-   inkscape:version="0.48.4 r9939"
+   inkscape:version="0.48.5 r10040"
    sodipodi:docname="OrderButtonBase.svg"
    inkscape:export-filename="/home/cg/programming/orders/orders/res/svgs/OrderButtonBase.png"
    inkscape:export-xdpi="90"
@@ -42,10 +42,10 @@
      showgrid="true"
      inkscape:document-units="px"
      inkscape:grid-bbox="true"
-     inkscape:window-width="1278"
-     inkscape:window-height="501"
+     inkscape:window-width="638"
+     inkscape:window-height="1004"
      inkscape:window-x="0"
-     inkscape:window-y="521"
+     inkscape:window-y="18"
      inkscape:window-maximized="0" />
   <metadata
      id="metadata2821">
@@ -55,7 +55,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -70,7 +70,7 @@
        height="62.060608"
        x="0.969697"
        y="0.96969509"
-       ry="14.545455"
-       rx="14.545454" />
+       ry="12.488417"
+       rx="12.745547" />
   </g>
 </svg>

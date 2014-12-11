@@ -318,16 +318,16 @@ bool blocksVision( int x, int y, int from_x, int from_y, Direction ew, Direction
       return true;
    // Cliff corners
    if ((t == CLIFF_CORNER_SOUTHEAST_90 || t == CLIFF_CORNER_SOUTHEAST_270)
-         && ns == NORTH && ew == WEST)
+         && ns != SOUTH && ew != EAST)
       return true;
    if ((t == CLIFF_CORNER_SOUTHWEST_90 || t == CLIFF_CORNER_SOUTHWEST_270)
-         && ns == NORTH && ew == EAST)
+         && ns != SOUTH && ew != WEST)
       return true;
    if ((t == CLIFF_CORNER_NORTHWEST_90 || t == CLIFF_CORNER_NORTHWEST_270)
-         && ns == SOUTH && ew == EAST)
+         && ns != NORTH && ew != WEST)
       return true;
    if ((t == CLIFF_CORNER_NORTHEAST_90 || t == CLIFF_CORNER_NORTHEAST_270)
-         && ns == SOUTH && ew == WEST)
+         && ns != NORTH && ew != EAST)
       return true;
 
 
@@ -335,16 +335,9 @@ bool blocksVision( int x, int y, int from_x, int from_y, Direction ew, Direction
    return false;
 }
 
-
 int calculatePointVision( int start_x, int start_y, int end_x, int end_y, int flags, Vision *v_grid )
 {
-   /* Eight quadrants:
-    * \2|3/
-    * 1\|/4
-    * --s-- 
-    * 5/|\8
-    * /6|7\
-    */
+   int previous_x = start_x, previous_y = start_y;
 
    float dydx;
    if (start_x == end_x)
@@ -355,14 +348,11 @@ int calculatePointVision( int start_x, int start_y, int end_x, int end_y, int fl
    int x, y, dx = 1, dy = 1;
    if (end_x < start_x) dx = -1;
    if (end_y < start_y) dy = -1;
-
    float calculator = 0;
 
    Direction dir1 = EAST, dir2 = SOUTH;
    if (dx == -1) dir1 = WEST;
    if (dy == -1) dir2 = NORTH;
-
-   int previous_x = start_x, previous_y = start_y;
    
    if (dydx >= 1 || dydx <= -1) { 
       // steep slope - go up/down 1 each move, calculate x
@@ -380,7 +370,7 @@ int calculatePointVision( int start_x, int start_y, int end_x, int end_y, int fl
          }
 
          // Check if this square obstructs vision
-         if (blocksVision(x, y, previous_x, previous_y, dir1, dir2, flags)) {
+         if (y != start_y && blocksVision(x, y, previous_x, previous_y, dir1, dir2, flags)) {
             GRID_AT(v_grid,x,y) = VIS_VISIBLE;
             return -1; // Vision obstructed beyond here
          }
@@ -408,7 +398,7 @@ int calculatePointVision( int start_x, int start_y, int end_x, int end_y, int fl
          }
 
          // Check if this square obstructs vision
-         if (blocksVision(x, y, previous_x, previous_y, dir1, dir2, flags)) {
+         if (x != start_x && blocksVision(x, y, previous_x, previous_y, dir1, dir2, flags)) {
             GRID_AT(v_grid,x,y) = VIS_VISIBLE;
             return -1; // Vision obstructed beyond here
          }
@@ -419,6 +409,7 @@ int calculatePointVision( int start_x, int start_y, int end_x, int end_y, int fl
          previous_y = y;
       }
    }
+   GRID_AT(v_grid,end_x,end_y) = VIS_VISIBLE;
    return 0;
 }
 
@@ -475,40 +466,12 @@ int calculateLineVision( int start_x, int start_y, int end_x, int end_y, float r
       return calculateVerticalLineVision( start_x, start_y, end_y, flags, v_grid );
    if (start_y == end_y)
       return calculateHorizintalLineVision( start_x, end_x, start_y, flags, v_grid );
+   
+   int ret = calculatePointVision( start_x, start_y, end_x, end_y, flags, v_grid ); 
+   if (ret == 0) // We must have seen it to get this result
+      GRID_AT(v_grid,end_x,end_y) = VIS_VISIBLE;
 
-   float dydx;
-   if (start_x == end_x)
-      dydx = 100000000;
-   else
-      dydx = ((float)(start_y - end_y)) / ((float)(start_x - end_x));
-
-   int quadrant;
-   if (end_x < start_x) {
-      if (dydx >= 1 || dydx <= -1)
-         quadrant = 2;
-      else
-         quadrant = 1;
-   } else {
-      if (dydx >= 1 || dydx <= -1)
-         quadrant = 3;
-      else
-         quadrant = 4;
-   }
-   if (end_y > start_y)
-      quadrant += 4;
-
-   if (quadrant == 1 || quadrant == 2) 
-      return calculatePointVision( start_x-1, start_y-1, end_x-1, end_y-1, flags, v_grid );
-   if (quadrant == 3 || quadrant == 4) 
-      return calculatePointVision( start_x+1, start_y-1, end_x+1, end_y-1, flags, v_grid );
-   if (quadrant == 5 || quadrant == 6) 
-      return calculatePointVision( start_x-1, start_y+1, end_x-1, end_y+1, flags, v_grid );
-   if (quadrant == 7 || quadrant == 8) 
-      return calculatePointVision( start_x+1, start_y+1, end_x+1, end_y+1, flags, v_grid );
-
-   // We must have seen it to get this result
-   GRID_AT(v_grid,end_x,end_y) = VIS_VISIBLE;
-   return 0;
+   return ret;
 }
 
 int calculateUnitVision( Unit *unit )

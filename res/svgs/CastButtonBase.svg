@@ -14,7 +14,7 @@
    id="svg2"
    version="1.1"
    inkscape:version="0.48.5 r10040"
-   sodipodi:docname="PlayerAlert.svg"
+   sodipodi:docname="CastButtonBase.svg"
    inkscape:export-filename="/home/cg/programming/orders/res/PlayerGoAllButton.png"
    inkscape:export-xdpi="90"
    inkscape:export-ydpi="90">
@@ -27,17 +27,17 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="11.953125"
-     inkscape:cx="32"
-     inkscape:cy="32"
+     inkscape:zoom="5.9765625"
+     inkscape:cx="28.371933"
+     inkscape:cy="35.771985"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
      width="64px"
-     inkscape:window-width="1278"
-     inkscape:window-height="1000"
+     inkscape:window-width="638"
+     inkscape:window-height="1004"
      inkscape:window-x="0"
-     inkscape:window-y="22"
+     inkscape:window-y="18"
      inkscape:window-maximized="0" />
   <metadata
      id="metadata7">
@@ -47,7 +47,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -57,10 +57,9 @@
      id="layer1"
      transform="translate(0,-988.3622)">
     <path
-       transform="translate(0,988.3622)"
        style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1"
        inkscape:transform-center-y="-2.9971004"
-       d="M 31.53987,1.1577492 40.623998,20.793325 61.389771,20.844973 47.002231,38.26814 53.988122,61.935636 31.539869,48.596033 9.091615,61.935635 16.077508,38.26814 1.6899683,20.844971 22.45574,20.793325 z"
+       d="m 32,989.97313 9.084128,19.63557 20.765773,0.052 -14.38754,17.4231 6.985891,23.6675 -22.448253,-13.3396 -22.4482537,13.3396 6.9858927,-23.6675 -14.3875393,-17.4231 20.7657713,-0.052 z"
        id="path3790"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="ccccccccccc" />
