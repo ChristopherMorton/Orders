@@ -8,10 +8,13 @@
 namespace sum
 {
    void setLevelListener( bool set = true );
+   void setLevelEditorListener( bool set = true );
 
    int loadLevel( int level_id );
    int updateLevel( int dt );
    int drawLevel();
+
+   int loadLevelEditor( int level );
 
 #define SELECT_CLOSEST 1
 #define SELECT_FARTHEST 2

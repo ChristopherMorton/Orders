@@ -14,6 +14,7 @@ namespace sum
    {
    public:
       sf::Texture *texture;
+      sf::Sprite *sprite;
       int image_size_x, image_size_y;
       int num_images;
       int duration; // In milliseconds
@@ -21,7 +22,7 @@ namespace sum
       Animation();
 
       int load( sf::Texture *t, int i_size_x, int i_size_y, int num, int dur );
-      sf::Sprite *createSprite( int dt );
+      sf::Sprite *getSprite( int dt );
    };
 
 };

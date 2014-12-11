@@ -24,6 +24,8 @@ int Animation::load( sf::Texture *t, int i_size_x, int i_size_y, int num, int du
    num_images = num;
    duration = dur;
 
+   sprite = new Sprite( *t );
+
    return 0;
 }
 
@@ -36,16 +38,13 @@ int getFrame( int dt, int duration, int num )
    return ret;
 }
 
-sf::Sprite *Animation::createSprite( int dt )
+sf::Sprite *Animation::getSprite( int dt )
 {
    if (NULL == texture) return NULL;
 
    int frame = getFrame( dt, duration, num_images );
 
-   Sprite *ret = new Sprite();
-   ret->setTexture( *texture );
+   sprite->setTextureRect( IntRect( (frame * image_size_x), 0, image_size_x, image_size_y ) );
 
-   ret->setTextureRect( IntRect( (frame * image_size_x), 0, image_size_x, image_size_y ) );
-
-   return ret;
+   return sprite;
 }

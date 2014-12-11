@@ -22,6 +22,8 @@ enum UnitType {
    SUMMONMARKER_T
 };
 
+// BASE CLASS
+
 class Unit
 {
 public:
@@ -81,7 +83,7 @@ public:
    virtual ~Unit();
 };
 
-bool testUnitCanMove( Unit *u );
+// SPECIALIZED CLASSES
 
 class Player : public Unit
 {
@@ -263,6 +265,11 @@ public:
    virtual int draw();
    virtual ~TargetPractice();
 };
+
+// OTHER
+
+int initUnits();
+bool testUnitCanMove( Unit *u );
 
 };
 

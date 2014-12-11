@@ -171,6 +171,7 @@ IMEdgeTextButton *b_splash_to_map = NULL;
 string s_splash_to_map = "Play!";
 IMButton *b_open_options = NULL;
 IMButton *b_splashToTestLevel = NULL;
+IMButton *b_splashToLevelEditor = NULL;
 Sprite* splashScreen = NULL;
 
 void fitGui_Splash()
@@ -180,9 +181,11 @@ void fitGui_Splash()
    b_open_options->setPosition( 0, 0 );
    b_open_options->setSize( 40, 40 );
 
-   //b_splashToTestLevel->setPosition( config::height() - 50, config::width() - 50 );
    b_splashToTestLevel->setPosition( 40, 40 );
    b_splashToTestLevel->setSize( 50, 50 );
+
+   b_splashToLevelEditor->setPosition( 40, 100 );
+   b_splashToLevelEditor->setSize( 50, 50 );
 
    b_splash_to_map->setPosition( 500, 300 );
    b_splash_to_map->setSize( 200, 100 );
@@ -200,6 +203,10 @@ int initSplashMenuGui()
    b_splashToTestLevel = new IMButton();
    b_splashToTestLevel->setAllTextures( texture_manager->getTexture( "OrderButtonBase.png" ) );
    gui_manager->registerWidget( "splashToTestLevel", b_splashToTestLevel);
+
+   b_splashToLevelEditor = new IMButton();
+   b_splashToLevelEditor->setAllTextures( texture_manager->getTexture( "StarFull.png" ) );
+   gui_manager->registerWidget( "splashToTestLevel", b_splashToLevelEditor);
 
    b_splash_to_map = new IMEdgeTextButton();
    b_splash_to_map->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
@@ -227,6 +234,9 @@ void splashMenu()
    {
       // Draw
       SFML_GlobalRenderWindow::get()->draw(*splashScreen);
+
+      if (b_splashToLevelEditor->doWidget())
+         loadLevelEditor(0);
 
       if (b_splashToTestLevel->doWidget())
          loadLevel(0);
@@ -553,12 +563,16 @@ int progressiveInit()
             progress = 2;
          break;
       case 2:
-         if (initProjectiles() == 0)
+         if (initUnits() == 0)
             progress = 3;
          break;
       case 3:
-         if (initMap() == 0)
+         if (initProjectiles() == 0)
             progress = 4;
+         break;
+      case 4:
+         if (initMap() == 0)
+            progress = 5;
          break;
 
       default:
@@ -761,6 +775,9 @@ int mainLoop( int dt )
 
    } else if (menu_state & MENU_PRI_INGAME) {
       updateLevel(dt);
+      drawLevel();
+
+   } else if (menu_state & MENU_PRI_LEVEL_EDITOR) {
       drawLevel();
 
    } else if (menu_state & MENU_PRI_ANIMATION) {

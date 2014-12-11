@@ -46,7 +46,7 @@ float view_rel_x_to_y;
 
 int turn, turn_progress;
 int pause_state = 0;
-#define FULLY_PAUSED 20
+#define FULLY_PAUSED 15
 
 //////////////////////////////////////////////////////////////////////
 // Some definitions ---
@@ -296,25 +296,25 @@ int addProjectile( Projectile_Type t, int team, float x, float y, float speed, U
 //////////////////////////////////////////////////////////////////////
 // Vision ---
 
-bool blocksVision( int from_x, int from_y, int to_x, int to_y, Direction ew, Direction ns, int flags )
+bool blocksVision( int x, int y, int from_x, int from_y, Direction ew, Direction ns, int flags )
 {
-   Terrain t = GRID_AT(terrain_grid,from_x,from_y);
+   Terrain t = GRID_AT(terrain_grid,x,y);
 
-   if (t == TER_TREE1 || t == TER_TREE2)
+   if (t >= TER_ROCK_1 && t <= TER_TREE_LAST)
       return true;
 
    // Cliffs
    if ((t == CLIFF_SOUTH || t == CLIFF_SOUTH_EAST_EDGE || t == CLIFF_SOUTH_WEST_EDGE)
-      && ns == NORTH && (to_y < from_y))
+      && ns == NORTH && (y < from_y))
       return true;
    if ((t == CLIFF_NORTH || t == CLIFF_NORTH_EAST_EDGE || t == CLIFF_NORTH_WEST_EDGE)
-      && ns == SOUTH && (to_y > from_y))
+      && ns == SOUTH && (y > from_y))
       return true;
    if ((t == CLIFF_EAST || t == CLIFF_EAST_NORTH_EDGE || t == CLIFF_EAST_SOUTH_EDGE)
-      && ew == WEST && (to_x < from_x))
+      && ew == WEST && (x < from_x))
       return true;
    if ((t == CLIFF_WEST || t == CLIFF_WEST_SOUTH_EDGE || t == CLIFF_WEST_NORTH_EDGE)
-      && ew == EAST && (to_x > from_x))
+      && ew == EAST && (x > from_x))
       return true;
    // Cliff corners
    if ((t == CLIFF_CORNER_SOUTHEAST_90 || t == CLIFF_CORNER_SOUTHEAST_270)
@@ -379,9 +379,10 @@ int calculatePointVision( int start_x, int start_y, int end_x, int end_y, int fl
             calculator += 1.0;
          }
 
-         // Check if vision to this square is obstructed by the last square
-         if (blocksVision(previous_x, previous_y, x, y, dir1, dir2, flags)) {
-            return -1; // Vision obstructed
+         // Check if this square obstructs vision
+         if (blocksVision(x, y, previous_x, previous_y, dir1, dir2, flags)) {
+            GRID_AT(v_grid,x,y) = VIS_VISIBLE;
+            return -1; // Vision obstructed beyond here
          }
 
          // Otherwise, it's visible, move on
@@ -406,8 +407,9 @@ int calculatePointVision( int start_x, int start_y, int end_x, int end_y, int fl
             calculator += 1.0;
          }
 
-         // Check possible vision-obstructors
-         if (blocksVision(previous_x, previous_y, x, y, dir1, dir2, flags)) {
+         // Check if this square obstructs vision
+         if (blocksVision(x, y, previous_x, previous_y, dir1, dir2, flags)) {
+            GRID_AT(v_grid,x,y) = VIS_VISIBLE;
             return -1; // Vision obstructed beyond here
          }
 
@@ -430,7 +432,8 @@ int calculateVerticalLineVision( int x, int start_y, int end_y, int flags, Visio
 
    for ( int y = start_y + dy; y != end_y + dy; y += dy) {
       // Check possible vision-obstructors
-      if (blocksVision(x, y - dy, x, y, ALL_DIR, dir, flags)) {
+      if (blocksVision(x, y, x, y - dy, ALL_DIR, dir, flags)) {
+         GRID_AT(v_grid,x,y) = VIS_VISIBLE;
          return -1; // Vision obstructed beyond here
       }
 
@@ -450,7 +453,8 @@ int calculateHorizintalLineVision( int start_x, int end_x, int y, int flags, Vis
 
    for ( int x = start_x + dx; x != end_x + dx; x += dx) {
       // Check possible vision-obstructors
-      if (blocksVision(x - dx, y, x, y, dir, ALL_DIR, flags)) {
+      if (blocksVision(x, y, x - dx, y, dir, ALL_DIR, flags)) {
+         GRID_AT(v_grid,x,y) = VIS_VISIBLE;
          return -1; // Vision obstructed beyond here
       }
 
@@ -562,6 +566,17 @@ int calculateUnitVision( Unit *unit )
 
 int calculateVision()
 {
+   if (false == vision_enabled) {
+      int x, y;
+      for (x = 0; x < level_dim_x; ++x) {
+         for (y = 0; y < level_dim_y; ++y) {
+            GRID_AT(vision_grid,x,y) = VIS_VISIBLE;
+         }
+      }
+
+      return -1;
+   }
+
    int x, y;
    for (x = 0; x < level_dim_x; ++x) {
       for (y = 0; y < level_dim_y; ++y) {
@@ -595,6 +610,14 @@ int selectUnit( Vector2f coords )
 
    std::stringstream ls;
    ls << "Selecting a unit at x=" << cx << ", y=" << cy;
+
+   if (GRID_AT(vision_grid,cx,cy) != VIS_VISIBLE) {
+      ls << " - coordinates not visible";
+      log(ls.str());
+      selected_unit = NULL;
+      return -2;
+   }
+
    Unit *u = GRID_AT(unit_grid, (int)coords.x, (int)coords.y);
 
    if (u) {
@@ -695,7 +718,8 @@ bool canMove( int x, int y, int from_x, int from_y )
 
    // TODO: building collision
    Terrain t = GRID_AT(terrain_grid,x,y);
-   if (t >= CLIFF_SOUTH && t <= CLIFF_CORNER_NORTHWEST_270)
+   if ( (t >= CLIFF_SOUTH && t <= CLIFF_CORNER_NORTHWEST_270)
+     || (t >= TER_ROCK_1 && t <= TER_ROCK_LAST))
       return false; // cliffs impassable
 
    return true;
@@ -705,6 +729,10 @@ set<Unit*> unit_collision_set;
 
 Unit* unitIncoming( int to_x, int to_y, int from_x, int from_y )
 {
+   if (to_x < 0 || to_x >= level_dim_x || to_y < 0 || to_y >= level_dim_y
+         || from_x < 0 || from_x >= level_dim_x || from_y < 0 || from_y >= level_dim_y)
+      return NULL;
+
    Unit *u = GRID_AT(unit_grid,from_x,from_y);
    if (NULL != u && u->active == 1)
    {
@@ -960,6 +988,7 @@ int alertUnits( Order o )
    listening_units.clear();
 
    // Get search box
+   // TODO: This should be a level-defined thing
    int x = player->x_grid, y = player->y_grid;
    int shout_range = (int)player->attack_range + 1;
    int min_x, max_x, min_y, max_y;
@@ -1086,7 +1115,6 @@ int broadcastOrder( Order o )
    {
       Unit* unit = (*it);
       if (unit) {
-         log("UNIT");
          unit->addOrder( o );
       }
    }
@@ -1165,15 +1193,27 @@ int completePlayerCommand( Order o )
 
 void initTextures()
 {
+   int i;
    SFML_TextureManager &t_manager = SFML_TextureManager::getSingleton();
    // Setup terrain
    terrain_sprites = new Sprite*[NUM_TERRAINS];
+   for (i = 0; i < NUM_TERRAINS; ++i)
+      terrain_sprites[i] = NULL;
 
    terrain_sprites[TER_NONE] = NULL;
-   terrain_sprites[TER_TREE1] = new Sprite( *(t_manager.getTexture( "BasicTree1.png" )));
-   normalizeTo1x1( terrain_sprites[TER_TREE1] );
-   terrain_sprites[TER_TREE2] = new Sprite( *(t_manager.getTexture( "BasicTree2.png" )));
-   normalizeTo1x1( terrain_sprites[TER_TREE2] );
+   // Trees
+   terrain_sprites[TER_TREE_1] = new Sprite( *(t_manager.getTexture( "BasicTree1.png" )));
+   normalizeTo1x1( terrain_sprites[TER_TREE_1] );
+   for (i = TER_TREE_2; i <= TER_TREE_LAST; ++i) { 
+      terrain_sprites[i] = new Sprite( *(t_manager.getTexture( "BasicTree2.png" )));
+      normalizeTo1x1( terrain_sprites[i] );
+   }
+
+   // Rocks
+   for (i = TER_ROCK_1; i <= TER_ROCK_LAST; ++i) { 
+      terrain_sprites[i] = new Sprite( *(t_manager.getTexture( "Rock1.png" )));
+      normalizeTo1x1( terrain_sprites[i] );
+   }
 
    // CLIFF
    // straight
@@ -1542,16 +1582,17 @@ int loadLevel( int level_id )
       if (createLevelFromFile( "res/testlevel.txt" ) == -1)
          return -1;
 
-      //GRID_AT(terrain_grid,0,0) = TER_NONE;
+      GRID_AT(terrain_grid,4,9) = TER_ROCK_1;
+      //player->x_grid = 1;
+      //player->y_grid = 4;
 
- //     player->x_grid = 1;
-//      player->y_grid = 4;
-
-  //    writeLevelToFile( "res/testlevel.txt" );
+      //writeLevelToFile( "res/testlevel.txt" );
    }
 
    menu_state = MENU_MAIN | MENU_PRI_INGAME;
    setLevelListener(true);
+
+   vision_enabled = true;
    calculateVision();
 
    return 0;
@@ -1575,7 +1616,7 @@ void togglePause()
 {
    if (pause_state == 0)
       pause();
-   else
+   else if (pause_state == FULLY_PAUSED)
       unpause();
 }
 
@@ -1584,11 +1625,34 @@ void drawPause()
    if (pause_state == 0) return;
 
    int transparency = (128 * abs(pause_state)) / FULLY_PAUSED;
-   Color c( 128, 128, 128, transparency );
+   Color c( 192, 192, 192, transparency );
    RectangleShape r( Vector2f(config::width(), config::height()) );
    r.setFillColor( c );
    r.setPosition( 0, 0 );
    SFML_GlobalRenderWindow::get()->draw( r );
+}
+
+int updatePause( int dt )
+{
+   if (pause_state == FULLY_PAUSED)
+      return 2;
+   else if (pause_state < 0) {
+      float factor = (float)(FULLY_PAUSED + pause_state) / (float)FULLY_PAUSED;
+      int d_pause = dt / 10;
+      dt *= factor;
+      pause_state -= d_pause;
+      if (pause_state <= -FULLY_PAUSED)
+         pause_state = FULLY_PAUSED;
+   }
+   else if (pause_state > 0) {
+      float factor = (float)(FULLY_PAUSED + pause_state) / (float)FULLY_PAUSED;
+      int d_pause = dt / 10;
+      dt *= factor;
+      pause_state -= d_pause;
+      if (pause_state <= 0)
+         pause_state = 0;
+   }
+   return 0;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1686,24 +1750,8 @@ int completeTurnAll( )
 
 int updateLevel( int dt )
 {
-   if (pause_state == FULLY_PAUSED)
+   if (updatePause( dt ) == 2)
       return 2;
-   else if (pause_state < 0) {
-      float factor = (float)(FULLY_PAUSED + pause_state) / (float)FULLY_PAUSED;
-      int d_pause = dt / 10;
-      dt *= factor;
-      pause_state -= d_pause;
-      if (pause_state <= -FULLY_PAUSED)
-         pause_state = FULLY_PAUSED;
-   }
-   else if (pause_state > 0) {
-      float factor = (float)(FULLY_PAUSED + pause_state) / (float)FULLY_PAUSED;
-      int d_pause = dt / 10;
-      dt *= factor;
-      pause_state -= d_pause;
-      if (pause_state <= 0)
-         pause_state = 0;
-   }
 
    int til_end = TURN_LENGTH - turn_progress;
    turn_progress += dt;
@@ -2675,14 +2723,25 @@ int drawClock()
 int drawOrderQueue()
 {
    if (player) {
-      int draw_x = 38;
+      int draw_x = 38, draw_y = 2, x_edge = config::width();
+      if (selected_unit != NULL) x_edge -= selection_box_width;
+
       for (int i = player->current_order; i != player->final_order; ++i) {
          if (i == player->max_orders) i = 0;
 
          Order &o = player->order_queue[i];
          if ( o.action != SKIP ) {
-            drawOrder( player->order_queue[i], draw_x, 2, 32 );
+            drawOrder( player->order_queue[i], draw_x, draw_y, 32 );
             draw_x += 36;
+
+            if (draw_x + 32 >= x_edge) {
+               if (pause_state == FULLY_PAUSED) {
+                  draw_x = 2;
+                  draw_y += 36;
+               } else {
+                  break;
+               }
+            }
          }
       }
    }
@@ -2793,6 +2852,69 @@ int drawGui()
 }
 
 //////////////////////////////////////////////////////////////////////
+// Level Editor ---
+
+Vector2u l_e_selection;
+bool l_e_selected;
+
+int levelEditorSelectGrid( Vector2f coords )
+{
+   int cx = (int)coords.x,
+       cy = (int)coords.y;
+
+   if (cx < 0 || cx >= level_dim_x || cy < 0 || cy >= level_dim_y) {
+      l_e_selected = false;
+      return -1;
+   }
+
+   l_e_selection.x = cx;
+   l_e_selection.y = cy;
+   l_e_selected = true;
+
+   return 0;
+}
+
+int levelEditorChangeTerrain( int change )
+{
+   if (!l_e_selected) {
+      return -1;
+   }
+
+   int cur_t = GRID_AT(terrain_grid,l_e_selection.x,l_e_selection.y);
+   int new_t = cur_t + change;
+
+   if (new_t < 0)
+      new_t = 0;
+   if (new_t >= NUM_TERRAINS)
+      new_t = NUM_TERRAINS - 1;
+
+   GRID_AT(terrain_grid,l_e_selection.x,l_e_selection.y) = (Terrain)new_t;
+
+   return 0;
+}
+
+int loadLevelEditor( int level )
+{
+   loadLevel( level );
+
+   menu_state = MENU_MAIN | MENU_PRI_LEVEL_EDITOR;
+   setLevelListener(false);
+   setLevelEditorListener(true);
+
+   vision_enabled = false;
+   calculateVision();
+   
+   return 0;
+}
+
+int levelEditorWriteToFile()
+{
+   string level_name_out = "level_editor_output.lvl";
+
+   return writeLevelToFile( level_name_out );
+}
+
+//////////////////////////////////////////////////////////////////////
 // Draw ---
 
 void drawBaseTerrain()
@@ -2819,7 +2941,7 @@ void drawTerrain()
 
          Sprite *s_ter = terrain_sprites[GRID_AT(terrain_grid,x,y)];
       
-         if (s_ter) {
+         if (NULL != s_ter) {
             s_ter->setPosition( x, y );
             r_window->draw( *s_ter );
          }
@@ -2839,7 +2961,7 @@ void drawUnits()
    for (list<Unit*>::iterator it=unit_list.begin(); it != unit_list.end(); ++it)
    {
       Unit* unit = (*it);
-      if (unit) {
+      if (unit && GRID_AT(vision_grid,unit->x_grid,unit->y_grid) == VIS_VISIBLE) {
          unit->draw();
       }
    }
@@ -3118,6 +3240,101 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
    }
 };
 
+struct LevelEditorEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListener
+{
+   virtual bool keyPressed( const Event::KeyEvent &key_press )
+   {
+      if (key_press.code == Keyboard::Q)
+         shutdown(1,1);
+
+      // View movement
+      if (key_press.code == Keyboard::Right)
+         levelEditorChangeTerrain( 10 );
+      if (key_press.code == Keyboard::Left)
+         levelEditorChangeTerrain( -10 );
+      if (key_press.code == Keyboard::Down)
+         levelEditorChangeTerrain( 1 );
+      if (key_press.code == Keyboard::Up)
+         levelEditorChangeTerrain( -1 );
+      if (key_press.code == Keyboard::Add)
+         zoomView( 1 , level_view->getCenter());
+      if (key_press.code == Keyboard::Subtract)
+         zoomView( -1 , level_view->getCenter());
+
+      if (key_press.code == Keyboard::W) {
+         log("Writing new level data from level editor");
+         levelEditorWriteToFile();
+      }
+
+      return true;
+   }
+    
+   virtual bool keyReleased( const Event::KeyEvent &key_release )
+   {
+      return true;
+   }
+
+   virtual bool mouseMoved( const Event::MouseMoveEvent &mouse_move )
+   {
+      static int old_mouse_x, old_mouse_y;
+
+      if (left_mouse_down) {
+         Vector2f old_spot = coordsWindowToView( old_mouse_x, old_mouse_y );
+         Vector2f new_spot = coordsWindowToView( mouse_move.x, mouse_move.y );
+         shiftView( old_spot.x - new_spot.x, old_spot.y - new_spot.y );
+      }
+
+      if (right_mouse_down && r_click_menu_open) {
+         //rightClickMenuSelect( mouse_move.x, mouse_move.y );
+      }
+
+      old_mouse_x = mouse_move.x;
+      old_mouse_y = mouse_move.y;
+
+      return true;
+   }
+
+   virtual bool mouseButtonPressed( const Event::MouseButtonEvent &mbp )
+   {
+      if (mbp.button == Mouse::Left) {
+         left_mouse_down = 1;
+         left_mouse_down_time = game_clock->getElapsedTime().asMilliseconds();
+      }
+
+      if (mbp.button == Mouse::Right) {
+         right_mouse_down = 1;
+         right_mouse_down_time = game_clock->getElapsedTime().asMilliseconds();
+      }
+
+
+      return true;
+   }
+
+   virtual bool mouseButtonReleased( const Event::MouseButtonEvent &mbr )
+   {
+      if (mbr.button == Mouse::Left) {
+         left_mouse_down = 0;
+         int left_mouse_up_time = game_clock->getElapsedTime().asMilliseconds();
+
+         if (left_mouse_up_time - left_mouse_down_time < MOUSE_DOWN_SELECT_TIME
+               && !isMouseOverGui( mbr.x, mbr.y ))
+            levelEditorSelectGrid( coordsWindowToView( mbr.x, mbr.y ) );
+
+      }
+      if (mbr.button == Mouse::Right) {
+         right_mouse_down = 0;
+      }
+
+      return true;
+   }
+
+   virtual bool mouseWheelMoved( const Event::MouseWheelEvent &mwm )
+   {
+      zoomView( mwm.delta, coordsWindowToView( mwm.x, mwm.y ) );
+      return true;
+   }
+};
+
 void setLevelListener( bool set )
 {
    static LevelEventHandler level_listener;
@@ -3128,6 +3345,19 @@ void setLevelListener( bool set )
    } else {
       event_manager.removeMouseListener( &level_listener );
       event_manager.removeKeyListener( &level_listener );
+   }
+}
+
+void setLevelEditorListener( bool set )
+{
+   static LevelEditorEventHandler level_editor_listener;
+   SFML_WindowEventManager& event_manager = SFML_WindowEventManager::getSingleton();
+   if (set) {
+      event_manager.addMouseListener( &level_editor_listener, "level editor mouse" );
+      event_manager.addKeyListener( &level_editor_listener, "level editor key" );
+   } else {
+      event_manager.removeMouseListener( &level_editor_listener );
+      event_manager.removeKeyListener( &level_editor_listener );
    }
 }
 

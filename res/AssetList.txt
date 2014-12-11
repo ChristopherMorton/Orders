@@ -6,6 +6,7 @@ IMAGE TargetPractice.png
 // Terrain
 IMAGE BasicTree1.png
 IMAGE BasicTree2.png
+IMAGE Rock1.png
 IMAGE CliffStraight.png
 IMAGE CliffEnd.png
 IMAGE CliffCorner90.png

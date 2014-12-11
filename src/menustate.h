@@ -20,6 +20,7 @@ extern sf::Font *menu_font; // stored in app.cpp
 #define MENU_PRI_MAP 0x200
 #define MENU_PRI_INGAME 0x400
 #define MENU_PRI_ANIMATION 0x800
+#define MENU_PRI_LEVEL_EDITOR 0x1000
 // which secondary windows are up?
 #define MENU_SEC_OPTIONS 0x10000
 #define MENU_SEC_AV_OPTIONS 0x20000

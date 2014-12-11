@@ -449,12 +449,12 @@ string Unit::descriptor()
 
 Player *thePlayer = NULL;
 
-Animation anim_idle;
+Animation player_anim_idle;
 
 void initPlayerAnimations()
 {
    Texture *t = SFML_TextureManager::getSingleton().getTexture( "BugScratchWiggleAnimation.png" );
-   anim_idle.load( t, 128, 128, 3, 1000 );
+   player_anim_idle.load( t, 128, 128, 3, 1000 );
 }
 
 // Private
@@ -593,19 +593,25 @@ sf::Texture* Player::getTexture()
 
 int Player::draw()
 { 
-   Sprite *sp_player = anim_idle.createSprite( (int)(progress * 1000) );
+   Sprite *sp_player = player_anim_idle.getSprite( (int)(progress * 1000) );
    if (NULL == sp_player) return -1;
 
-   Vector2u dim (anim_idle.image_size_x, anim_idle.image_size_y);
+   Vector2u dim (player_anim_idle.image_size_x, player_anim_idle.image_size_y);
    sp_player->setOrigin( dim.x / 2.0, dim.y / 2.0 );
    float scale_x = 1.0 / dim.x;
    float scale_y = 1.0 / dim.y;
    sp_player->setScale( scale_x, scale_y );
 
    sp_player->setPosition( x_real, y_real );
-   SFML_GlobalRenderWindow::get()->draw( *sp_player );
 
-   delete sp_player;
+   int rotation;
+   if (facing == EAST) rotation = 0;
+   if (facing == SOUTH) rotation = 90;
+   if (facing == WEST) rotation = 180;
+   if (facing == NORTH) rotation = 270;
+   sp_player->setRotation( rotation );
+
+   SFML_GlobalRenderWindow::get()->draw( *sp_player );
 
    return 0;
 }
@@ -1022,7 +1028,7 @@ int Worm::doAttack( Order o )
    target = getEnemy( x_grid, y_grid, attack_range, facing, team, selector );
 
    if (target) {
-      log("Bug attack");
+      log("Worm attack");
       // TODO: Melee poison attack
    }
 
@@ -1251,6 +1257,14 @@ string Bird::descriptor()
 //////////////////////////////////////////////////////////////////////
 // Bug ---
 
+Animation bug_anim_idle;
+
+void initBugAnimations()
+{
+   Texture *t = SFML_TextureManager::getSingleton().getTexture( "BugScratchWiggleAnimation.png" );
+   bug_anim_idle.load( t, 128, 128, 3, 1000 );
+}
+
 // *tors
 Bug::Bug()
 {
@@ -1379,10 +1393,33 @@ sf::Texture* Bug::getTexture()
    return SFML_TextureManager::getSingleton().getTexture( "BugScratch.png" );
 }
 
-Sprite *sp_bug = NULL;
+//Sprite *sp_bug = NULL;
 
 int Bug::draw()
 {
+   Sprite *sp_bug = bug_anim_idle.getSprite( (int)(progress * 1000) );
+   if (NULL == sp_bug) return -1;
+
+   Vector2u dim (bug_anim_idle.image_size_x, bug_anim_idle.image_size_y);
+   sp_bug->setOrigin( dim.x / 2.0, dim.y / 2.0 );
+   float scale_x = 0.5 / dim.x;
+   float scale_y = 0.5 / dim.y;
+   sp_bug->setScale( scale_x, scale_y );
+
+   sp_bug->setPosition( x_real, y_real );
+
+   int rotation;
+   if (facing == EAST) rotation = 0;
+   if (facing == SOUTH) rotation = 90;
+   if (facing == WEST) rotation = 180;
+   if (facing == NORTH) rotation = 270;
+   sp_bug->setRotation( rotation );
+
+   SFML_GlobalRenderWindow::get()->draw( *sp_bug );
+
+   return 0;
+
+   /*
    if (NULL == sp_bug) {
       sp_bug = new Sprite(*getTexture());
       Vector2u dim = getTexture()->getSize();
@@ -1403,6 +1440,7 @@ int Bug::draw()
    SFML_GlobalRenderWindow::get()->draw( *sp_bug );
 
    return 0;
+   */
 }
 
 string Bug::descriptor()
@@ -1588,6 +1626,12 @@ TargetPractice::~TargetPractice()
 string TargetPractice::descriptor()
 {
    return "Target";
+}
+
+int initUnits()
+{
+   initBugAnimations();
+   return 0;
 }
 
 };
