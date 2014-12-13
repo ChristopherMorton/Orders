@@ -11,6 +11,9 @@ IMAGE CliffStraight.png
 IMAGE CliffEnd.png
 IMAGE CliffCorner90.png
 IMAGE CliffCorner270.png
+IMAGE AtelierCenter.png
+IMAGE AtelierEdge.png
+IMAGE AtelierCorner.png
 // Vision-related
 IMAGE Fog.png
 IMAGE FogCloudSolid.png

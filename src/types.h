@@ -65,6 +65,18 @@ typedef unsigned char Terrain;
 #define TER_TREE_LAST 49
    // Flowers/Grass (41-60) - 0
    // End
+
+   // Atelier (246-254) - 9
+#define TER_ATELIER 246
+#define TER_ATELIER_NORTH_EDGE 247
+#define TER_ATELIER_EAST_EDGE 248
+#define TER_ATELIER_SOUTH_EDGE 249
+#define TER_ATELIER_WEST_EDGE 250
+#define TER_ATELIER_CORNER_NORTHEAST 251
+#define TER_ATELIER_CORNER_SOUTHEAST 252
+#define TER_ATELIER_CORNER_SOUTHWEST 253
+#define TER_ATELIER_CORNER_NORTHWEST 254
+
 #define NUM_TERRAINS 255
 
 typedef enum {

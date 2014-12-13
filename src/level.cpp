@@ -132,6 +132,17 @@ Vector2u coordsViewToWindow( float view_x, float view_y )
    return Vector2u( window_x, window_y );
 }
 
+int drawSquare( int x, int y, int size, Color line_color )
+{
+   RectangleShape rect;
+   rect.setSize( Vector2f( size, size ) );
+   rect.setPosition( x, y );
+   rect.setFillColor( Color::Transparent );
+   rect.setOutlineColor( line_color );
+   rect.setOutlineThickness( 1.0 );
+   SFML_GlobalRenderWindow::get()->draw( rect );
+}
+
 //////////////////////////////////////////////////////////////////////
 // View management ---
 
@@ -547,6 +558,9 @@ int calculateVision()
             GRID_AT(vision_grid,x,y) = VIS_SEEN_BEFORE;
          else
             GRID_AT(vision_grid,x,y) = VIS_NEVER_SEEN;
+
+         if (GRID_AT(terrain_grid,x,y) >= TER_ATELIER)
+            GRID_AT(vision_grid,x,y) = VIS_VISIBLE;
       }
    }
    
@@ -950,34 +964,15 @@ int alertUnits( Order o )
    }
    listening_units.clear();
 
-   // Get search box
-   // TODO: This should be a level-defined thing
-   int x = player->x_grid, y = player->y_grid;
-   int shout_range = (int)player->attack_range + 1;
-   int min_x, max_x, min_y, max_y;
-   min_x = x - shout_range;
-   max_x = x + shout_range;
-   min_y = y - shout_range;
-   max_y = y + shout_range;
-   if (min_x < 0) min_x = 0;
-   if (max_x >= level_dim_x) max_x = level_dim_x - 1;
-   if (min_y < 0) min_y = 0;
-   if (max_y >= level_dim_y) max_y = level_dim_y - 1;
+   // Check all areas that are in the Atelier
+   for (int x = 0; x < level_dim_x; ++x) {
+      for (int y = 0; y < level_dim_y; ++y) {
+         if (GRID_AT(terrain_grid,x,y) >= TER_ATELIER) {
+            Unit *u = GRID_AT(unit_grid,x,y);
+            if (u == player) continue;
 
-   float range_squared = player->attack_range * player->attack_range;
+            if (u && u->team == 0) { // On my team
 
-   for (int j = min_y; j <= max_y; ++j) {
-      for (int i = min_x; i <= max_x; ++i) {
-         Unit *u = GRID_AT(unit_grid,i,j);
-         if (u == player) continue;
-
-         if (u && u->team == 0) { // On my team
-            float u_x = u->x_grid - x, u_y = u->y_grid - y;
-            float u_squared = (u_x * u_x) + (u_y * u_y);
-            // Is it really in range?
-            if (u_squared <= range_squared) {
-
-               // Okay so it's in shout range, now what?
                if (o.action == PL_ALERT_ALL) {
                   alert(u);
                } else if (o.action == PL_ALERT_MONSTERS && u->type == MONSTER_T) {
@@ -993,6 +988,7 @@ int alertUnits( Order o )
                } else if (o.action == PL_ALERT_TEAM && u->team == o.count) {
                   alert(u);
                }
+
             }
          }
       }
@@ -1003,7 +999,7 @@ int alertUnits( Order o )
          
 int activateUnits( Order o )
 {
-   // Get search box
+   /* Get search box
    int x = player->x_grid, y = player->y_grid;
    int shout_range = (int)player->attack_range + 1;
    int min_x, max_x, min_y, max_y;
@@ -1020,16 +1016,15 @@ int activateUnits( Order o )
 
    for (int j = min_y; j <= max_y; ++j) {
       for (int i = min_x; i <= max_x; ++i) {
-         Unit *u = GRID_AT(unit_grid,i,j);
-         if (u == player) continue;
+         */
+   for (int x = 0; x < level_dim_x; ++x) {
+      for (int y = 0; y < level_dim_y; ++y) {
+         if (GRID_AT(terrain_grid,x,y) >= TER_ATELIER) {
+            Unit *u = GRID_AT(unit_grid,x,y);
+            if (u == player) continue;
 
-         if (u && u->team == 0) { // On my team
-            float u_x = u->x_grid - x, u_y = u->y_grid - y;
-            float u_squared = (u_x * u_x) + (u_y * u_y);
-            // Is it really in range?
-            if (u_squared <= range_squared) {
+            if (u && u->team == 0) { // On my team
 
-               // Okay so it's in shout range, now what?
                if (o.action == PL_CMD_GO_ALL) {
                   u->activate();
                } else if (o.action == PL_CMD_GO_MONSTERS && u->type == MONSTER_T) {
@@ -1045,6 +1040,7 @@ int activateUnits( Order o )
                } else if (o.action == PL_CMD_GO_TEAM && u->team == o.count) {
                   u->activate();
                }
+            
             }
          }
       }
@@ -1259,7 +1255,44 @@ void initTextures()
    normalizeTo1x1( terrain_sprites[CLIFF_CORNER_NORTHEAST_270] );
    terrain_sprites[CLIFF_CORNER_NORTHEAST_270]->setRotation( 270 );
    terrain_sprites[CLIFF_CORNER_NORTHEAST_270]->setOrigin( dim.x, 0 );
+
+   // Atelier
+
+   terrain_sprites[TER_ATELIER] = new Sprite( *(t_manager.getTexture( "AtelierCenter.png" )));
+   normalizeTo1x1( terrain_sprites[TER_ATELIER] );
+
+   // edge
+   dim = t_manager.getTexture( "AtelierEdge.png" )->getSize();
+   terrain_sprites[TER_ATELIER_SOUTH_EDGE] = new Sprite( *(t_manager.getTexture( "AtelierEdge.png" )));
+   normalizeTo1x1( terrain_sprites[TER_ATELIER_SOUTH_EDGE] );
+   terrain_sprites[TER_ATELIER_WEST_EDGE] = new Sprite( *(t_manager.getTexture( "AtelierEdge.png" )));
+   normalizeTo1x1( terrain_sprites[TER_ATELIER_WEST_EDGE] );
+   terrain_sprites[TER_ATELIER_WEST_EDGE]->setRotation( 90 );
+   terrain_sprites[TER_ATELIER_WEST_EDGE]->setOrigin( 0, dim.y );
+   terrain_sprites[TER_ATELIER_NORTH_EDGE] = new Sprite( *(t_manager.getTexture( "AtelierEdge.png" )));
+   normalizeTo1x1( terrain_sprites[TER_ATELIER_NORTH_EDGE] );
+   terrain_sprites[TER_ATELIER_NORTH_EDGE]->setRotation( 180 );
+   terrain_sprites[TER_ATELIER_NORTH_EDGE]->setOrigin( dim.x, dim.y );
+   terrain_sprites[TER_ATELIER_EAST_EDGE] = new Sprite( *(t_manager.getTexture( "AtelierEdge.png" )));
+   normalizeTo1x1( terrain_sprites[TER_ATELIER_EAST_EDGE] );
+   terrain_sprites[TER_ATELIER_EAST_EDGE]->setRotation( 270 );
+   terrain_sprites[TER_ATELIER_EAST_EDGE]->setOrigin( dim.x, 0 );
    
+   // corner
+   terrain_sprites[TER_ATELIER_CORNER_SOUTHWEST] = new Sprite( *(t_manager.getTexture( "AtelierCorner.png" )));
+   normalizeTo1x1( terrain_sprites[TER_ATELIER_CORNER_SOUTHWEST] );
+   terrain_sprites[TER_ATELIER_CORNER_NORTHWEST] = new Sprite( *(t_manager.getTexture( "AtelierCorner.png" )));
+   normalizeTo1x1( terrain_sprites[TER_ATELIER_CORNER_NORTHWEST] );
+   terrain_sprites[TER_ATELIER_CORNER_NORTHWEST]->setRotation( 90 );
+   terrain_sprites[TER_ATELIER_CORNER_NORTHWEST]->setOrigin( 0, dim.y );
+   terrain_sprites[TER_ATELIER_CORNER_NORTHEAST] = new Sprite( *(t_manager.getTexture( "AtelierCorner.png" )));
+   normalizeTo1x1( terrain_sprites[TER_ATELIER_CORNER_NORTHEAST] );
+   terrain_sprites[TER_ATELIER_CORNER_NORTHEAST]->setRotation( 180 ); 
+   terrain_sprites[TER_ATELIER_CORNER_NORTHEAST]->setOrigin( dim.x, dim.y );
+   terrain_sprites[TER_ATELIER_CORNER_SOUTHEAST] = new Sprite( *(t_manager.getTexture( "AtelierCorner.png" )));
+   normalizeTo1x1( terrain_sprites[TER_ATELIER_CORNER_SOUTHEAST] );
+   terrain_sprites[TER_ATELIER_CORNER_SOUTHEAST]->setRotation( 270 );
+   terrain_sprites[TER_ATELIER_CORNER_SOUTHEAST]->setOrigin( dim.x, 0 );
 
    base_grass_sprite = new Sprite( *(t_manager.getTexture( "GreenGrass.png" )));
    base_mountain_sprite = new Sprite( *(t_manager.getTexture( "GrayRock.png" )));
@@ -1744,186 +1777,269 @@ int updateLevel( int dt )
 //////////////////////////////////////////////////////////////////////
 // GUI ---
 
-// Right Click Menu
+//////////////////////////////////////////////////////////////////////
+// Right Click Menu ---
 
-int r_click_menu_x_grid, r_click_menu_y_grid;
-int r_click_menu_top_x_left, r_click_menu_top_y_bottom; // Top box
-int r_click_menu_bottom_x_left, r_click_menu_bottom_y_top; // Bottom box
-float r_click_menu_button_size_x, r_click_menu_button_size_y;
+int cast_menu_x_grid, cast_menu_y_grid; // the affected grid square
+int cast_menu_grid_left, cast_menu_grid_top, cast_menu_grid_size;
 
-int r_click_menu_selection = 0; // -num == top box, +num == bottom box
+int cast_menu_box = 1; // 0 not expanded, 1 above, 2 right, 3 below, 4 left
+Vector2u cast_menu_top_left, cast_menu_size;
+int cast_menu_button_size;
 
-bool r_click_menu_open = false;
-bool r_click_menu_solid = false;
+// Deprecated
+int cast_menu_top_x_left, cast_menu_top_y_bottom; // Top box
+int cast_menu_bottom_x_left, cast_menu_bottom_y_top; // Bottom box
+float cast_menu_button_size_x, cast_menu_button_size_y;
+
+int cast_menu_selection = 0; // 1 == closest to source
+
+bool cast_menu_open = false;
+bool cast_menu_solid = false;
+bool cast_menu_summons_allowed = true;
 
 void initRightClickMenu()
 {
-   r_click_menu_open = false;
-   r_click_menu_solid = false;
+   cast_menu_open = false;
+   cast_menu_solid = false;
 }
 
-int rightClickMenuCreate( int x, int y )
+int castMenuCreate( Vector2i grid )
 {
-   Vector2i grid = coordsWindowToLevel( x, y );
-
    if (grid.x < 0 || grid.x >= level_dim_x || grid.y < 0 || grid.y >= level_dim_y)
       return -1;
    
    // TODO: do something so that the menu is always visible
 
-   r_click_menu_x_grid = grid.x;
-   r_click_menu_y_grid = grid.y;
+   cast_menu_x_grid = grid.x;
+   cast_menu_y_grid = grid.y;
 
-   Vector2u top_left = coordsViewToWindow( grid.x, grid.y );
-   Vector2u bottom_left = coordsViewToWindow( grid.x, grid.y + 1 );
+   cast_menu_top_left = coordsViewToWindow( grid.x, grid.y );
+   Vector2u bottom_right = coordsViewToWindow( grid.x + 1, grid.y + 1 );
+   cast_menu_grid_size = cast_menu_size.x = cast_menu_size.y = bottom_right.y - cast_menu_top_left.y;
 
-   r_click_menu_top_x_left = top_left.x;
-   r_click_menu_top_y_bottom = top_left.y;
+   cast_menu_box = 0;
+   cast_menu_grid_left = cast_menu_top_left.x;
+   cast_menu_grid_top = cast_menu_top_left.y;
 
-   r_click_menu_bottom_x_left = bottom_left.x;
-   r_click_menu_bottom_y_top = bottom_left.y;
-
-   r_click_menu_selection = 0;
+   cast_menu_selection = 0;
 
    // Calculate how big to make the buttons
    float x_dim = config::width(), y_dim = config::height();
-   r_click_menu_button_size_x = x_dim / 6;
-   r_click_menu_button_size_y = y_dim / 30;
+   cast_menu_button_size_x = x_dim / 6;
+   cast_menu_button_size_y = y_dim / 30;
+   cast_menu_button_size = x_dim / 20;
 
-   r_click_menu_open = true;
-   r_click_menu_solid = false;
+   cast_menu_open = true;
+   cast_menu_solid = false;
+
+   if (GRID_AT(terrain_grid,grid.x,grid.y) >= TER_ATELIER)
+      cast_menu_summons_allowed = true;
+   else
+      cast_menu_summons_allowed = false;
 
    log("Right click menu created");
 
    return 0;
 }
 
-int rightClickMenuSelect( int x, int y )
+int castMenuSelect( unsigned int x, unsigned int y )
 {
-   if (x < r_click_menu_top_x_left || 
-       x > (r_click_menu_top_x_left + r_click_menu_button_size_x) ||
-       !( (y <= r_click_menu_top_y_bottom && 
-           y >= r_click_menu_top_y_bottom - (r_click_menu_button_size_y * 5))
-          ||
-          (y >= r_click_menu_bottom_y_top && 
-           y <= r_click_menu_bottom_y_top + (r_click_menu_button_size_y * 5))
-        )
-      )
+   if (cast_menu_box == 0)
    {
-      // Not in a selection area
-      r_click_menu_selection = 0;
-   } 
-   else if (y <= r_click_menu_top_y_bottom && 
-       y >= r_click_menu_top_y_bottom - (r_click_menu_button_size_y * 5))
+      if (x < cast_menu_top_left.x)
+         cast_menu_box = 4;
+      else if (x > cast_menu_top_left.x + cast_menu_size.x)
+         cast_menu_box = 2;
+      else if (y < cast_menu_top_left.y && cast_menu_summons_allowed)
+         cast_menu_box = 1;
+      else if (y > cast_menu_top_left.y + cast_menu_size.y && cast_menu_summons_allowed)
+         cast_menu_box = 3;
+   }
+
+   if (cast_menu_box == 1 || cast_menu_box == 3) // Vertical - summons
    {
-      // Top selection area
-      r_click_menu_selection = ((int) ((y - r_click_menu_top_y_bottom) / r_click_menu_button_size_y)) - 1;
+      int dy;
+      if (cast_menu_box == 1)
+         dy = cast_menu_top_left.y - y;
+      else
+         dy = y - (cast_menu_top_left.y + cast_menu_size.y);
+
+      if (dy > (5*cast_menu_button_size))
+         cast_menu_selection = 0;
+      else if (dy < 0) {
+         cast_menu_selection = 0;
+         cast_menu_box = 0;
+      }
+      else
+         cast_menu_selection = (dy / cast_menu_button_size) + 1;
+      /*
+      if (x < cast_menu_top_x_left || 
+          x > (cast_menu_top_x_left + cast_menu_button_size_x) ||
+          !( (y <= cast_menu_top_y_bottom && 
+              y >= cast_menu_top_y_bottom - (cast_menu_button_size_y * 5))
+             ||
+             (y >= cast_menu_bottom_y_top && 
+              y <= cast_menu_bottom_y_top + (cast_menu_button_size_y * 5))
+           )
+         )
+      {
+         // Not in a selection area
+         cast_menu_selection = 0;
+      } 
+      else if (y <= cast_menu_top_y_bottom && 
+          y >= cast_menu_top_y_bottom - (cast_menu_button_size_y * 5))
+      {
+         // Top selection area
+         cast_menu_selection = ((int) ((y - cast_menu_top_y_bottom) / cast_menu_button_size_y)) - 1;
+      }
+      else
+      {
+         // Bottom selection area
+         cast_menu_selection = (int) ((y - cast_menu_bottom_y_top) / cast_menu_button_size_y);
+      }
+      */
+   }
+
+   if (cast_menu_box == 2 || cast_menu_box == 4) // Horizontal - spells
+   {
+      int dx;
+      if (cast_menu_box == 4)
+         dx = cast_menu_top_left.x - x;
+      else
+         dx = x - (cast_menu_top_left.x + cast_menu_size.x);
+
+      if (dx > (5*cast_menu_button_size))
+         cast_menu_selection = 0;
+      else if (dx < 0) {
+         cast_menu_selection = 0;
+         cast_menu_box = 0;
+      }
+      else
+         cast_menu_selection = (dx / cast_menu_button_size) + 1;
+   }
+
+
+   return cast_menu_selection;
+}
+
+void castMenuSolidify()
+{ 
+   cast_menu_solid = true;
+}
+
+void castMenuClose()
+{
+   cast_menu_open = false;
+}
+
+void castMenuChoose()
+{
+   Order o( SKIP, TRUE, cast_menu_x_grid );
+   o.iteration = cast_menu_y_grid;
+
+   if (cast_menu_box == 1 || cast_menu_box == 3)
+   {
+      switch (cast_menu_selection) {
+         case 1:
+            o.action = SUMMON_MONSTER;
+            player->addOrder( o ); 
+            break;
+         case 2:
+            o.action = SUMMON_SOLDIER;
+            player->addOrder( o ); 
+            break;
+         case 3:
+            o.action = SUMMON_WORM;
+            player->addOrder( o ); 
+            break;
+         case 4:
+            o.action = SUMMON_BIRD;
+            player->addOrder( o ); 
+            break;
+         case 5:
+            o.action = SUMMON_BUG;
+            player->addOrder( o ); 
+            break;
+      }
    }
    else
    {
-      // Bottom selection area
-      r_click_menu_selection = (int) ((y - r_click_menu_bottom_y_top) / r_click_menu_button_size_y);
-   }
-   return r_click_menu_selection;
-}
 
-void rightClickMenuSolidify()
-{ 
-   r_click_menu_solid = true;
-}
-
-void rightClickMenuClose()
-{
-   r_click_menu_open = false;
-}
-
-void rightClickMenuChoose()
-{
-   Order o( SKIP, TRUE, r_click_menu_x_grid );
-   o.iteration = r_click_menu_y_grid;
-
-   switch (r_click_menu_selection) {
-      case -1:
-         o.action = SUMMON_MONSTER;
-         player->addOrder( o ); 
-         break;
-      case -2:
-         o.action = SUMMON_SOLDIER;
-         player->addOrder( o ); 
-         break;
-      case -3:
-         o.action = SUMMON_WORM;
-         player->addOrder( o ); 
-         break;
-      case -4:
-         o.action = SUMMON_BIRD;
-         player->addOrder( o ); 
-         break;
-      case -5:
-         o.action = SUMMON_BUG;
-         player->addOrder( o ); 
-         break;
    }
 
-   rightClickMenuClose();
+   castMenuClose();
 }
 
 void drawRightClickMenu()
 {
-   if (r_click_menu_open == false) return;
+   if (cast_menu_open == false) return;
    RenderWindow *gui_window = SFML_GlobalRenderWindow::get();
 
-   Text text;
-   text.setFont( *menu_font );
-   text.setColor( Color::Black );
-   text.setCharacterSize( 16 );
+   if (cast_menu_box == 0)
+   {
+      // Draw 'summon' vertically and 'cast' horizontally
+      Text text;
+      text.setFont( *menu_font );
+      text.setColor( Color::Black );
+      text.setCharacterSize( 16 );
 
-   text.setString( String("Summon Monster") );
-   text.setPosition( r_click_menu_top_x_left, r_click_menu_top_y_bottom - (r_click_menu_button_size_y) );
-   gui_window->draw( text );
-   text.setString( String("Summon Soldier") );
-   text.setPosition( r_click_menu_top_x_left, r_click_menu_top_y_bottom - (2*r_click_menu_button_size_y) );
-   gui_window->draw( text );
-   text.setString( String("Summon Worm") );
-   text.setPosition( r_click_menu_top_x_left, r_click_menu_top_y_bottom - (3*r_click_menu_button_size_y) );
-   gui_window->draw( text );
-   text.setString( String("Summon Bird") );
-   text.setPosition( r_click_menu_top_x_left, r_click_menu_top_y_bottom - (4*r_click_menu_button_size_y) );
-   gui_window->draw( text );
-   text.setString( String("Summon Bug") );
-   text.setPosition( r_click_menu_top_x_left, r_click_menu_top_y_bottom - (5*r_click_menu_button_size_y) );
-   gui_window->draw( text );
+      if (cast_menu_summons_allowed) {
+         text.setString( String("Summon") );
+         text.setPosition( cast_menu_top_left.x, cast_menu_top_left.y );
+         text.setRotation( 270 );
+         gui_window->draw( text );
 
-   text.setString( String("Cast Scry") );
-   text.setPosition( r_click_menu_bottom_x_left, r_click_menu_bottom_y_top);
-   gui_window->draw( text );
-   text.setString( String("Cast Lightning") );
-   text.setPosition( r_click_menu_bottom_x_left, r_click_menu_bottom_y_top + (1*r_click_menu_button_size_y) );
-   gui_window->draw( text );
-   text.setString( String("Cast Quake") );
-   text.setPosition( r_click_menu_bottom_x_left, r_click_menu_bottom_y_top + (2*r_click_menu_button_size_y) );
-   gui_window->draw( text );
-   text.setString( String("Cast Heal") );
-   text.setPosition( r_click_menu_bottom_x_left, r_click_menu_bottom_y_top + (3*r_click_menu_button_size_y) );
-   gui_window->draw( text );
-   text.setString( String("Cast Timelock") );
-   text.setPosition( r_click_menu_bottom_x_left, r_click_menu_bottom_y_top + (4*r_click_menu_button_size_y) );
-   gui_window->draw( text );
-   text.setString( String("Cast Telepathy") );
-   text.setPosition( r_click_menu_bottom_x_left, r_click_menu_bottom_y_top + (5*r_click_menu_button_size_y) );
-   gui_window->draw( text );
+         text.setPosition( cast_menu_top_left.x + cast_menu_size.x, cast_menu_top_left.y + cast_menu_size.y );
+         text.setRotation( 90 );
+         gui_window->draw( text );
+      }
 
-   RectangleShape grid_select_rect;
-   float rect_size = r_click_menu_bottom_y_top - r_click_menu_top_y_bottom;
-   grid_select_rect.setSize( Vector2f( rect_size, rect_size ) );
-   grid_select_rect.setPosition( r_click_menu_top_x_left, r_click_menu_top_y_bottom );
-   grid_select_rect.setFillColor( Color::Transparent );
-   grid_select_rect.setOutlineColor( Color::White );
-   grid_select_rect.setOutlineThickness( 1.0 );
-   gui_window->draw( grid_select_rect );
+      text.setString( String("Cast") );
+      text.setPosition( cast_menu_top_left.x, cast_menu_top_left.y + cast_menu_size.y );
+      text.setRotation( 180 );
+      gui_window->draw( text );
+
+      text.setPosition( cast_menu_top_left.x + cast_menu_size.x, cast_menu_top_left.y );
+      text.setRotation( 0 );
+      gui_window->draw( text );
+
+   }
+   else if (cast_menu_box == 1 || cast_menu_box == 3)
+   {
+      int x, y, dy, dim;
+      dim = cast_menu_button_size;
+      x = cast_menu_grid_left + (cast_menu_grid_size / 2) - (dim / 2);
+      if (cast_menu_box == 1) {
+         y = cast_menu_grid_top - dim;
+         dy = -dim;
+      } else {
+         y = cast_menu_top_left.y + cast_menu_grid_size;
+         dy = dim;
+      }
+
+      drawOrder( Order( SUMMON_MONSTER ), x, y, dim );
+      if (cast_menu_selection == 1) drawSquare( x, y, dim, Color::White );
+      y += dy;
+      drawOrder( Order( SUMMON_SOLDIER ), x, y, dim );
+      if (cast_menu_selection == 2) drawSquare( x, y, dim, Color::White );
+      y += dy;
+      drawOrder( Order( SUMMON_WORM ), x, y, dim );
+      if (cast_menu_selection == 3) drawSquare( x, y, dim, Color::White );
+      y += dy;
+      drawOrder( Order( SUMMON_BIRD ), x, y, dim );
+      if (cast_menu_selection == 4) drawSquare( x, y, dim, Color::White );
+      y += dy;
+      drawOrder( Order( SUMMON_BUG ), x, y, dim );
+      if (cast_menu_selection == 5) drawSquare( x, y, dim, Color::White );
+
+   }
+
+   drawSquare( cast_menu_top_left.x, cast_menu_top_left.y, cast_menu_size.x, Color::White );
 }
 
-// The order buttons part of the gui
+//////////////////////////////////////////////////////////////////////
+// Order Buttons ---
 
 int selection_box_width = 240, selection_box_height = 50;
 
@@ -2623,6 +2739,9 @@ int drawOrderButtons()
    return 0;
 }
 
+//////////////////////////////////////////////////////////////////////
+// Rest of the Gui ---
+
 Sprite *s_clock_face,
        *s_clock_half_red,
        *s_clock_half_white;
@@ -3137,8 +3256,8 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
          shiftView( old_spot.x - new_spot.x, old_spot.y - new_spot.y );
       }
 
-      if (right_mouse_down && r_click_menu_open) {
-         //rightClickMenuSelect( mouse_move.x, mouse_move.y );
+      if ((right_mouse_down && cast_menu_open) || cast_menu_solid) {
+         castMenuSelect( mouse_move.x, mouse_move.y );
       }
 
       old_mouse_x = mouse_move.x;
@@ -3153,9 +3272,9 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
          left_mouse_down = 1;
          left_mouse_down_time = game_clock->getElapsedTime().asMilliseconds();
 
-         if (r_click_menu_solid) {
-            rightClickMenuSelect( mbp.x, mbp.y );
-            rightClickMenuChoose();
+         if (cast_menu_solid) {
+            castMenuSelect( mbp.x, mbp.y );
+            castMenuChoose();
          }
       }
 
@@ -3163,7 +3282,7 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
          right_mouse_down = 1;
          right_mouse_down_time = game_clock->getElapsedTime().asMilliseconds();
          if (!isMouseOverGui( mbp.x, mbp.y ))
-            rightClickMenuCreate( mbp.x, mbp.y );
+            castMenuCreate( coordsWindowToLevel( mbp.x, mbp.y ) );
       }
 
 
@@ -3186,10 +3305,10 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
          int right_mouse_up_time = game_clock->getElapsedTime().asMilliseconds();
 
          if (right_mouse_up_time - right_mouse_down_time < MOUSE_DOWN_SELECT_TIME)
-            rightClickMenuSolidify();
+            castMenuSolidify();
          else {
-            rightClickMenuSelect( mbr.x, mbr.y );
-            rightClickMenuChoose();
+            castMenuSelect( mbr.x, mbr.y );
+            castMenuChoose();
          }
       }
 
@@ -3247,8 +3366,8 @@ struct LevelEditorEventHandler : public My_SFML_MouseListener, public My_SFML_Ke
          shiftView( old_spot.x - new_spot.x, old_spot.y - new_spot.y );
       }
 
-      if (right_mouse_down && r_click_menu_open) {
-         //rightClickMenuSelect( mouse_move.x, mouse_move.y );
+      if (right_mouse_down && cast_menu_open) {
+         //castMenuSelect( mouse_move.x, mouse_move.y );
       }
 
       old_mouse_x = mouse_move.x;
