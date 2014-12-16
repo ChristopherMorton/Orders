@@ -558,9 +558,21 @@ int calculateVision()
             GRID_AT(vision_grid,x,y) = VIS_SEEN_BEFORE;
          else
             GRID_AT(vision_grid,x,y) = VIS_NEVER_SEEN;
+      }
+   }
 
-         if (GRID_AT(terrain_grid,x,y) >= TER_ATELIER)
-            GRID_AT(vision_grid,x,y) = VIS_VISIBLE;
+   for (x = 0; x < level_dim_x; ++x) {
+      for (y = 0; y < level_dim_y; ++y) {
+         if (GRID_AT(terrain_grid,x,y) >= TER_ATELIER) {
+            // Give vision in 1 radius
+            for (int i = x - 1; i <= x + 1 && i <= level_dim_x; ++i) {
+               if (i < 0) continue;
+               for (int j = y - 1; j <= y + 1 && j <= level_dim_y; ++j) {
+                  if (j < 0) continue;
+                  GRID_AT(vision_grid,i,j) = VIS_VISIBLE;
+               }
+            }
+         }
       }
    }
    
@@ -999,24 +1011,6 @@ int alertUnits( Order o )
          
 int activateUnits( Order o )
 {
-   /* Get search box
-   int x = player->x_grid, y = player->y_grid;
-   int shout_range = (int)player->attack_range + 1;
-   int min_x, max_x, min_y, max_y;
-   min_x = x - shout_range;
-   max_x = x + shout_range;
-   min_y = y - shout_range;
-   max_y = y + shout_range;
-   if (min_x < 0) min_x = 0;
-   if (max_x >= level_dim_x) max_x = level_dim_x - 1;
-   if (min_y < 0) min_y = 0;
-   if (max_y >= level_dim_y) max_y = level_dim_y - 1;
-
-   float range_squared = player->attack_range * player->attack_range;
-
-   for (int j = min_y; j <= max_y; ++j) {
-      for (int i = min_x; i <= max_x; ++i) {
-         */
    for (int x = 0; x < level_dim_x; ++x) {
       for (int y = 0; y < level_dim_y; ++y) {
          if (GRID_AT(terrain_grid,x,y) >= TER_ATELIER) {
@@ -1105,11 +1099,10 @@ int startPlayerCommand( Order o )
          break;
       case PL_CAST_HEAL:
       case PL_CAST_LIGHTNING:
-      case PL_CAST_QUAKE:
       case PL_CAST_TIMELOCK:
       case PL_CAST_SCRY:
       case PL_CAST_TELEPATHY:
-         log("Spells not implemented");
+         log("startPlayerCommand: Spells not implemented");
          // TODO
          break;
       default:
@@ -1965,6 +1958,28 @@ void castMenuChoose()
    }
    else
    {
+      switch (cast_menu_selection) {
+         case 1:
+            o.action = PL_CAST_HEAL;
+            player->addOrder( o ); 
+            break;
+         case 2:
+            o.action = PL_CAST_LIGHTNING;
+            player->addOrder( o ); 
+            break;
+         case 3:
+            o.action = PL_CAST_TIMELOCK;
+            player->addOrder( o ); 
+            break;
+         case 4:
+            o.action = PL_CAST_SCRY;
+            player->addOrder( o ); 
+            break;
+         case 5:
+            o.action = PL_CAST_TELEPATHY;
+            player->addOrder( o ); 
+            break;
+      }
 
    }
 
@@ -2014,7 +2029,7 @@ void drawRightClickMenu()
          y = cast_menu_grid_top - dim;
          dy = -dim;
       } else {
-         y = cast_menu_top_left.y + cast_menu_grid_size;
+         y = cast_menu_grid_top + cast_menu_grid_size;
          dy = dim;
       }
 
@@ -2031,6 +2046,35 @@ void drawRightClickMenu()
       if (cast_menu_selection == 4) drawSquare( x, y, dim, Color::White );
       y += dy;
       drawOrder( Order( SUMMON_BUG ), x, y, dim );
+      if (cast_menu_selection == 5) drawSquare( x, y, dim, Color::White );
+
+   }
+   else if (cast_menu_box == 2 || cast_menu_box == 4)
+   {
+      int x, y, dx, dim;
+      dim = cast_menu_button_size;
+      y = cast_menu_grid_top + (cast_menu_grid_size / 2) - (dim / 2);
+      if (cast_menu_box == 4) {
+         x = cast_menu_grid_left - dim;
+         dx = -dim;
+      } else {
+         x = cast_menu_grid_left + cast_menu_grid_size;
+         dx = dim;
+      }
+
+      drawOrder( Order( PL_CAST_HEAL ), x, y, dim );
+      if (cast_menu_selection == 1) drawSquare( x, y, dim, Color::White );
+      x += dx;
+      drawOrder( Order( PL_CAST_LIGHTNING ), x, y, dim );
+      if (cast_menu_selection == 2) drawSquare( x, y, dim, Color::White );
+      x += dx;
+      drawOrder( Order( PL_CAST_TIMELOCK ), x, y, dim );
+      if (cast_menu_selection == 3) drawSquare( x, y, dim, Color::White );
+      x += dx;
+      drawOrder( Order( PL_CAST_SCRY ), x, y, dim );
+      if (cast_menu_selection == 4) drawSquare( x, y, dim, Color::White );
+      x += dx;
+      drawOrder( Order( PL_CAST_TELEPATHY ), x, y, dim );
       if (cast_menu_selection == 5) drawSquare( x, y, dim, Color::White );
 
    }
@@ -2060,7 +2104,36 @@ IMImageButton *b_o_move_forward,
               *b_o_wait,
               *b_pl_alert_all,
               *b_pl_cmd_go,
-              *b_pl_cmd_go_all;
+              *b_pl_cmd_go_all,
+              *b_pl_alert_monster,
+              *b_pl_cmd_go_monster,
+              *b_o_monster_guard,
+              *b_o_monster_burst,
+              *b_pl_alert_soldier,
+              *b_pl_cmd_go_soldier,
+              *b_o_soldier_switch_axe,
+              *b_o_soldier_switch_spear,
+              *b_o_soldier_switch_bow,
+              *b_pl_alert_worm,
+              *b_pl_cmd_go_worm,
+              *b_o_worm_sprint,
+              *b_o_worm_trail_on,
+              *b_o_worm_trail_off,
+              *b_pl_alert_bird,
+              *b_pl_cmd_go_bird,
+              *b_o_bird_fly,
+              *b_o_bird_land,
+              *b_o_bird_memorize_on,
+              *b_o_bird_memorize_off,
+              *b_o_bird_shout,
+              *b_pl_alert_bug,
+              *b_pl_cmd_go_bug,
+              *b_o_bug_meditate,
+              *b_o_bug_sunder,
+              *b_o_bug_fireball,
+              *b_o_bug_heal,
+              *b_o_bug_open_wormhole,
+              *b_o_bug_close_wormhole;
 IMTextButton *b_count_1,
              *b_count_2,
              *b_count_3,
@@ -2094,7 +2167,7 @@ bool isMouseOverGui( int x, int y )
        height = config::height();
 
    int sec_buffer = 5;
-   float button_size = (((float)width) - (20.0 * sec_buffer)) / 20.0;
+   float button_size = (((float)width) - (22.0 * sec_buffer)) / 22.0;
 
    if (y > (height - ((sec_buffer * 2) + (button_size * 3))))
       return true; // All button areas are this tall
@@ -2118,8 +2191,8 @@ void fitGui_Level()
    int width = config::width(),
        height = config::height();
 
-   int sec_buffer = 5;
-   float button_size = (((float)width) - (20.0 * sec_buffer)) / 20.0;
+   float sec_buffer = 5.0;
+   float button_size = (((float)width) - (20.0 * sec_buffer)) / 22.0;
 
    int text_size = floor( button_size / 2);
 
@@ -2128,11 +2201,11 @@ void fitGui_Level()
        sec_start_movement = sec_start_conditionals + (sec_buffer * 2) + (button_size * 1),
        sec_start_attack = sec_start_movement + (sec_buffer * 2) + (button_size * 3),
        sec_start_control = sec_start_attack + (sec_buffer * 2) + (button_size * 2),
-       sec_start_monster = sec_start_control + (sec_buffer * 2) + (button_size * 1),
-       sec_start_soldier = sec_start_monster + (sec_buffer * 2) + (button_size * 1),
+       sec_start_monster = sec_start_control + (sec_buffer * 2) + (button_size * 1) - 3,
+       sec_start_soldier = sec_start_monster + (sec_buffer * 2) + (button_size * 2),
        sec_start_worm = sec_start_soldier + (sec_buffer * 2) + (button_size * 2),
        sec_start_bird = sec_start_worm + (sec_buffer * 2) + (button_size * 2),
-       sec_start_bug = sec_start_bird + (sec_buffer * 2) + (button_size * 2);
+       sec_start_bug = sec_start_bird + (sec_buffer * 2) + (button_size * 3);
 
    // Numpad
 
@@ -2251,30 +2324,37 @@ void fitGui_Level()
                                  height - ((sec_buffer * 2) + (button_size * 3)));
 
    b_o_move_forward->setSize( button_size, button_size );
+   b_o_move_forward->setImageSize( button_size, button_size );
    b_o_move_forward->setPosition( sec_start_movement + sec_buffer + (button_size * 2),
                                   height - (sec_buffer + (button_size * 3)));
 
    b_o_move_backward->setSize( button_size, button_size );
+   b_o_move_backward->setImageSize( button_size, button_size );
    b_o_move_backward->setPosition( sec_start_movement + sec_buffer,
                                    height - (sec_buffer + (button_size * 3)));
 
    b_o_wait->setSize( button_size, button_size );
+   b_o_wait->setImageSize( button_size, button_size );
    b_o_wait->setPosition( sec_start_movement + sec_buffer + button_size,
                           height - (sec_buffer + (button_size * 3)));
 
    b_o_turn_north->setSize( button_size, button_size );
+   b_o_turn_north->setImageSize( button_size, button_size );
    b_o_turn_north->setPosition( sec_start_movement + sec_buffer + button_size,
                                 height - (sec_buffer + (button_size * 2)));
 
    b_o_turn_east->setSize( button_size, button_size );
+   b_o_turn_east->setImageSize( button_size, button_size );
    b_o_turn_east->setPosition( sec_start_movement + sec_buffer + (button_size * 2),
                                height - (sec_buffer + (button_size * 1)));
 
    b_o_turn_south->setSize( button_size, button_size );
+   b_o_turn_south->setImageSize( button_size, button_size );
    b_o_turn_south->setPosition( sec_start_movement + sec_buffer + button_size,
                                 height - (sec_buffer + (button_size * 1)));
 
    b_o_turn_west->setSize( button_size, button_size );
+   b_o_turn_west->setImageSize( button_size, button_size );
    b_o_turn_west->setPosition( sec_start_movement + sec_buffer,
                                height - (sec_buffer + (button_size * 1)));
 
@@ -2286,18 +2366,22 @@ void fitGui_Level()
                                height - ((sec_buffer * 2) + (button_size * 3)));
 
    b_o_attack_smallest->setSize( button_size, button_size );
+   b_o_attack_smallest->setImageSize( button_size, button_size );
    b_o_attack_smallest->setPosition( sec_start_attack + sec_buffer,
                                      height - (sec_buffer + (button_size * 2)));
 
    b_o_attack_biggest->setSize( button_size, button_size );
+   b_o_attack_biggest->setImageSize( button_size, button_size );
    b_o_attack_biggest->setPosition( sec_start_attack + sec_buffer + button_size,
                                     height - (sec_buffer + (button_size * 2)));
 
    b_o_attack_closest->setSize( button_size, button_size );
+   b_o_attack_closest->setImageSize( button_size, button_size );
    b_o_attack_closest->setPosition( sec_start_attack + sec_buffer,
                                     height - (sec_buffer + (button_size * 1)));
 
    b_o_attack_farthest->setSize( button_size, button_size );
+   b_o_attack_farthest->setImageSize( button_size, button_size );
    b_o_attack_farthest->setPosition( sec_start_attack + sec_buffer + button_size,
                                      height - (sec_buffer + (button_size * 1)));
 
@@ -2309,49 +2393,196 @@ void fitGui_Level()
                                 height - ((sec_buffer * 2) + (button_size * 3)));
 
    b_o_start_block->setSize( button_size, button_size );
+   b_o_start_block->setImageSize( button_size, button_size );
    b_o_start_block->setPosition( sec_start_control + sec_buffer,
                                  height - (sec_buffer + (button_size * 3)));
 
    b_o_end_block->setSize( button_size, button_size );
+   b_o_end_block->setImageSize( button_size, button_size );
    b_o_end_block->setPosition( sec_start_control + sec_buffer,
                                height - (sec_buffer + (button_size * 2)));
 
    b_o_repeat->setSize( button_size, button_size );
+   b_o_repeat->setImageSize( button_size, button_size );
    b_o_repeat->setPosition( sec_start_control + sec_buffer,
                             height - (sec_buffer + (button_size * 1)));
 
    // Units
 
    // Monster
-   b_monster_area->setSize( (sec_buffer * 3) + (button_size * 1),
-                           (sec_buffer * 3) + (button_size * 4));
+   b_monster_area->setSize( (sec_buffer * 3) + (button_size * 2),
+                            (sec_buffer * 3) + (button_size * 3));
    b_monster_area->setPosition( sec_start_monster,
-                                height - ((sec_buffer * 2) + (button_size * 4)));
+                                height - ((sec_buffer * 2) + (button_size * 3)));
+
+   b_pl_alert_monster->setSize( button_size, button_size );
+   b_pl_alert_monster->setImageSize( button_size, button_size );
+   b_pl_alert_monster->setPosition( sec_start_monster + sec_buffer,
+                                    height - (sec_buffer + (button_size * 3)) );
+
+   b_pl_cmd_go_monster->setSize( button_size, button_size );
+   b_pl_cmd_go_monster->setImageSize( button_size, button_size );
+   b_pl_cmd_go_monster->setPosition( sec_start_monster + sec_buffer + button_size,
+                                     height - (sec_buffer + (button_size * 3)) );
+
+   b_o_monster_guard->setSize( button_size, button_size );
+   b_o_monster_guard->setImageSize( button_size, button_size );
+   b_o_monster_guard->setPosition( sec_start_monster + sec_buffer,
+                                   height - (sec_buffer + (button_size * 2)) );
+
+   b_o_monster_burst->setSize( button_size, button_size );
+   b_o_monster_burst->setImageSize( button_size, button_size );
+   b_o_monster_burst->setPosition( sec_start_monster + sec_buffer,
+                                   height - (sec_buffer + button_size) );
 
    // Soldier
    b_soldier_area->setSize( (sec_buffer * 3) + (button_size * 2),
-                           (sec_buffer * 3) + (button_size * 4));
+                           (sec_buffer * 3) + (button_size * 3));
    b_soldier_area->setPosition( sec_start_soldier,
-                                height - ((sec_buffer * 2) + (button_size * 4)));
+                                height - ((sec_buffer * 2) + (button_size * 3)));
+
+   b_pl_alert_soldier->setSize( button_size, button_size );
+   b_pl_alert_soldier->setImageSize( button_size, button_size );
+   b_pl_alert_soldier->setPosition( sec_start_soldier + (sec_buffer * 2),
+                                    height - (sec_buffer + (button_size * 3)) );
+
+   b_pl_cmd_go_soldier->setSize( button_size, button_size );
+   b_pl_cmd_go_soldier->setImageSize( button_size, button_size );
+   b_pl_cmd_go_soldier->setPosition( sec_start_soldier + (sec_buffer * 2) + button_size,
+                                     height - (sec_buffer + (button_size * 3)) );
+
+   b_o_soldier_switch_axe->setSize( button_size, button_size );
+   b_o_soldier_switch_axe->setImageSize( button_size, button_size );
+   b_o_soldier_switch_axe->setPosition( sec_start_soldier + (sec_buffer * 2),
+                                        height - (sec_buffer + (button_size * 2)) );
+
+   b_o_soldier_switch_spear->setSize( button_size, button_size );
+   b_o_soldier_switch_spear->setImageSize( button_size, button_size );
+   b_o_soldier_switch_spear->setPosition( sec_start_soldier + (sec_buffer * 2) + button_size,
+                                          height - (sec_buffer + (button_size * 2)) );
+   
+   b_o_soldier_switch_bow->setSize( button_size, button_size );
+   b_o_soldier_switch_bow->setImageSize( button_size, button_size );
+   b_o_soldier_switch_bow->setPosition( sec_start_soldier + (sec_buffer * 2),
+                                        height - (sec_buffer + button_size ) );
 
    // Worm
    b_worm_area->setSize( (sec_buffer * 3) + (button_size * 2),
-                           (sec_buffer * 3) + (button_size * 4));
+                           (sec_buffer * 3) + (button_size * 3));
    b_worm_area->setPosition( sec_start_worm,
-                                height - ((sec_buffer * 2) + (button_size * 4)));
+                                height - ((sec_buffer * 2) + (button_size * 3)));
+
+   b_pl_alert_worm->setSize( button_size, button_size );
+   b_pl_alert_worm->setImageSize( button_size, button_size );
+   b_pl_alert_worm->setPosition( sec_start_worm + (sec_buffer * 2),
+                                 height - (sec_buffer + (button_size * 3)) );
+
+   b_pl_cmd_go_worm->setSize( button_size, button_size );
+   b_pl_cmd_go_worm->setImageSize( button_size, button_size );
+   b_pl_cmd_go_worm->setPosition( sec_start_worm + (sec_buffer * 2) + button_size,
+                                  height - (sec_buffer + (button_size * 3)) );
+
+   b_o_worm_trail_on->setSize( button_size, button_size );
+   b_o_worm_trail_on->setImageSize( button_size, button_size );
+   b_o_worm_trail_on->setPosition( sec_start_worm + (sec_buffer * 2),
+                                   height - (sec_buffer + (button_size * 2)) );
+
+   b_o_worm_trail_off->setSize( button_size, button_size );
+   b_o_worm_trail_off->setImageSize( button_size, button_size );
+   b_o_worm_trail_off->setPosition( sec_start_worm + (sec_buffer * 2) + button_size,
+                                    height - (sec_buffer + (button_size * 2)) );
+
+   b_o_worm_sprint->setSize( button_size, button_size );
+   b_o_worm_sprint->setImageSize( button_size, button_size );
+   b_o_worm_sprint->setPosition( sec_start_worm + (sec_buffer * 2),
+                                 height - (sec_buffer + button_size ) );
 
    // Bird
-   b_bird_area->setSize( (sec_buffer * 3) + (button_size * 2),
-                           (sec_buffer * 3) + (button_size * 4));
+   b_bird_area->setSize( (sec_buffer * 3) + (button_size * 3),
+                         (sec_buffer * 3) + (button_size * 3));
    b_bird_area->setPosition( sec_start_bird,
-                                height - ((sec_buffer * 2) + (button_size * 4)));
+                                height - ((sec_buffer * 2) + (button_size * 3)));
+
+   b_pl_alert_bird->setSize( button_size, button_size );
+   b_pl_alert_bird->setImageSize( button_size, button_size );
+   b_pl_alert_bird->setPosition( sec_start_bird + (sec_buffer * 2),
+                                 height - (sec_buffer + (button_size * 3)) );
+
+   b_pl_cmd_go_bird->setSize( button_size, button_size );
+   b_pl_cmd_go_bird->setImageSize( button_size, button_size );
+   b_pl_cmd_go_bird->setPosition( sec_start_bird + (sec_buffer * 2) + button_size,
+                                  height - (sec_buffer + (button_size * 3)) );
+
+   b_o_bird_memorize_on->setSize( button_size, button_size );
+   b_o_bird_memorize_on->setImageSize( button_size, button_size );
+   b_o_bird_memorize_on->setPosition( sec_start_bird + (sec_buffer * 2),
+                                      height - (sec_buffer + (button_size * 2)) );
+
+   b_o_bird_memorize_off->setSize( button_size, button_size );
+   b_o_bird_memorize_off->setImageSize( button_size, button_size );
+   b_o_bird_memorize_off->setPosition( sec_start_bird + (sec_buffer * 2) + button_size,
+                                       height - (sec_buffer + (button_size * 2)) );
+
+   b_o_bird_shout->setSize( button_size, button_size );
+   b_o_bird_shout->setImageSize( button_size, button_size );
+   b_o_bird_shout->setPosition( sec_start_bird + (sec_buffer * 2) + (button_size * 2),
+                                height - (sec_buffer + (button_size * 2)) );
+
+   b_o_bird_fly->setSize( button_size, button_size );
+   b_o_bird_fly->setImageSize( button_size, button_size );
+   b_o_bird_fly->setPosition( sec_start_bird + (sec_buffer * 2),
+                              height - (sec_buffer + button_size ) );
+
+   b_o_bird_land->setSize( button_size, button_size );
+   b_o_bird_land->setImageSize( button_size, button_size );
+   b_o_bird_land->setPosition( sec_start_bird + (sec_buffer * 2) + button_size,
+                               height - (sec_buffer + button_size ) );
 
    // Bug
    b_bug_area->setSize( (sec_buffer * 3) + (button_size * 3),
-                           (sec_buffer * 3) + (button_size * 4));
+                           (sec_buffer * 3) + (button_size * 3));
    b_bug_area->setPosition( sec_start_bug,
-                                height - ((sec_buffer * 2) + (button_size * 4)));
+                                height - ((sec_buffer * 2) + (button_size * 3)));
 
+   b_pl_alert_bug->setSize( button_size, button_size );
+   b_pl_alert_bug->setImageSize( button_size, button_size );
+   b_pl_alert_bug->setPosition( sec_start_bug + (sec_buffer * 2),
+                                height - (sec_buffer + (button_size * 3)) );
+
+   b_pl_cmd_go_bug->setSize( button_size, button_size );
+   b_pl_cmd_go_bug->setImageSize( button_size, button_size );
+   b_pl_cmd_go_bug->setPosition( sec_start_bug + (sec_buffer * 2) + button_size,
+                                 height - (sec_buffer + (button_size * 3)) );
+
+   b_o_bug_sunder->setSize( button_size, button_size );
+   b_o_bug_sunder->setImageSize( button_size, button_size );
+   b_o_bug_sunder->setPosition( sec_start_bug + (sec_buffer * 2),
+                                height - (sec_buffer + (button_size * 2)) );
+
+   b_o_bug_fireball->setSize( button_size, button_size );
+   b_o_bug_fireball->setImageSize( button_size, button_size );
+   b_o_bug_fireball->setPosition( sec_start_bug + (sec_buffer * 2) + button_size,
+                                  height - (sec_buffer + (button_size * 2)) );
+
+   b_o_bug_heal->setSize( button_size, button_size );
+   b_o_bug_heal->setImageSize( button_size, button_size );
+   b_o_bug_heal->setPosition( sec_start_bug + (sec_buffer * 2) + (button_size * 2),
+                              height - (sec_buffer + (button_size * 2)) );
+
+   b_o_bug_open_wormhole->setSize( button_size, button_size );
+   b_o_bug_open_wormhole->setImageSize( button_size, button_size );
+   b_o_bug_open_wormhole->setPosition( sec_start_bug + (sec_buffer * 2),
+                                        height - (sec_buffer + button_size ) );
+
+   b_o_bug_close_wormhole->setSize( button_size, button_size );
+   b_o_bug_close_wormhole->setImageSize( button_size, button_size );
+   b_o_bug_close_wormhole->setPosition( sec_start_bug + (sec_buffer * 2) + button_size,
+                                        height - (sec_buffer + button_size ) );
+
+   b_o_bug_meditate->setSize( button_size, button_size );
+   b_o_bug_meditate->setImageSize( button_size, button_size );
+   b_o_bug_meditate->setPosition( sec_start_bug + (sec_buffer * 2) + (button_size * 2),
+                                  height - (sec_buffer + button_size ) );
 
    view_rel_x_to_y = ((float)height) / ((float)width);
 }
@@ -2365,170 +2596,446 @@ int initLevelGui()
    // but for now they can be unchanging regular buttons.
 
    b_o_move_forward = new IMImageButton();
-   b_o_move_forward->setAllTextures( t_manager.getTexture( "OrderMoveForward.png" ) );
-   b_o_move_forward->setPressedTexture( t_manager.getTexture( "OrderButtonBase.png" ) );
-   b_o_move_forward->setImage( NULL );
+   b_o_move_forward->setNormalTexture( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_o_move_forward->setPressedTexture( t_manager.getTexture( "OrderButtonPressed.png" ) );
+   b_o_move_forward->setHoverTexture( t_manager.getTexture( "OrderButtonHover.png" ) );
+   b_o_move_forward->setImage( t_manager.getTexture( "OrderMoveForward.png" ) );
+   b_o_move_forward->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Order: move forward", b_o_move_forward);
 
    b_o_move_backward = new IMImageButton();
-   b_o_move_backward->setAllTextures( t_manager.getTexture( "OrderMoveBackward.png" ) );
-   b_o_move_backward->setImage( NULL );
+   b_o_move_backward->setNormalTexture( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_o_move_backward->setPressedTexture( t_manager.getTexture( "OrderButtonPressed.png" ) );
+   b_o_move_backward->setHoverTexture( t_manager.getTexture( "OrderButtonHover.png" ) );
+   b_o_move_backward->setImage( t_manager.getTexture( "OrderMoveBackward.png" )  );
+   b_o_move_backward->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Order: move backward", b_o_move_backward);
 
    b_o_turn_north = new IMImageButton();
-   b_o_turn_north->setAllTextures( t_manager.getTexture( "OrderTurnNorth.png" ) );
-   b_o_turn_north->setImage( NULL );
+   b_o_turn_north->setNormalTexture( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_o_turn_north->setPressedTexture( t_manager.getTexture( "OrderButtonPressed.png" ) );
+   b_o_turn_north->setHoverTexture( t_manager.getTexture( "OrderButtonHover.png" ) );
+   b_o_turn_north->setImage( t_manager.getTexture( "OrderTurnNorth.png" )  );
+   b_o_turn_north->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Order: turn north", b_o_turn_north);
 
    b_o_turn_east = new IMImageButton();
-   b_o_turn_east->setAllTextures( t_manager.getTexture( "OrderTurnEast.png" ) );
-   b_o_turn_east->setImage( NULL );
+   b_o_turn_east->setNormalTexture( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_o_turn_east->setPressedTexture( t_manager.getTexture( "OrderButtonPressed.png" ) );
+   b_o_turn_east->setHoverTexture( t_manager.getTexture( "OrderButtonHover.png" ) );
+   b_o_turn_east->setImage(  t_manager.getTexture( "OrderTurnEast.png" ) );
+   b_o_turn_east->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Order: turn east", b_o_turn_east);
 
    b_o_turn_south = new IMImageButton();
-   b_o_turn_south->setAllTextures( t_manager.getTexture( "OrderTurnSouth.png" ) );
-   b_o_turn_south->setImage( NULL );
+   b_o_turn_south->setNormalTexture( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_o_turn_south->setPressedTexture( t_manager.getTexture( "OrderButtonPressed.png" ) );
+   b_o_turn_south->setHoverTexture( t_manager.getTexture( "OrderButtonHover.png" ) );
+   b_o_turn_south->setImage(  t_manager.getTexture( "OrderTurnSouth.png" ) );
+   b_o_turn_south->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Order: turn south", b_o_turn_south);
 
    b_o_turn_west = new IMImageButton();
-   b_o_turn_west->setAllTextures( t_manager.getTexture( "OrderTurnWest.png" ) );
-   b_o_turn_west->setImage( NULL );
+   b_o_turn_west->setNormalTexture( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_o_turn_west->setPressedTexture( t_manager.getTexture( "OrderButtonPressed.png" ) );
+   b_o_turn_west->setHoverTexture( t_manager.getTexture( "OrderButtonHover.png" ) );
+   b_o_turn_west->setImage(  t_manager.getTexture( "OrderTurnWest.png" ) );
+   b_o_turn_west->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Order: turn west", b_o_turn_west);
 
    b_o_attack_smallest = new IMImageButton();
-   b_o_attack_smallest->setAllTextures( t_manager.getTexture( "OrderAttackSmallest.png" ) );
-   b_o_attack_smallest->setImage( NULL );
+   b_o_attack_smallest->setNormalTexture( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_o_attack_smallest->setPressedTexture( t_manager.getTexture( "OrderButtonPressed.png" ) );
+   b_o_attack_smallest->setHoverTexture( t_manager.getTexture( "OrderButtonHover.png" ) );
+   b_o_attack_smallest->setImage(  t_manager.getTexture( "OrderAttackSmallest.png" ) );
+   b_o_attack_smallest->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Order: attack smallest", b_o_attack_smallest);
 
    b_o_attack_biggest = new IMImageButton();
-   b_o_attack_biggest->setAllTextures( t_manager.getTexture( "OrderAttackBiggest.png" ) );
-   b_o_attack_biggest->setImage( NULL );
+   b_o_attack_biggest->setNormalTexture( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_o_attack_biggest->setPressedTexture( t_manager.getTexture( "OrderButtonPressed.png" ) );
+   b_o_attack_biggest->setHoverTexture( t_manager.getTexture( "OrderButtonHover.png" ) );
+   b_o_attack_biggest->setImage(  t_manager.getTexture( "OrderAttackBiggest.png" ) );
+   b_o_attack_biggest->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Order: attack biggest", b_o_attack_biggest);
 
    b_o_attack_closest = new IMImageButton();
-   b_o_attack_closest->setAllTextures( t_manager.getTexture( "OrderAttackClosest.png" ) );
-   b_o_attack_closest->setImage( NULL );
+   b_o_attack_closest->setNormalTexture( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_o_attack_closest->setPressedTexture( t_manager.getTexture( "OrderButtonPressed.png" ) );
+   b_o_attack_closest->setHoverTexture( t_manager.getTexture( "OrderButtonHover.png" ) );
+   b_o_attack_closest->setImage(  t_manager.getTexture( "OrderAttackClosest.png" ) );
+   b_o_attack_closest->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Order: attack closest", b_o_attack_closest);
 
    b_o_attack_farthest = new IMImageButton();
-   b_o_attack_farthest->setAllTextures( t_manager.getTexture( "OrderAttackFarthest.png" ) );
-   b_o_attack_farthest->setImage( NULL );
+   b_o_attack_farthest->setNormalTexture( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_o_attack_farthest->setPressedTexture( t_manager.getTexture( "OrderButtonPressed.png" ) );
+   b_o_attack_farthest->setHoverTexture( t_manager.getTexture( "OrderButtonHover.png" ) );
+   b_o_attack_farthest->setImage(  t_manager.getTexture( "OrderAttackFarthest.png" ) );
+   b_o_attack_farthest->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Order: attack farthest", b_o_attack_farthest);
 
    b_o_start_block = new IMImageButton();
-   b_o_start_block->setAllTextures( t_manager.getTexture( "ControlStartBlock.png" ) );
-   b_o_start_block->setImage( NULL );
+   b_o_start_block->setAllTextures( t_manager.getTexture( "ControlButtonBase.png" ) );
+   b_o_start_block->setImage(  t_manager.getTexture( "ControlStartBlock.png" ) );
+   b_o_start_block->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Control: start block", b_o_start_block);
 
    b_o_end_block = new IMImageButton();
-   b_o_end_block->setAllTextures( t_manager.getTexture( "ControlEndBlock.png" ) );
-   b_o_end_block->setImage( NULL );
+   b_o_end_block->setAllTextures( t_manager.getTexture( "ControlButtonBase.png" ) );
+   b_o_end_block->setImage(  t_manager.getTexture( "ControlEndBlock.png" ) );
+   b_o_end_block->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Control: end block", b_o_end_block);
 
    b_o_repeat = new IMImageButton();
-   b_o_repeat->setAllTextures( t_manager.getTexture( "ControlRepeat.png" ) );
-   b_o_repeat->setImage( NULL );
+   b_o_repeat->setAllTextures( t_manager.getTexture( "ControlButtonBase.png" ) );
+   b_o_repeat->setImage(  t_manager.getTexture( "ControlRepeat.png" ) );
+   b_o_repeat->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Control: repeat", b_o_repeat);
 
    b_o_wait = new IMImageButton();
-   b_o_wait->setAllTextures( t_manager.getTexture( "OrderWait.png" ) );
-   b_o_wait->setImage( NULL );
+   b_o_wait->setNormalTexture( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_o_wait->setPressedTexture( t_manager.getTexture( "OrderButtonPressed.png" ) );
+   b_o_wait->setHoverTexture( t_manager.getTexture( "OrderButtonHover.png" ) );
+   b_o_wait->setImage(  t_manager.getTexture( "OrderWait.png" ) );
+   b_o_wait->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Order: wait", b_o_wait);
 
    b_pl_alert_all = new IMImageButton();
    b_pl_alert_all->setAllTextures( t_manager.getTexture( "PlayerAlert.png" ) );
    b_pl_alert_all->setImage( NULL );
+   b_pl_alert_all->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Player: alert all", b_pl_alert_all);
 
    b_pl_cmd_go = new IMImageButton();
    b_pl_cmd_go->setAllTextures( t_manager.getTexture( "PlayerGoButton.png" ) );
    b_pl_cmd_go->setImage( NULL );
+   b_pl_cmd_go->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Player: command go", b_pl_cmd_go);
 
    b_pl_cmd_go_all = new IMImageButton();
    b_pl_cmd_go_all->setAllTextures( t_manager.getTexture( "PlayerGoAllButton.png" ) );
    b_pl_cmd_go_all->setImage( NULL );
+   b_pl_cmd_go_all->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Player: command go all", b_pl_cmd_go_all);
 
+   b_pl_alert_monster = new IMImageButton();
+   b_pl_alert_monster->setAllTextures( t_manager.getTexture( "MonsterAlertButton.png" ) );
+   b_pl_alert_monster->setImage( NULL );
+   b_pl_alert_monster->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Alert Monster", b_pl_alert_monster);
+
+   b_pl_cmd_go_monster = new IMImageButton();
+   b_pl_cmd_go_monster->setAllTextures( t_manager.getTexture( "MonsterGoButton.png" ) );
+   b_pl_cmd_go_monster->setImage( NULL );
+   b_pl_cmd_go_monster->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Go Monster", b_pl_cmd_go_monster);
+
+   b_o_monster_guard = new IMImageButton();
+   b_o_monster_guard->setNormalTexture( t_manager.getTexture( "MonsterOrderButtonBase.png" ) );
+   b_o_monster_guard->setPressedTexture( t_manager.getTexture( "MonsterButtonPressed.png" ) );
+   b_o_monster_guard->setHoverTexture( t_manager.getTexture( "MonsterButtonHover.png" ) );
+   b_o_monster_guard->setImage( NULL );
+   b_o_monster_guard->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Monster: Guard", b_o_monster_guard);
+
+   b_o_monster_burst = new IMImageButton();
+   b_o_monster_burst->setNormalTexture( t_manager.getTexture( "MonsterOrderButtonBase.png" ) );
+   b_o_monster_burst->setPressedTexture( t_manager.getTexture( "MonsterButtonPressed.png" ) );
+   b_o_monster_burst->setHoverTexture( t_manager.getTexture( "MonsterButtonHover.png" ) );
+   b_o_monster_burst->setImage( NULL );
+   b_o_monster_burst->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Monster: Burst", b_o_monster_burst);
+
+
+   b_pl_alert_soldier = new IMImageButton();
+   b_pl_alert_soldier->setAllTextures( t_manager.getTexture( "SoldierAlertButton.png" ) );
+   b_pl_alert_soldier->setImage( NULL );
+   b_pl_alert_soldier->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Alert Soldier", b_pl_alert_soldier);
+
+   b_pl_cmd_go_soldier = new IMImageButton();
+   b_pl_cmd_go_soldier->setAllTextures( t_manager.getTexture( "SoldierGoButton.png" ) );
+   b_pl_cmd_go_soldier->setImage( NULL );
+   b_pl_cmd_go_soldier->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Go Soldier", b_pl_cmd_go_soldier);
+
+   b_o_soldier_switch_axe = new IMImageButton();
+   b_o_soldier_switch_axe->setNormalTexture( t_manager.getTexture( "SoldierOrderButtonBase.png" ) );
+   b_o_soldier_switch_axe->setPressedTexture( t_manager.getTexture( "SoldierButtonPressed.png" ) );
+   b_o_soldier_switch_axe->setHoverTexture( t_manager.getTexture( "SoldierButtonHover.png" ) );
+   b_o_soldier_switch_axe->setImage( NULL );
+   b_o_soldier_switch_axe->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Soldier: Switch Axe", b_o_soldier_switch_axe);
+
+   b_o_soldier_switch_spear = new IMImageButton();
+   b_o_soldier_switch_spear->setNormalTexture( t_manager.getTexture( "SoldierOrderButtonBase.png" ) );
+   b_o_soldier_switch_spear->setPressedTexture( t_manager.getTexture( "SoldierButtonPressed.png" ) );
+   b_o_soldier_switch_spear->setHoverTexture( t_manager.getTexture( "SoldierButtonHover.png" ) );
+   b_o_soldier_switch_spear->setImage( NULL );
+   b_o_soldier_switch_spear->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Soldier: Switch Spear", b_o_soldier_switch_spear);
+
+   b_o_soldier_switch_bow = new IMImageButton();
+   b_o_soldier_switch_bow->setNormalTexture( t_manager.getTexture( "SoldierOrderButtonBase.png" ) );
+   b_o_soldier_switch_bow->setPressedTexture( t_manager.getTexture( "SoldierButtonPressed.png" ) );
+   b_o_soldier_switch_bow->setHoverTexture( t_manager.getTexture( "SoldierButtonHover.png" ) );
+   b_o_soldier_switch_bow->setImage( NULL );
+   b_o_soldier_switch_bow->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Soldier: Switch Bow", b_o_soldier_switch_bow);
+
+   b_pl_alert_worm = new IMImageButton();
+   b_pl_alert_worm->setAllTextures( t_manager.getTexture( "WormAlertButton.png" ) );
+   b_pl_alert_worm->setImage( NULL );
+   b_pl_alert_worm->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Alert Worm", b_pl_alert_worm);
+
+   b_pl_cmd_go_worm = new IMImageButton();
+   b_pl_cmd_go_worm->setAllTextures( t_manager.getTexture( "WormGoButton.png" ) );
+   b_pl_cmd_go_worm->setImage( NULL );
+   b_pl_cmd_go_worm->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Go Worm", b_pl_cmd_go_worm);
+
+   b_o_worm_sprint = new IMImageButton();
+   b_o_worm_sprint->setNormalTexture( t_manager.getTexture( "WormOrderButtonBase.png" ) );
+   b_o_worm_sprint->setPressedTexture( t_manager.getTexture( "WormButtonPressed.png" ) );
+   b_o_worm_sprint->setHoverTexture( t_manager.getTexture( "WormButtonHover.png" ) );
+   b_o_worm_sprint->setImage( NULL );
+   b_o_worm_sprint->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Worm: Sprint", b_o_worm_sprint);
+
+   b_o_worm_trail_on = new IMImageButton();
+   b_o_worm_trail_on->setNormalTexture( t_manager.getTexture( "WormOrderButtonBase.png" ) );
+   b_o_worm_trail_on->setPressedTexture( t_manager.getTexture( "WormButtonPressed.png" ) );
+   b_o_worm_trail_on->setHoverTexture( t_manager.getTexture( "WormButtonHover.png" ) );
+   b_o_worm_trail_on->setImage( NULL );
+   b_o_worm_trail_on->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Worm: Trail On", b_o_worm_trail_on);
+
+   b_o_worm_trail_off = new IMImageButton();
+   b_o_worm_trail_off->setNormalTexture( t_manager.getTexture( "WormOrderButtonBase.png" ) );
+   b_o_worm_trail_off->setPressedTexture( t_manager.getTexture( "WormButtonPressed.png" ) );
+   b_o_worm_trail_off->setHoverTexture( t_manager.getTexture( "WormButtonHover.png" ) );
+   b_o_worm_trail_off->setImage( NULL );
+   b_o_worm_trail_off->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Worm: Trail Off", b_o_worm_trail_off);
+
+   b_pl_alert_bird = new IMImageButton();
+   b_pl_alert_bird->setAllTextures( t_manager.getTexture( "BirdAlertButton.png" ) );
+   b_pl_alert_bird->setImage( NULL );
+   b_pl_alert_bird->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Alert Bird", b_pl_alert_bird);
+
+   b_pl_cmd_go_bird = new IMImageButton();
+   b_pl_cmd_go_bird->setAllTextures( t_manager.getTexture( "BirdGoButton.png" ) );
+   b_pl_cmd_go_bird->setImage( NULL );
+   b_pl_cmd_go_bird->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Go Bird", b_pl_cmd_go_bird);
+
+   b_o_bird_fly = new IMImageButton();
+   b_o_bird_fly->setNormalTexture( t_manager.getTexture( "BirdOrderButtonBase.png" ) );
+   b_o_bird_fly->setPressedTexture( t_manager.getTexture( "BirdButtonPressed.png" ) );
+   b_o_bird_fly->setHoverTexture( t_manager.getTexture( "BirdButtonHover.png" ) );
+   b_o_bird_fly->setImage( NULL );
+   b_o_bird_fly->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Bird: Fly", b_o_bird_fly);
+
+   b_o_bird_land = new IMImageButton();
+   b_o_bird_land->setNormalTexture( t_manager.getTexture( "BirdOrderButtonBase.png" ) );
+   b_o_bird_land->setPressedTexture( t_manager.getTexture( "BirdButtonPressed.png" ) );
+   b_o_bird_land->setHoverTexture( t_manager.getTexture( "BirdButtonHover.png" ) );
+   b_o_bird_land->setImage( NULL );
+   b_o_bird_land->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Bird: Land", b_o_bird_land);
+
+   b_o_bird_memorize_on = new IMImageButton();
+   b_o_bird_memorize_on->setNormalTexture( t_manager.getTexture( "BirdOrderButtonBase.png" ) );
+   b_o_bird_memorize_on->setPressedTexture( t_manager.getTexture( "BirdButtonPressed.png" ) );
+   b_o_bird_memorize_on->setHoverTexture( t_manager.getTexture( "BirdButtonHover.png" ) );
+   b_o_bird_memorize_on->setImage( NULL );
+   b_o_bird_memorize_on->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Bird: Memorize On", b_o_bird_memorize_on);
+
+   b_o_bird_memorize_off = new IMImageButton();
+   b_o_bird_memorize_off->setNormalTexture( t_manager.getTexture( "BirdOrderButtonBase.png" ) );
+   b_o_bird_memorize_off->setPressedTexture( t_manager.getTexture( "BirdButtonPressed.png" ) );
+   b_o_bird_memorize_off->setHoverTexture( t_manager.getTexture( "BirdButtonHover.png" ) );
+   b_o_bird_memorize_off->setImage( NULL );
+   b_o_bird_memorize_off->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Bird: Memorize Off", b_o_bird_memorize_off);
+
+   b_o_bird_shout = new IMImageButton();
+   b_o_bird_shout->setNormalTexture( t_manager.getTexture( "BirdOrderButtonBase.png" ) );
+   b_o_bird_shout->setPressedTexture( t_manager.getTexture( "BirdButtonPressed.png" ) );
+   b_o_bird_shout->setHoverTexture( t_manager.getTexture( "BirdButtonHover.png" ) );
+   b_o_bird_shout->setImage( NULL );
+   b_o_bird_shout->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Bird: Shout", b_o_bird_shout);
+
+   b_pl_alert_bug = new IMImageButton();
+   b_pl_alert_bug->setAllTextures( t_manager.getTexture( "BugAlertButton.png" ) );
+   b_pl_alert_bug->setImage( NULL );
+   b_pl_alert_bug->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Alert Bug", b_pl_alert_bug);
+
+   b_pl_cmd_go_bug = new IMImageButton();
+   b_pl_cmd_go_bug->setAllTextures( t_manager.getTexture( "BugGoButton.png" ) );
+   b_pl_cmd_go_bug->setImage( NULL );
+   b_pl_cmd_go_bug->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Go Bug", b_pl_cmd_go_bug);
+
+   b_o_bug_meditate = new IMImageButton();
+   b_o_bug_meditate->setNormalTexture( t_manager.getTexture( "BugOrderButtonBase.png" ) );
+   b_o_bug_meditate->setPressedTexture( t_manager.getTexture( "BugButtonPressed.png" ) );
+   b_o_bug_meditate->setHoverTexture( t_manager.getTexture( "BugButtonHover.png" ) );
+   b_o_bug_meditate->setImage( NULL );
+   b_o_bug_meditate->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Bug: Meditate", b_o_bug_meditate);
+
+   b_o_bug_sunder = new IMImageButton();
+   b_o_bug_sunder->setNormalTexture( t_manager.getTexture( "BugOrderButtonBase.png" ) );
+   b_o_bug_sunder->setPressedTexture( t_manager.getTexture( "BugButtonPressed.png" ) );
+   b_o_bug_sunder->setHoverTexture( t_manager.getTexture( "BugButtonHover.png" ) );
+   b_o_bug_sunder->setImage( NULL );
+   b_o_bug_sunder->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Bug: Sunder", b_o_bug_sunder);
+
+   b_o_bug_fireball = new IMImageButton();
+   b_o_bug_fireball->setNormalTexture( t_manager.getTexture( "BugOrderButtonBase.png" ) );
+   b_o_bug_fireball->setPressedTexture( t_manager.getTexture( "BugButtonPressed.png" ) );
+   b_o_bug_fireball->setHoverTexture( t_manager.getTexture( "BugButtonHover.png" ) );
+   b_o_bug_fireball->setImage( NULL );
+   b_o_bug_fireball->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Bug: Fireball", b_o_bug_fireball);
+
+   b_o_bug_heal = new IMImageButton();
+   b_o_bug_heal->setNormalTexture( t_manager.getTexture( "BugOrderButtonBase.png" ) );
+   b_o_bug_heal->setPressedTexture( t_manager.getTexture( "BugButtonPressed.png" ) );
+   b_o_bug_heal->setHoverTexture( t_manager.getTexture( "BugButtonHover.png" ) );
+   b_o_bug_heal->setImage( NULL );
+   b_o_bug_heal->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Bug: Heal", b_o_bug_heal);
+
+   b_o_bug_open_wormhole = new IMImageButton();
+   b_o_bug_open_wormhole->setNormalTexture( t_manager.getTexture( "BugOrderButtonBase.png" ) );
+   b_o_bug_open_wormhole->setPressedTexture( t_manager.getTexture( "BugButtonPressed.png" ) );
+   b_o_bug_open_wormhole->setHoverTexture( t_manager.getTexture( "BugButtonHover.png" ) );
+   b_o_bug_open_wormhole->setImage( NULL );
+   b_o_bug_open_wormhole->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Bug: Open Wormhole", b_o_bug_open_wormhole);
+
+   b_o_bug_close_wormhole = new IMImageButton();
+   b_o_bug_close_wormhole->setNormalTexture( t_manager.getTexture( "BugOrderButtonBase.png" ) );
+   b_o_bug_close_wormhole->setPressedTexture( t_manager.getTexture( "BugButtonPressed.png" ) );
+   b_o_bug_close_wormhole->setHoverTexture( t_manager.getTexture( "BugButtonHover.png" ) );
+   b_o_bug_close_wormhole->setImage( NULL );
+   b_o_bug_close_wormhole->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Bug: Close Wormhole", b_o_bug_close_wormhole);
+
+
    b_count_1 = new IMTextButton();
-   b_count_1->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_1->setNormalTexture( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_1->setPressedTexture( t_manager.getTexture( "OrderButtonPressed.png" ) );
+   b_count_1->setHoverTexture( t_manager.getTexture( "OrderButtonHover.png" ) );
    b_count_1->setText( &s_1 );
    b_count_1->setTextColor( Color::Black );
    b_count_1->setFont( menu_font );
    gui_manager.registerWidget( "Count: 1", b_count_1);
 
    b_count_2 = new IMTextButton();
-   b_count_2->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_2->setNormalTexture( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_2->setPressedTexture( t_manager.getTexture( "OrderButtonPressed.png" ) );
+   b_count_2->setHoverTexture( t_manager.getTexture( "OrderButtonHover.png" ) );
    b_count_2->setText( &s_2 );
    b_count_2->setTextColor( Color::Black );
    b_count_2->setFont( menu_font );
    gui_manager.registerWidget( "Count: 2", b_count_2);
 
    b_count_3 = new IMTextButton();
-   b_count_3->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_3->setNormalTexture( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_3->setPressedTexture( t_manager.getTexture( "OrderButtonPressed.png" ) );
+   b_count_3->setHoverTexture( t_manager.getTexture( "OrderButtonHover.png" ) );
    b_count_3->setText( &s_3 );
    b_count_3->setTextColor( Color::Black );
    b_count_3->setFont( menu_font );
    gui_manager.registerWidget( "Count: 3", b_count_3);
 
    b_count_4 = new IMTextButton();
-   b_count_4->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_4->setNormalTexture( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_4->setPressedTexture( t_manager.getTexture( "OrderButtonPressed.png" ) );
+   b_count_4->setHoverTexture( t_manager.getTexture( "OrderButtonHover.png" ) );
    b_count_4->setText( &s_4 );
    b_count_4->setTextColor( Color::Black );
    b_count_4->setFont( menu_font );
    gui_manager.registerWidget( "Count: 4", b_count_4);
 
    b_count_5 = new IMTextButton();
-   b_count_5->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_5->setNormalTexture( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_5->setPressedTexture( t_manager.getTexture( "OrderButtonPressed.png" ) );
+   b_count_5->setHoverTexture( t_manager.getTexture( "OrderButtonHover.png" ) );
    b_count_5->setText( &s_5 );
    b_count_5->setTextColor( Color::Black );
    b_count_5->setFont( menu_font );
    gui_manager.registerWidget( "Count: 5", b_count_5);
 
    b_count_6 = new IMTextButton();
-   b_count_6->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_6->setNormalTexture( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_6->setPressedTexture( t_manager.getTexture( "OrderButtonPressed.png" ) );
+   b_count_6->setHoverTexture( t_manager.getTexture( "OrderButtonHover.png" ) );
    b_count_6->setText( &s_6 );
    b_count_6->setTextColor( Color::Black );
    b_count_6->setFont( menu_font );
    gui_manager.registerWidget( "Count: 6", b_count_6);
 
    b_count_7 = new IMTextButton();
-   b_count_7->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_7->setNormalTexture( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_7->setPressedTexture( t_manager.getTexture( "OrderButtonPressed.png" ) );
+   b_count_7->setHoverTexture( t_manager.getTexture( "OrderButtonHover.png" ) );
    b_count_7->setText( &s_7 );
    b_count_7->setTextColor( Color::Black );
    b_count_7->setFont( menu_font );
    gui_manager.registerWidget( "Count: 7", b_count_7);
 
    b_count_8 = new IMTextButton();
-   b_count_8->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_8->setNormalTexture( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_8->setPressedTexture( t_manager.getTexture( "OrderButtonPressed.png" ) );
+   b_count_8->setHoverTexture( t_manager.getTexture( "OrderButtonHover.png" ) );
    b_count_8->setText( &s_8 );
    b_count_8->setTextColor( Color::Black );
    b_count_8->setFont( menu_font );
    gui_manager.registerWidget( "Count: 8", b_count_8);
 
    b_count_9 = new IMTextButton();
-   b_count_9->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_9->setNormalTexture( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_9->setPressedTexture( t_manager.getTexture( "OrderButtonPressed.png" ) );
+   b_count_9->setHoverTexture( t_manager.getTexture( "OrderButtonHover.png" ) );
    b_count_9->setText( &s_9 );
    b_count_9->setTextColor( Color::Black );
    b_count_9->setFont( menu_font );
    gui_manager.registerWidget( "Count: 9", b_count_9);
 
    b_count_0 = new IMTextButton();
-   b_count_0->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_0->setNormalTexture( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_0->setPressedTexture( t_manager.getTexture( "OrderButtonPressed.png" ) );
+   b_count_0->setHoverTexture( t_manager.getTexture( "OrderButtonHover.png" ) );
    b_count_0->setText( &s_0 );
    b_count_0->setTextColor( Color::Black );
    b_count_0->setFont( menu_font );
    gui_manager.registerWidget( "Count: 0", b_count_0);
 
    b_count_infinite = new IMTextButton();
-   b_count_infinite->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_infinite->setNormalTexture( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_infinite->setPressedTexture( t_manager.getTexture( "OrderButtonPressed.png" ) );
+   b_count_infinite->setHoverTexture( t_manager.getTexture( "OrderButtonHover.png" ) );
    b_count_infinite->setText( &s_infinite );
    b_count_infinite->setTextColor( Color::Black );
    b_count_infinite->setFont( menu_font );
    gui_manager.registerWidget( "Count: infinite", b_count_infinite);
 
    b_count_reset = new IMTextButton();
-   b_count_reset->setAllTextures( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_reset->setNormalTexture( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_count_reset->setPressedTexture( t_manager.getTexture( "OrderButtonPressed.png" ) );
+   b_count_reset->setHoverTexture( t_manager.getTexture( "OrderButtonHover.png" ) );
    b_count_reset->setText( &s_reset );
    b_count_reset->setTextColor( Color::Black );
    b_count_reset->setFont( menu_font );
@@ -2581,37 +3088,37 @@ int initLevelGui()
    gui_manager.registerWidget( "Player command area", b_pl_cmd_area);
 
    b_monster_area = new IMEdgeButton();
-   b_monster_area->setAllTextures( t_manager.getTexture( "UICenterGrey.png" ) );
-   b_monster_area->setCornerAllTextures( t_manager.getTexture( "UICornerGrey3px.png" ) );
-   b_monster_area->setEdgeAllTextures( t_manager.getTexture( "UIEdgeGrey3px.png" ) );
+   b_monster_area->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
+   b_monster_area->setCornerAllTextures( t_manager.getTexture( "UICornerBrown3px.png" ) );
+   b_monster_area->setEdgeAllTextures( t_manager.getTexture( "UIEdgeBrown3px.png" ) );
    b_monster_area->setEdgeWidth( 3 );
    gui_manager.registerWidget( "Monster area", b_monster_area);
 
    b_soldier_area = new IMEdgeButton();
-   b_soldier_area->setAllTextures( t_manager.getTexture( "UICenterGrey.png" ) );
-   b_soldier_area->setCornerAllTextures( t_manager.getTexture( "UICornerGrey3px.png" ) );
-   b_soldier_area->setEdgeAllTextures( t_manager.getTexture( "UIEdgeGrey3px.png" ) );
+   b_soldier_area->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
+   b_soldier_area->setCornerAllTextures( t_manager.getTexture( "UICornerBrown3px.png" ) );
+   b_soldier_area->setEdgeAllTextures( t_manager.getTexture( "UIEdgeBrown3px.png" ) );
    b_soldier_area->setEdgeWidth( 3 );
    gui_manager.registerWidget( "Soldier area", b_soldier_area);
 
    b_worm_area = new IMEdgeButton();
-   b_worm_area->setAllTextures( t_manager.getTexture( "UICenterGrey.png" ) );
-   b_worm_area->setCornerAllTextures( t_manager.getTexture( "UICornerGrey3px.png" ) );
-   b_worm_area->setEdgeAllTextures( t_manager.getTexture( "UIEdgeGrey3px.png" ) );
+   b_worm_area->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
+   b_worm_area->setCornerAllTextures( t_manager.getTexture( "UICornerBrown3px.png" ) );
+   b_worm_area->setEdgeAllTextures( t_manager.getTexture( "UIEdgeBrown3px.png" ) );
    b_worm_area->setEdgeWidth( 3 );
    gui_manager.registerWidget( "Worm area", b_worm_area);
 
    b_bird_area = new IMEdgeButton();
-   b_bird_area->setAllTextures( t_manager.getTexture( "UICenterGrey.png" ) );
-   b_bird_area->setCornerAllTextures( t_manager.getTexture( "UICornerGrey3px.png" ) );
-   b_bird_area->setEdgeAllTextures( t_manager.getTexture( "UIEdgeGrey3px.png" ) );
+   b_bird_area->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
+   b_bird_area->setCornerAllTextures( t_manager.getTexture( "UICornerBrown3px.png" ) );
+   b_bird_area->setEdgeAllTextures( t_manager.getTexture( "UIEdgeBrown3px.png" ) );
    b_bird_area->setEdgeWidth( 3 );
    gui_manager.registerWidget( "Bird area", b_bird_area);
 
    b_bug_area = new IMEdgeButton();
-   b_bug_area->setAllTextures( t_manager.getTexture( "UICenterGrey.png" ) );
-   b_bug_area->setCornerAllTextures( t_manager.getTexture( "UICornerGrey3px.png" ) );
-   b_bug_area->setEdgeAllTextures( t_manager.getTexture( "UIEdgeGrey3px.png" ) );
+   b_bug_area->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
+   b_bug_area->setCornerAllTextures( t_manager.getTexture( "UICornerBrown3px.png" ) );
+   b_bug_area->setEdgeAllTextures( t_manager.getTexture( "UIEdgeBrown3px.png" ) );
    b_bug_area->setEdgeWidth( 3 );
    gui_manager.registerWidget( "Bug area", b_bug_area);
 
@@ -2675,6 +3182,94 @@ int drawOrderButtons()
 
    if (b_pl_cmd_go_all->doWidget())
       playerAddOrder( PL_CMD_GO_ALL );
+
+   if (b_pl_alert_monster->doWidget())
+      playerAddOrder( PL_ALERT_MONSTERS );
+
+   if (b_pl_cmd_go_monster->doWidget())
+      playerAddOrder( PL_CMD_GO_MONSTERS );
+
+   if (b_o_monster_guard->doWidget())
+      playerAddOrder( MONSTER_GUARD );
+
+   if (b_o_monster_burst->doWidget())
+      playerAddOrder( MONSTER_BURST );
+
+   if (b_pl_alert_soldier->doWidget())
+      playerAddOrder( PL_ALERT_SOLDIERS );
+
+   if (b_pl_cmd_go_soldier->doWidget())
+      playerAddOrder( PL_CMD_GO_SOLDIERS );
+
+   if (b_o_soldier_switch_axe->doWidget())
+      playerAddOrder( SOLDIER_SWITCH_AXE );
+
+   if (b_o_soldier_switch_spear->doWidget())
+      playerAddOrder( SOLDIER_SWITCH_SPEAR );
+
+   if (b_o_soldier_switch_bow->doWidget())
+      playerAddOrder( SOLDIER_SWITCH_BOW );
+
+   if (b_pl_alert_worm->doWidget())
+      playerAddOrder( PL_ALERT_WORMS );
+
+   if (b_pl_cmd_go_worm->doWidget())
+      playerAddOrder( PL_CMD_GO_WORMS );
+
+   if (b_o_worm_sprint->doWidget())
+      playerAddOrder( WORM_SPRINT );
+
+   if (b_o_worm_trail_on->doWidget())
+      playerAddOrder( WORM_TRAIL_START );
+
+   if (b_o_worm_trail_off->doWidget())
+      playerAddOrder( WORM_TRAIL_END );
+
+   if (b_pl_alert_bird->doWidget())
+      playerAddOrder( PL_ALERT_BIRDS );
+
+   if (b_pl_cmd_go_bird->doWidget())
+      playerAddOrder( PL_CMD_GO_BIRDS );
+
+   if (b_o_bird_fly->doWidget())
+      playerAddOrder( BIRD_FLY );
+
+   if (b_o_bird_land->doWidget())
+      playerAddOrder( BIRD_LAND );
+
+   if (b_o_bird_memorize_on->doWidget())
+      playerAddOrder( BIRD_MEMORIZE_START );
+
+   if (b_o_bird_memorize_off->doWidget())
+      playerAddOrder( BIRD_MEMORIZE_END );
+
+   if (b_o_bird_shout->doWidget())
+      playerAddOrder( BIRD_SHOUT );
+
+   if (b_pl_alert_bug->doWidget())
+      playerAddOrder( PL_ALERT_BUGS );
+
+   if (b_pl_cmd_go_bug->doWidget())
+      playerAddOrder( PL_CMD_GO_BUGS );
+
+   if (b_o_bug_meditate->doWidget())
+      playerAddOrder( BUG_MEDITATE );
+
+   if (b_o_bug_sunder->doWidget())
+      playerAddOrder( BUG_CAST_SUNDER );
+
+   if (b_o_bug_fireball->doWidget())
+      playerAddOrder( BUG_CAST_FIREBALL );
+
+   if (b_o_bug_heal->doWidget())
+      playerAddOrder( BUG_CAST_HEAL );
+
+   if (b_o_bug_open_wormhole->doWidget())
+      playerAddOrder( BUG_OPEN_WORMHOLE );
+
+   if (b_o_bug_close_wormhole->doWidget())
+      playerAddOrder( BUG_CLOSE_WORMHOLE );
+
 
    if (b_count_0->doWidget())
       playerAddCount( 0 );
@@ -3179,64 +3774,29 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
       if (key_press.code == Keyboard::Space)
          togglePause();
 
-      // For testing purposes
-      if (key_press.code == Keyboard::W) {
-         log("Pressed W");
-         unit_list.back()->addOrder( Order( TURN_NORTH, TRUE, 1 ) );
-         unit_list.back()->addOrder( Order( MOVE_FORWARD, TRUE, 1 ) ); 
-      }
-      if (key_press.code == Keyboard::A) {
-         log("Pressed A");
-         unit_list.back()->addOrder( Order( TURN_WEST, TRUE, 1 ) );
-         unit_list.back()->addOrder( Order( MOVE_FORWARD, TRUE, 1 ) ); 
-      }
-      if (key_press.code == Keyboard::R) {
-         log("Pressed R");
-         unit_list.back()->addOrder( Order( TURN_SOUTH, TRUE, 1 ) );
-         unit_list.back()->addOrder( Order( MOVE_FORWARD, TRUE, 1 ) ); 
-      }
-      if (key_press.code == Keyboard::S) {
-         log("Pressed S");
-         unit_list.back()->addOrder( Order( TURN_EAST, TRUE, 1 ) );
-         unit_list.back()->addOrder( Order( MOVE_FORWARD, TRUE, 1 ) ); 
-      }
-      if (key_press.code == Keyboard::Space) {
-         unit_list.back()->activate();
-      }
-      if (key_press.code == Keyboard::D) {
-         unit_list.back()->clearOrders();
-         unit_list.back()->active = 0;
-      }
-      if (key_press.code == Keyboard::P) {
-         unit_list.back()->logOrders();
-      }
+      // TODO: Give orders via the keyboard
+      if (key_press.code == Keyboard::Num0)
+         playerAddCount( 0 );
+      if (key_press.code == Keyboard::Num1)
+         playerAddCount( 1 );
+      if (key_press.code == Keyboard::Num2)
+         playerAddCount( 2 );
+      if (key_press.code == Keyboard::Num3)
+         playerAddCount( 3 );
+      if (key_press.code == Keyboard::Num4)
+         playerAddCount( 4 );
+      if (key_press.code == Keyboard::Num5)
+         playerAddCount( 5 );
+      if (key_press.code == Keyboard::Num6)
+         playerAddCount( 6 );
+      if (key_press.code == Keyboard::Num7)
+         playerAddCount( 7 );
+      if (key_press.code == Keyboard::Num8)
+         playerAddCount( 8 );
+      if (key_press.code == Keyboard::Num9)
+         playerAddCount( 9 );
 
-      if (key_press.code == Keyboard::LBracket) {
-         log("Pressed LBracket");
-         unit_list.back()->addOrder( Order( START_BLOCK, TRUE, 2 ) );
-      }
-      if (key_press.code == Keyboard::RBracket) {
-         log("Pressed RBracket");
-         unit_list.back()->addOrder( Order( END_BLOCK ) );
-      }
-      if (key_press.code == Keyboard::O) {
-         log("Pressed O");
-         unit_list.back()->addOrder( Order( REPEAT, TRUE, -1 ) );
-      }
-      if (key_press.code == Keyboard::M) {
-         log("Pressed M");
-         unit_list.back()->addOrder( Order( ATTACK_CLOSEST, TRUE, 1 ) );
-      }
-      if (key_press.code == Keyboard::N) {
-         log("Pressed N");
-         Order o( SUMMON_BUG, TRUE, 6);
-         o.iteration = 6;
-         player->addOrder( o );
-      }
-      if (key_press.code == Keyboard::E) {
-         log("Pressed E");
-         player->activate();
-      }
+      // TODO: Make key-bindings something you can change/save
 
       return true;
    }
@@ -3268,6 +3828,9 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
 
    virtual bool mouseButtonPressed( const Event::MouseButtonEvent &mbp )
    {
+      if (isMouseOverGui( mbp.x, mbp.y ))
+         return false;
+
       if (mbp.button == Mouse::Left) {
          left_mouse_down = 1;
          left_mouse_down_time = game_clock->getElapsedTime().asMilliseconds();
@@ -3281,8 +3844,7 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
       if (mbp.button == Mouse::Right) {
          right_mouse_down = 1;
          right_mouse_down_time = game_clock->getElapsedTime().asMilliseconds();
-         if (!isMouseOverGui( mbp.x, mbp.y ))
-            castMenuCreate( coordsWindowToLevel( mbp.x, mbp.y ) );
+         castMenuCreate( coordsWindowToLevel( mbp.x, mbp.y ) );
       }
 
 

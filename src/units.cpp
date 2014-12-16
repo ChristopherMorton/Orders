@@ -489,7 +489,7 @@ int Player::init( int x, int y, Direction face )
 
    health = max_health = PLAYER_MAX_HEALTH;
 
-   vision_range = 3.5;
+   vision_range = 0.5;
    attack_range = 3.5;
 
    speed = 0.99;
@@ -648,7 +648,7 @@ Monster::Monster( int x, int y, Direction face )
 
    health = max_health = MONSTER_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
 
-   vision_range = MONSTER_BASE_VISION;
+   vision_range = MONSTER_BASE_VISION * (1.0 + ((float)focus_vision / 25.0));
    attack_range = 1.3;
 
    speed = MONSTER_BASE_SPEED * ( 1.0 - ( focus_speed * 0.02 ) );
@@ -806,7 +806,7 @@ Soldier::Soldier( int x, int y, Direction face )
 
    health = max_health = SOLDIER_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
 
-   vision_range = SOLDIER_BASE_VISION;
+   vision_range = SOLDIER_BASE_VISION * (1.0 + ((float)focus_vision / 25.0));
    attack_range = 1.3;
 
    speed = SOLDIER_BASE_SPEED * ( 1.0 - ( focus_speed * 0.02 ) );
@@ -965,7 +965,7 @@ Worm::Worm( int x, int y, Direction face )
 
    health = max_health = WORM_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
 
-   vision_range = WORM_BASE_VISION;
+   vision_range = WORM_BASE_VISION * (1.0 + ((float)focus_vision / 25.0));
    attack_range = 1.3;
 
    speed = WORM_BASE_SPEED * ( 1.0 - ( focus_speed * 0.02 ) );
@@ -1123,7 +1123,7 @@ Bird::Bird( int x, int y, Direction face )
 
    health = max_health = BIRD_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
 
-   vision_range = BIRD_BASE_VISION;
+   vision_range = BIRD_BASE_VISION * (1.0 + ((float)focus_vision / 25.0));
    attack_range = 1.3;
 
    speed = BIRD_BASE_SPEED * ( 1.0 - ( focus_speed * 0.02 ) );
@@ -1148,7 +1148,7 @@ Bird::~Bird()
 
 int Bird::addOrder( Order o )
 {
-   if ((o.action <= SKIP) || (o.action >= BIRD_MEMORIZE_START && o.action <= BIRD_FLY_OFF)) {
+   if ((o.action <= SKIP) || (o.action >= BIRD_MEMORIZE_START && o.action <= BIRD_LAND)) {
       if (order_count >= max_orders) // No more memory
          return -2;
 
@@ -1289,7 +1289,7 @@ Bug::Bug( int x, int y, Direction face )
 
    health = max_health = BUG_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
 
-   vision_range = BUG_BASE_VISION;
+   vision_range = BUG_BASE_VISION * (1.0 + ((float)focus_vision / 25.0));
 
    attack_range = BUG_BASE_VISION;
    orb_speed = BUG_ORB_SPEED * ( 1.0 + ( focus_speed * 0.01) );
@@ -1316,7 +1316,7 @@ Bug::~Bug()
 
 int Bug::addOrder( Order o )
 {
-   if ((o.action <= SKIP) || (o.action >= BUG_MEDITATE && o.action <= BUG_CAST_WARP_TWO)) {
+   if ((o.action <= SKIP) || (o.action >= BUG_MEDITATE && o.action <= BUG_MEDITATE)) {
       if (order_count >= max_orders) // No more memory
          return -2;
 

@@ -14,7 +14,7 @@
    id="svg2"
    version="1.1"
    inkscape:version="0.48.5 r10040"
-   sodipodi:docname="CastButtonBase.svg"
+   sodipodi:docname="CastHeal.svg"
    inkscape:export-filename="/home/cg/programming/orders/res/PlayerGoAllButton.png"
    inkscape:export-xdpi="90"
    inkscape:export-ydpi="90">
@@ -34,10 +34,10 @@
      inkscape:current-layer="layer1"
      showgrid="false"
      width="64px"
-     inkscape:window-width="1278"
-     inkscape:window-height="1000"
+     inkscape:window-width="766"
+     inkscape:window-height="1004"
      inkscape:window-x="0"
-     inkscape:window-y="22"
+     inkscape:window-y="18"
      inkscape:window-maximized="0" />
   <metadata
      id="metadata7">
@@ -47,7 +47,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -57,15 +57,8 @@
      id="layer1"
      transform="translate(0,-988.3622)">
     <path
-       style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1"
-       inkscape:transform-center-y="-2.9971004"
-       d="m 32,989.97313 9.084128,19.63557 20.765773,0.052 -14.38754,17.4231 6.985891,23.6675 -22.448253,-13.3396 -22.4482537,13.3396 6.9858927,-23.6675 -14.3875393,-17.4231 20.7657713,-0.052 z"
-       id="path3790"
-       inkscape:connector-curvature="0"
-       sodipodi:nodetypes="ccccccccccc" />
-    <path
-       style="fill:#ff0000;fill-opacity:1;stroke:#ff0000;stroke-width:2.43760228000000012;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1"
-       d="m 27.050925,1013.5529 c -2.872005,0 -5.217989,2.308 -5.217989,5.1796 -0.255167,7.8506 10.169671,12.439 10.169671,12.439 0,0 9.69159,-3.6288 10.169065,-12.439 0,-2.8717 -2.307907,-5.1796 -5.179904,-5.1796 -2.375223,0 -4.367197,1.5949 -4.989161,3.7707 -0.621963,-2.1758 -2.576465,-3.7707 -4.951682,-3.7707 z"
+       style="fill:#ff0000;fill-opacity:1;stroke:#ff0000;stroke-width:2.43760228;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1"
+       d="m 27.050925,1015.5529 c -2.872005,0 -5.217989,2.308 -5.217989,5.1796 -0.255167,7.8506 10.169671,12.439 10.169671,12.439 0,0 9.69159,-3.6288 10.169065,-12.439 0,-2.8717 -2.307907,-5.1796 -5.179904,-5.1796 -2.375223,0 -4.367197,1.5949 -4.989161,3.7707 -0.621963,-2.1758 -2.576465,-3.7707 -4.951682,-3.7707 z"
        id="path3816"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="scccscs" />

@@ -29,6 +29,7 @@ IMAGE SoldierScratch.png
 IMAGE WormScratch.png
 IMAGE BirdScratch.png
 IMAGE BugScratch.png
+IMAGE BugScratchWiggleAnimation.png
 // Map things
 IMAGE MapScratch.png
 IMAGE MapButtonScratch.png
@@ -55,6 +56,8 @@ IMAGE FingerCursorClick.png
 IMAGE TestCursor.png
 IMAGE SplashScreen0.png
 IMAGE ClockFace.png
+IMAGE ClockHalfRed.png
+IMAGE ClockHalfWhite.png
 // Order Buttons
 IMAGE OrderButtonBase.png
 IMAGE OrderMoveForward.png
@@ -68,17 +71,22 @@ IMAGE OrderAttackSmallest.png
 IMAGE OrderAttackBiggest.png
 IMAGE OrderAttackClosest.png
 IMAGE OrderAttackFarthest.png
+IMAGE ControlButtonBase.png
+IMAGE ControlStartBlock.png
+IMAGE ControlEndBlock.png
+IMAGE ControlRepeat.png
+IMAGE MonsterOrderButtonBase.png
+IMAGE SoldierOrderButtonBase.png
+IMAGE WormOrderButtonBase.png
+IMAGE BirdOrderButtonBase.png
+IMAGE BugOrderButtonBase.png
+IMAGE CastButtonBase.png
+// Player Commands
 IMAGE PlayerAlert.png
-IMAGE PlayerAlertRed.png
-IMAGE PlayerAlertGold.png
-IMAGE PlayerAlertGreen.png
-IMAGE PlayerAlertBlue.png
-IMAGE PlayerAlertViolet.png
 IMAGE PlayerGoButton.png
 IMAGE PlayerGoAllButton.png
 IMAGE CastHeal.png
 IMAGE CastLightning.png
-IMAGE CastQuake.png
 IMAGE CastScry.png
 IMAGE CastTelepathy.png
 IMAGE CastEndTelepathy.png
@@ -88,3 +96,14 @@ IMAGE SummonSoldier.png
 IMAGE SummonWorm.png
 IMAGE SummonBird.png
 IMAGE SummonBug.png
+// Unit Specific
+IMAGE MonsterAlertButton.png
+IMAGE SoldierAlertButton.png
+IMAGE WormAlertButton.png
+IMAGE BirdAlertButton.png
+IMAGE BugAlertButton.png
+IMAGE MonsterGoButton.png
+IMAGE SoldierGoButton.png
+IMAGE WormGoButton.png
+IMAGE BirdGoButton.png
+IMAGE BugGoButton.png

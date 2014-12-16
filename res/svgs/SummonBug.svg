@@ -98,14 +98,14 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="5.6568542"
-     inkscape:cx="-8.0505969"
-     inkscape:cy="35.073281"
+     inkscape:zoom="4.078125"
+     inkscape:cx="42.304159"
+     inkscape:cy="15.071744"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
      width="64px"
-     inkscape:window-width="1278"
+     inkscape:window-width="638"
      inkscape:window-height="1004"
      inkscape:window-x="0"
      inkscape:window-y="18"
@@ -148,9 +148,13 @@
          sodipodi:nodetypes="scscscscssscscscscsccs" />
       <path
          id="path2993"
-         d="M 64,33.71875 C 39.60082,34.396319 28.730175,34.054219 14.9375,50.25 11.516972,54.266477 17.143864,59.474821 27.15625,64 L 64,64 64,33.71875 z"
-         style="fill:#800080;fill-opacity:1;stroke:#3b003c;stroke-width:2.64343901;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;display:inline"
-         inkscape:connector-curvature="0" />
+         d="M 64,33.71875 C 39.60082,34.396319 28.730175,34.054219 14.9375,50.25 11.516972,54.266477 17.143864,59.474821 27.15625,64 l 35.223251,14.746541 z"
+         style="fill:#800080;fill-opacity:1;stroke:#3b003c;stroke-width:2.64343905;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;display:inline"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="csccc"
+         inkscape:export-filename="/home/cg/programming/orders/res/SummonBug.png"
+         inkscape:export-xdpi="180"
+         inkscape:export-ydpi="180" />
       <use
          style="stroke-width:2.64343901;stroke-miterlimit:4;stroke-dasharray:none;display:inline"
          height="64"

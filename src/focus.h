@@ -6,7 +6,6 @@ namespace sum
    extern int focus_toughness,
               focus_strength,
               focus_speed,
-              focus_mana,
               focus_vision,
               focus_memory;
 }

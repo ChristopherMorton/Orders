@@ -42,7 +42,7 @@ namespace sum
 
       // Soldier
       SOLDIER_SWITCH_AXE,
-      SOLDIER_SWITCH_LANCE,
+      SOLDIER_SWITCH_SPEAR,
       SOLDIER_SWITCH_BOW,
 
       // Worm
@@ -54,16 +54,16 @@ namespace sum
       BIRD_MEMORIZE_START,
       BIRD_MEMORIZE_END,
       BIRD_SHOUT,
-      BIRD_FLY_ON,
-      BIRD_FLY_OFF,
+      BIRD_FLY,
+      BIRD_LAND,
 
       // Bug
-      BUG_MEDITATE,
-      BUG_CAST_ZAP,
       BUG_CAST_SUNDER,
+      BUG_CAST_FIREBALL,
       BUG_CAST_HEAL,
-      BUG_CAST_WARP_ONE,
-      BUG_CAST_WARP_TWO,
+      BUG_OPEN_WORMHOLE,
+      BUG_CLOSE_WORMHOLE,
+      BUG_MEDITATE,
 
       // Player Commands
       // Alert
@@ -87,7 +87,6 @@ namespace sum
       // Player spells
       PL_CAST_HEAL,
       PL_CAST_LIGHTNING,
-      PL_CAST_QUAKE,
       PL_CAST_TIMELOCK,
       PL_CAST_SCRY,
       PL_CAST_TELEPATHY,

@@ -118,8 +118,8 @@ void Order::logSelf()
       case SOLDIER_SWITCH_AXE:
          s << "SOLDIER_SWITCH_AXE";
          break;
-      case SOLDIER_SWITCH_LANCE:
-         s << "SOLDIER_SWITCH_LANCE";
+      case SOLDIER_SWITCH_SPEAR:
+         s << "SOLDIER_SWITCH_SPEAR";
          break;
       case SOLDIER_SWITCH_BOW:
          s << "SOLDIER_SWITCH_BOW";
@@ -142,29 +142,29 @@ void Order::logSelf()
       case BIRD_SHOUT:
          s << "BIRD_SHOUT";
          break;
-      case BIRD_FLY_ON:
-         s << "BIRD_FLY_ON";
+      case BIRD_FLY:
+         s << "BIRD_FLY";
          break;
-      case BIRD_FLY_OFF:
-         s << "BIRD_FLY_OFF";
-         break;
-      case BUG_MEDITATE:
-         s << "BUG_MEDITATE";
-         break;
-      case BUG_CAST_ZAP:
-         s << "BUG_CAST_ZAP";
+      case BIRD_LAND:
+         s << "BIRD_LAND";
          break;
       case BUG_CAST_SUNDER:
          s << "BUG_CAST_SUNDER";
          break;
+      case BUG_CAST_FIREBALL:
+         s << "BUG_CAST_FIREBALL";
+         break;
       case BUG_CAST_HEAL:
          s << "BUG_CAST_HEAL";
          break;
-      case BUG_CAST_WARP_ONE:
-         s << "BUG_CAST_WARP_ONE";
+      case BUG_OPEN_WORMHOLE:
+         s << "BUG_OPEN_WORMHOLE";
          break;
-      case BUG_CAST_WARP_TWO:
-         s << "BUG_CAST_WARP_TWO";
+      case BUG_CLOSE_WORMHOLE:
+         s << "BUG_CLOSE_WORMHOLE";
+         break;
+      case BUG_MEDITATE:
+         s << "BUG_MEDITATE";
          break;
       case PL_ALERT_ALL:
          s << "PL_ALERT_ALL";
@@ -216,9 +216,6 @@ void Order::logSelf()
          break;
       case PL_CAST_LIGHTNING:
          s << "PL_CAST_LIGHTNING";
-         break;
-      case PL_CAST_QUAKE:
-         s << "PL_CAST_QUAKE";
          break;
       case PL_CAST_TIMELOCK:
          s << "PL_CAST_TIMELOCK";
@@ -334,19 +331,19 @@ Texture *getOrderTexture( Order o )
          base_tex = t_manager.getTexture( "PlayerAlert.png" );
          break;
       case PL_ALERT_MONSTERS:
-         base_tex = t_manager.getTexture( "PlayerAlertRed.png" );
+         base_tex = t_manager.getTexture( "MonsterAlertButton.png" );
          break;
       case PL_ALERT_SOLDIERS:
-         base_tex = t_manager.getTexture( "PlayerAlertGold.png" );
+         base_tex = t_manager.getTexture( "SoldierAlertButton.png" );
          break;
       case PL_ALERT_WORMS:
-         base_tex = t_manager.getTexture( "PlayerAlertGreen.png" );
+         base_tex = t_manager.getTexture( "WormAlertButton.png" );
          break;
       case PL_ALERT_BIRDS:
-         base_tex = t_manager.getTexture( "PlayerAlertBlue.png" );
+         base_tex = t_manager.getTexture( "BirdAlertButton.png" );
          break;
       case PL_ALERT_BUGS:
-         base_tex = t_manager.getTexture( "PlayerAlertViolet.png" );
+         base_tex = t_manager.getTexture( "BugAlertButton.png" );
          break;
 
       case PL_CMD_GO:
@@ -355,16 +352,27 @@ Texture *getOrderTexture( Order o )
       case PL_CMD_GO_ALL:
          base_tex = t_manager.getTexture( "PlayerGoAllButton.png" );
          break;
-// Need unit specific go buttons
+      case PL_CMD_GO_MONSTERS:
+         base_tex = t_manager.getTexture( "MonsterGoButton.png" );
+         break;
+      case PL_CMD_GO_SOLDIERS:
+         base_tex = t_manager.getTexture( "SoldierGoButton.png" );
+         break;
+      case PL_CMD_GO_WORMS:
+         base_tex = t_manager.getTexture( "WormGoButton.png" );
+         break;
+      case PL_CMD_GO_BIRDS:
+         base_tex = t_manager.getTexture( "BirdGoButton.png" );
+         break;
+      case PL_CMD_GO_BUGS:
+         base_tex = t_manager.getTexture( "BugGoButton.png" );
+         break;
 
       case PL_CAST_HEAL:
          base_tex = t_manager.getTexture( "CastHeal.png" );
          break;
       case PL_CAST_LIGHTNING:
          base_tex = t_manager.getTexture( "CastLightning.png" );
-         break;
-      case PL_CAST_QUAKE:
-         base_tex = t_manager.getTexture( "CastQuake.png" );
          break;
       case PL_CAST_TIMELOCK:
          base_tex = t_manager.getTexture( "CastTimelock.png" );
@@ -404,6 +412,79 @@ Texture *getOrderTexture( Order o )
    return base_tex;
 }
 
+Texture *getOrderButtonTexture( Order o )
+{
+   SFML_TextureManager &t_manager = SFML_TextureManager::getSingleton();
+
+   switch (o.action)
+   {
+      case MOVE_FORWARD:
+      case MOVE_BACK:
+      case TURN_NORTH:
+      case TURN_EAST:
+      case TURN_SOUTH:
+      case TURN_WEST: 
+      case FOLLOW_PATH:
+      case ATTACK_CLOSEST:
+      case ATTACK_FARTHEST:
+      case ATTACK_BIGGEST:
+      case ATTACK_SMALLEST:
+      case WAIT:
+         return t_manager.getTexture( "OrderButtonBase.png" );
+
+      case START_BLOCK:
+      case END_BLOCK:
+      case REPEAT:
+         return t_manager.getTexture( "ControlButtonBase.png" );
+
+      // Monster
+      case MONSTER_GUARD:
+      case MONSTER_BURST:
+         return t_manager.getTexture( "MonsterOrderButtonBase.png" );
+
+      // Soldier
+      case SOLDIER_SWITCH_AXE:
+      case SOLDIER_SWITCH_SPEAR:
+      case SOLDIER_SWITCH_BOW:
+         return t_manager.getTexture( "SoldierOrderButtonBase.png" );
+
+      // Worm
+      case WORM_SPRINT:
+      case WORM_TRAIL_START:
+      case WORM_TRAIL_END:
+         return t_manager.getTexture( "WormOrderButtonBase.png" );
+
+      // Bird
+      case BIRD_MEMORIZE_START:
+      case BIRD_MEMORIZE_END:
+      case BIRD_SHOUT:
+      case BIRD_FLY:
+      case BIRD_LAND:
+         return t_manager.getTexture( "BirdOrderButtonBase.png" );
+
+      // Bug
+      case BUG_CAST_SUNDER:
+      case BUG_CAST_FIREBALL:
+      case BUG_CAST_HEAL:
+      case BUG_OPEN_WORMHOLE:
+      case BUG_CLOSE_WORMHOLE:
+      case BUG_MEDITATE:
+         return t_manager.getTexture( "BugOrderButtonBase.png" );
+
+      // Player spells
+      case PL_CAST_HEAL:
+      case PL_CAST_LIGHTNING:
+      case PL_CAST_TIMELOCK:
+      case PL_CAST_SCRY:
+      case PL_CAST_TELEPATHY:
+      case PL_END_TELEPATHY:
+         return t_manager.getTexture( "CastButtonBase.png" );
+
+      default:
+         return NULL;
+   };
+}
+
 void drawOrder( Order o, int x, int y, int size )
 {
    // Base order
@@ -411,12 +492,26 @@ void drawOrder( Order o, int x, int y, int size )
    if (NULL == base_tex)
       return;
 
+   Texture *button_tex = getOrderButtonTexture( o );
+   if (NULL != button_tex) {
+      // Requires a backing button
+
+      Sprite sp_button( *button_tex );
+      normalizeTo1x1( &sp_button );
+      sp_button.scale( size, size );
+      sp_button.setPosition( x, y );
+
+      SFML_GlobalRenderWindow::get()->draw( sp_button );
+   }
+
+
    Sprite sp_order( *base_tex );
    normalizeTo1x1( &sp_order );
    sp_order.scale( size, size );
    sp_order.setPosition( x, y );
-
    SFML_GlobalRenderWindow::get()->draw( sp_order );
+
+
 
    // Count
    if (o.count != 1 && o.action < PL_ALERT_ALL)
