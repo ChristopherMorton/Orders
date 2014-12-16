@@ -1495,6 +1495,9 @@ SummonMarker* SummonMarker::get( int x, int y )
    theSummonMarker->y_grid = y;
    theSummonMarker->y_real = y + 0.5;
 
+   theSummonMarker->progress = 0;
+   theSummonMarker->rotation = 0;
+
    return theSummonMarker;
 }
 
@@ -1512,29 +1515,52 @@ int SummonMarker::doAttack( Order o )
 
 sf::Texture* SummonMarker::getTexture()
 {
-   return SFML_TextureManager::getSingleton().getTexture( "OrderButtonBase.png" );
+   return SFML_TextureManager::getSingleton().getTexture( "SummoningCircle.png" );
 }
 
 int SummonMarker::update( float dtf )
 {
-   rotation += (dtf * 360);
+   progress += dtf;
+   rotation += (dtf * 240);
    return 0;
 }
 
-Sprite *sp_summon_marker = NULL;
+Sprite *sp_summon_marker_outside = NULL;
+Sprite *sp_summon_marker_inside = NULL;
 
 int SummonMarker::draw()
 {
-   if (NULL == sp_summon_marker) {
-      sp_summon_marker = new Sprite(*getTexture());
+   if (NULL == sp_summon_marker_inside) {
+      sp_summon_marker_inside = new Sprite(*getTexture());
       Vector2u dim = getTexture()->getSize();
-      sp_summon_marker->setOrigin( dim.x / 2.0, dim.y / 2.0 );
-      normalizeTo1x1( sp_summon_marker );
+      sp_summon_marker_inside->setOrigin( dim.x / 2.0, dim.y / 2.0 );
+   }
+   if (NULL == sp_summon_marker_outside) {
+      sp_summon_marker_outside = new Sprite(*getTexture());
+      Vector2u dim = getTexture()->getSize();
+      sp_summon_marker_outside->setOrigin( dim.x / 2.0, dim.y / 2.0 );
    }
 
-   sp_summon_marker->setRotation( rotation );
-   sp_summon_marker->setPosition( x_real, y_real );
-   SFML_GlobalRenderWindow::get()->draw( *sp_summon_marker );
+   normalizeTo1x1( sp_summon_marker_inside );
+   normalizeTo1x1( sp_summon_marker_outside );
+
+   sp_summon_marker_inside->setRotation( rotation );
+   sp_summon_marker_outside->setRotation( -rotation );
+   sp_summon_marker_inside->setPosition( x_real, y_real );
+   sp_summon_marker_outside->setPosition( x_real, y_real );
+
+   float out_scale, in_scale;
+   out_scale = (3.0 - progress) / 3.0;
+   in_scale = (1.0 + progress) / 3.0;
+
+   sp_summon_marker_outside->scale( out_scale, out_scale );
+   sp_summon_marker_inside->scale( in_scale, in_scale );
+
+   SFML_GlobalRenderWindow::get()->draw( *sp_summon_marker_outside );
+   SFML_GlobalRenderWindow::get()->draw( *sp_summon_marker_inside );
+
+   sp_summon_marker_outside->scale( -out_scale, -out_scale );
+   sp_summon_marker_inside->scale( -in_scale, -in_scale );
 
    return 0;
 }

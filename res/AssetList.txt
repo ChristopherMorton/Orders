@@ -3,6 +3,7 @@ IMAGE GreenGrass.png
 IMAGE BrownRock.png
 IMAGE GrayRock.png
 IMAGE TargetPractice.png
+IMAGE SummoningCircle.png
 // Terrain
 IMAGE BasicTree1.png
 IMAGE BasicTree2.png
@@ -60,6 +61,8 @@ IMAGE ClockHalfRed.png
 IMAGE ClockHalfWhite.png
 // Order Buttons
 IMAGE OrderButtonBase.png
+IMAGE OrderButtonHover.png
+IMAGE OrderButtonPressed.png
 IMAGE OrderMoveForward.png
 IMAGE OrderMoveBackward.png
 IMAGE OrderTurnNorth.png
@@ -80,6 +83,16 @@ IMAGE SoldierOrderButtonBase.png
 IMAGE WormOrderButtonBase.png
 IMAGE BirdOrderButtonBase.png
 IMAGE BugOrderButtonBase.png
+IMAGE MonsterButtonHover.png
+IMAGE SoldierButtonHover.png
+IMAGE WormButtonHover.png
+IMAGE BirdButtonHover.png
+IMAGE BugButtonHover.png
+IMAGE MonsterButtonPressed.png
+IMAGE SoldierButtonPressed.png
+IMAGE WormButtonPressed.png
+IMAGE BirdButtonPressed.png
+IMAGE BugButtonPressed.png
 IMAGE CastButtonBase.png
 // Player Commands
 IMAGE PlayerAlert.png
