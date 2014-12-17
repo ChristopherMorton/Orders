@@ -97,6 +97,8 @@ int left_mouse_down_time = 0;
 int right_mouse_down = 0;
 int right_mouse_down_time = 0;
 
+int key_shift_down = 0;
+
 //////////////////////////////////////////////////////////////////////
 // Utility ---
 
@@ -3771,6 +3773,9 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
       if (key_press.code == Keyboard::Q)
          shutdown(1,1);
 
+      if (key_press.code == Keyboard::LShift || key_press.code == Keyboard::RShift)
+         key_shift_down = 1;
+
       // View movement
       if (key_press.code == Keyboard::Right)
          shiftView( 2, 0 );
@@ -3818,6 +3823,9 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
     
    virtual bool keyReleased( const Event::KeyEvent &key_release )
    {
+      if (key_release.code == Keyboard::LShift || key_release.code == Keyboard::RShift)
+         key_shift_down = 0;
+
       return true;
    }
 
@@ -3846,7 +3854,7 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
       if (isMouseOverGui( mbp.x, mbp.y ))
          return false;
 
-      if (mbp.button == Mouse::Left) {
+      if (mbp.button == Mouse::Left && key_shift_down == 0) {
          left_mouse_down = 1;
          left_mouse_down_time = game_clock->getElapsedTime().asMilliseconds();
 
@@ -3856,7 +3864,8 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
          }
       }
 
-      if (mbp.button == Mouse::Right) {
+      if (mbp.button == Mouse::Right ||
+         (mbp.button == Mouse::Left && key_shift_down == 1)) {
          right_mouse_down = 1;
          right_mouse_down_time = game_clock->getElapsedTime().asMilliseconds();
          castMenuCreate( coordsWindowToLevel( mbp.x, mbp.y ) );
@@ -3868,7 +3877,7 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
 
    virtual bool mouseButtonReleased( const Event::MouseButtonEvent &mbr )
    {
-      if (mbr.button == Mouse::Left) {
+      if (mbr.button == Mouse::Left && key_shift_down == 0) {
          left_mouse_down = 0;
          int left_mouse_up_time = game_clock->getElapsedTime().asMilliseconds();
 
@@ -3877,7 +3886,8 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
             selectUnit( coordsWindowToView( mbr.x, mbr.y ) );
 
       }
-      if (mbr.button == Mouse::Right) {
+      if (mbr.button == Mouse::Right ||
+         (mbr.button == Mouse::Left && key_shift_down == 1)) {
          right_mouse_down = 0;
          int right_mouse_up_time = game_clock->getElapsedTime().asMilliseconds();
 
@@ -3906,6 +3916,9 @@ struct LevelEditorEventHandler : public My_SFML_MouseListener, public My_SFML_Ke
       if (key_press.code == Keyboard::Q)
          shutdown(1,1);
 
+      if (key_press.code == Keyboard::LShift || key_press.code == Keyboard::RShift)
+         key_shift_down = 1;
+
       // View movement
       if (key_press.code == Keyboard::Right)
          levelEditorChangeTerrain( 10 );
@@ -3920,7 +3933,8 @@ struct LevelEditorEventHandler : public My_SFML_MouseListener, public My_SFML_Ke
       if (key_press.code == Keyboard::Subtract)
          zoomView( -1 , level_view->getCenter());
 
-      if (key_press.code == Keyboard::W) {
+      if (key_press.code == Keyboard::W && (menu_state & MENU_PRI_LEVEL_EDITOR))
+      {
          log("Writing new level data from level editor");
          levelEditorWriteToFile();
       }
@@ -3930,6 +3944,9 @@ struct LevelEditorEventHandler : public My_SFML_MouseListener, public My_SFML_Ke
     
    virtual bool keyReleased( const Event::KeyEvent &key_release )
    {
+      if (key_release.code == Keyboard::LShift || key_release.code == Keyboard::RShift)
+         key_shift_down = 0;
+
       return true;
    }
 
@@ -3955,12 +3972,13 @@ struct LevelEditorEventHandler : public My_SFML_MouseListener, public My_SFML_Ke
 
    virtual bool mouseButtonPressed( const Event::MouseButtonEvent &mbp )
    {
-      if (mbp.button == Mouse::Left) {
+      if (mbp.button == Mouse::Left && key_shift_down == 0) {
          left_mouse_down = 1;
          left_mouse_down_time = game_clock->getElapsedTime().asMilliseconds();
       }
 
-      if (mbp.button == Mouse::Right) {
+      if (mbp.button == Mouse::Right ||
+         (mbp.button == Mouse::Left && key_shift_down == 1)) {
          right_mouse_down = 1;
          right_mouse_down_time = game_clock->getElapsedTime().asMilliseconds();
       }
@@ -3971,7 +3989,7 @@ struct LevelEditorEventHandler : public My_SFML_MouseListener, public My_SFML_Ke
 
    virtual bool mouseButtonReleased( const Event::MouseButtonEvent &mbr )
    {
-      if (mbr.button == Mouse::Left) {
+      if (mbr.button == Mouse::Left && key_shift_down == 0) {
          left_mouse_down = 0;
          int left_mouse_up_time = game_clock->getElapsedTime().asMilliseconds();
 
@@ -3980,7 +3998,8 @@ struct LevelEditorEventHandler : public My_SFML_MouseListener, public My_SFML_Ke
             levelEditorSelectGrid( coordsWindowToView( mbr.x, mbr.y ) );
 
       }
-      if (mbr.button == Mouse::Right) {
+      if (mbr.button == Mouse::Right ||
+         (mbr.button == Mouse::Left && key_shift_down == 1)) {
          right_mouse_down = 0;
       }
 
