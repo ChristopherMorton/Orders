@@ -76,7 +76,7 @@ Terrain* terrain_grid;
 Unit** unit_grid;
 // Lists
 list<Unit*> unit_list;
-list<Projectile*> projectile_list;
+list<Effect*> projectile_list;
 
 // Vision
 Vision* vision_grid;
@@ -283,19 +283,19 @@ int moveUnit( Unit *u, int new_x, int new_y )
    return -1;
 }
 
-int removeProjectile( Projectile *p )
+int removeProjectile( Effect *p )
 {
    if (p) {
-      list<Projectile*>::iterator it= find( projectile_list.begin(), projectile_list.end(), p );
+      list<Effect*>::iterator it= find( projectile_list.begin(), projectile_list.end(), p );
       projectile_list.erase( it );
       return 0;
    }
    return -1;
 }
 
-int addProjectile( Projectile_Type t, int team, float x, float y, float speed, Unit* target )
+int addProjectile( Effect_Type t, int team, float x, float y, float speed, Unit* target )
 {
-   Projectile *p = genProjectile( t, team, x, y, speed, target );
+   Effect *p = genProjectile( t, team, x, y, speed, target );
 
    if (p) {
       projectile_list.push_back(p);
@@ -939,7 +939,11 @@ int completeSummon( Order o )
    if (o.action == SUMMON_BUG)
       u = new Bug( x, y, SOUTH );
 
-   addUnit( u );
+   if (NULL != u)
+   {
+      addUnit( u );
+      projectile_list.push_back( new StaticEffect( SE_SUMMON_CLOUD, 0.5, x + 0.5, y + 0.5 ) );
+   }
 
    return 0;
 }
@@ -1705,9 +1709,9 @@ int updateAll( int dt )
       }
       ++it;
    }
-   for (list<Projectile*>::iterator it=projectile_list.begin(); it != projectile_list.end(); ++it)
+   for (list<Effect*>::iterator it=projectile_list.begin(); it != projectile_list.end(); ++it)
    {
-      Projectile* proj = (*it);
+      Effect* proj = (*it);
       if (proj) {
          result = proj->update( dtf );
          if (result == 1) {
@@ -3646,9 +3650,9 @@ void drawUnits()
 
 void drawProjectiles()
 {
-   for (list<Projectile*>::iterator it=projectile_list.begin(); it != projectile_list.end(); ++it)
+   for (list<Effect*>::iterator it=projectile_list.begin(); it != projectile_list.end(); ++it)
    {
-      Projectile* proj = (*it);
+      Effect* proj = (*it);
       if (proj) {
          proj->draw();
       }

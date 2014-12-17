@@ -1355,7 +1355,7 @@ int Bug::doAttack( Order o )
 
    if (target) {
       log("Bug pre-generate");
-      addProjectile( HOMING_ORB, team, x_real, y_real, orb_speed, target );
+      addProjectile( PR_HOMING_ORB, team, x_real, y_real, orb_speed, target );
    }
 
    log("Bug finishing attack");
@@ -1521,7 +1521,7 @@ sf::Texture* SummonMarker::getTexture()
 int SummonMarker::update( float dtf )
 {
    progress += dtf;
-   rotation += (dtf * 240);
+   rotation += (dtf * 450);
    return 0;
 }
 
@@ -1544,23 +1544,49 @@ int SummonMarker::draw()
    normalizeTo1x1( sp_summon_marker_inside );
    normalizeTo1x1( sp_summon_marker_outside );
 
-   sp_summon_marker_inside->setRotation( rotation );
-   sp_summon_marker_outside->setRotation( -rotation );
    sp_summon_marker_inside->setPosition( x_real, y_real );
    sp_summon_marker_outside->setPosition( x_real, y_real );
 
-   float out_scale, in_scale;
-   out_scale = (3.0 - progress) / 3.0;
-   in_scale = (1.0 + progress) / 3.0;
+   if (progress < 0.6) {
+      sp_summon_marker_inside->setRotation( rotation );
+      sp_summon_marker_outside->setRotation( -rotation );
 
-   sp_summon_marker_outside->scale( out_scale, out_scale );
-   sp_summon_marker_inside->scale( in_scale, in_scale );
+      float out_scale, in_scale;
+      out_scale = (5.0 - (progress/0.3)) / 5.0;
+      in_scale = (0.0 + (progress/0.2)) / 5.0;
 
-   SFML_GlobalRenderWindow::get()->draw( *sp_summon_marker_outside );
-   SFML_GlobalRenderWindow::get()->draw( *sp_summon_marker_inside );
+      sp_summon_marker_outside->scale( out_scale, out_scale );
+      sp_summon_marker_inside->scale( in_scale, in_scale );
 
-   sp_summon_marker_outside->scale( -out_scale, -out_scale );
-   sp_summon_marker_inside->scale( -in_scale, -in_scale );
+      SFML_GlobalRenderWindow::get()->draw( *sp_summon_marker_outside );
+      SFML_GlobalRenderWindow::get()->draw( *sp_summon_marker_inside );
+
+      sp_summon_marker_outside->scale( -out_scale, -out_scale );
+      sp_summon_marker_inside->scale( -in_scale, -in_scale );
+   }
+   else
+   {
+      int alpha = (int) ( ((progress - 0.6)/0.4) * 256);
+      Color c_yellow( 255, 255, 0, alpha );
+      CircleShape cir( 0.25 );
+      cir.setFillColor( c_yellow );
+      cir.setOrigin( 0.25, 0.25 );
+      cir.setPosition( x_real, y_real );
+      SFML_GlobalRenderWindow::get()->draw( cir );
+
+      sp_summon_marker_inside->setRotation( 270 );
+      sp_summon_marker_outside->setRotation( -270 );
+
+      sp_summon_marker_outside->scale( 0.6, 0.6 );
+      sp_summon_marker_inside->scale( 0.6, 0.6 );
+
+      SFML_GlobalRenderWindow::get()->draw( *sp_summon_marker_outside );
+      SFML_GlobalRenderWindow::get()->draw( *sp_summon_marker_inside );
+
+      sp_summon_marker_outside->scale( -0.6, -0.6 );
+      sp_summon_marker_inside->scale( -0.6, -0.6 );
+   }
+
 
    return 0;
 }

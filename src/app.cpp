@@ -567,7 +567,7 @@ int progressiveInit()
             progress = 3;
          break;
       case 3:
-         if (initProjectiles() == 0)
+         if (initEffects() == 0)
             progress = 4;
          break;
       case 4:

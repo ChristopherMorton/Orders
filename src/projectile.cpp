@@ -14,6 +14,11 @@
 namespace sum
 {
 
+Effect::~Effect()
+{
+
+}
+
 int Projectile::update( float dtf )
 {
    // Homing recalibrate TODO
@@ -57,7 +62,7 @@ int Projectile::draw( )
    return 0;
 }
 
-Projectile::Projectile( Projectile_Type t, int tm, float x, float y, float speed, Unit* tgt )
+Projectile::Projectile( Effect_Type t, int tm, float x, float y, float speed, Unit* tgt )
 {
    type = t;
    team = tm;
@@ -75,29 +80,79 @@ Projectile::Projectile( Projectile_Type t, int tm, float x, float y, float speed
    vel.y *= norm;
 
    switch (t) {
-      case ARROW:
+      case PR_ARROW:
          radius = 0.05;
          damage = 20.0;
          break;
-      case HOMING_ORB:
+      case PR_HOMING_ORB:
          radius = 0.1;
          damage = 30.0;
          break;
    }
 }
 
-int initProjectiles()
+Projectile::~Projectile()
 {
-   // Setup Sprites
 
-   log("initProjectiles complete");
+}
+
+int StaticEffect::update( float dtf )
+{
+   duration -= dtf;
+   if (duration <= 0)
+      return 1;
+
    return 0;
 }
 
-Projectile *genProjectile( Projectile_Type t, int tm, float x, float y, float speed, Unit* target )
+Sprite *sp_summon_cloud = NULL;
+
+int StaticEffect::draw()
+{
+   if (NULL == sp_summon_cloud) {
+      Texture *tex =SFML_TextureManager::getSingleton().getTexture( "FogCloudTransparent.png" ); 
+      sp_summon_cloud = new Sprite( *(tex));
+      Vector2u dim = tex->getSize();
+      sp_summon_cloud->setOrigin( dim.x / 2.0, dim.y / 2.0 );
+      normalizeTo1x1( sp_summon_cloud );
+   }
+
+   Sprite *sp = NULL;
+   if (type == SE_SUMMON_CLOUD)
+      sp = sp_summon_cloud;
+
+   if (NULL != sp) {
+      sp->setPosition( pos );
+      SFML_GlobalRenderWindow::get()->draw( *sp );
+   }
+
+   return 0;
+}
+
+StaticEffect::StaticEffect( Effect_Type t, float dur, float x, float y )
+{
+   type = t;
+   duration = dur;
+   pos = Vector2f( x, y );
+}
+
+StaticEffect::~StaticEffect()
+{
+
+}
+
+int initEffects()
+{
+   // Setup Sprites
+
+   log("initEffects complete");
+   return 0;
+}
+
+Projectile *genProjectile( Effect_Type t, int tm, float x, float y, float speed, Unit* target )
 {
    Projectile *result = NULL;
-   if (target && t < NUM_PROJECTILES) {
+   if (target && t <= PR_HOMING_ORB) {
       log("Generating projectile");
       result = new Projectile( t, tm, x, y, speed, target );
    }
