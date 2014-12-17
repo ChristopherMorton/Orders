@@ -2,7 +2,7 @@
 #include "level.h"
 #include "focus.h"
 #include "util.h"
-#include "projectile.h"
+#include "effects.h"
 #include "animation.h"
 #include "clock.h"
 #include "log.h"
@@ -441,6 +441,145 @@ string Unit::descriptor()
 {
    return "BASIC UNIT";
 }
+
+//////////////////////////////////////////////////////////////////////
+// RangedUnit ---
+
+// Private
+RangedUnit::RangedUnit()
+{ }
+
+RangedUnit::RangedUnit( UnitType t, int x, int y, Direction face, int my_team )
+{
+   if ( t < R_HUMAN_ARCHER_T || t > R_HUMAN_ARCHER_T ) {
+      alive = false;
+      return;
+   }
+
+   alive = true;
+
+   type = t;
+   x_grid = x;
+   y_grid = y;
+   x_real = x + 0.5;
+   y_real = y + 0.5;
+
+   TurnTo(face);
+
+   max_orders = 0;
+   order_queue = NULL;
+   clearOrders();
+
+   this_turn_order = Order( WAIT );
+
+   active = 1;
+   team = my_team;
+
+   switch (t) {
+      case R_HUMAN_ARCHER_T:
+         radius = 0.3;
+         health = max_health = 100;
+         vision_range = 8.5;
+         attack_range = 8.5;
+         speed = 0.6;
+         ai_type = STAND_AND_FIRE;
+         break;
+      default:
+         break;
+   }
+}
+
+int RangedUnit::doAttack( Order o )
+{
+   int selector = SELECT_CLOSEST;
+   Unit *target = NULL;
+   switch(o.action) {
+      case ATTACK_CLOSEST:
+         selector = SELECT_CLOSEST;
+         break;
+      case ATTACK_FARTHEST:
+         selector = SELECT_FARTHEST;
+         break;
+      case ATTACK_SMALLEST:
+         selector = SELECT_SMALLEST;
+         break;
+      case ATTACK_BIGGEST:
+         selector = SELECT_BIGGEST;
+         break;
+      default:
+         log("ERROR: doAttack called on non-attack order");
+         return -1;
+   }
+
+   target = getEnemy( x_grid, y_grid, attack_range, facing, team, selector );
+
+   if (target) {
+      addProjectile( PR_HOMING_ORB, team, x_real, y_real, 3.0, target );
+   }
+
+   done_attack = 1;
+   return 0;
+}
+
+std::string RangedUnit::descriptor()
+{
+   return "Human Archer";
+}
+
+int RangedUnit::prepareTurn()
+{
+   if (ai_type == STAND_AND_FIRE) {
+      this_turn_order = Order( ATTACK_CLOSEST );
+      done_attack = 0;
+   }
+
+   return 0;
+}
+
+int RangedUnit::update( float dtf )
+{
+   if (!alive)
+      return 1;
+
+   progress += dtf;
+   Order &o = this_turn_order;
+   return updateBasicOrder( dtf, o );
+}
+
+sf::Texture* RangedUnit::getTexture()
+{
+   return SFML_TextureManager::getSingleton().getTexture( "HumanArcher.png" );
+}
+
+Sprite *sp_human_archer = NULL;
+
+int RangedUnit::draw()
+{
+   if (NULL == sp_human_archer) {
+      sp_human_archer = new Sprite(*getTexture());
+      Vector2u dim = getTexture()->getSize();
+      sp_human_archer->setOrigin( dim.x / 2.0, dim.y / 2.0 );
+      normalizeTo1x1( sp_human_archer );
+      //sp_human_archer->scale( 0.5, 0.5 );
+   }
+
+   sp_human_archer->setPosition( x_real, y_real );
+
+   int rotation;
+   if (facing == EAST) rotation = 0;
+   if (facing == SOUTH) rotation = 90;
+   if (facing == WEST) rotation = 180;
+   if (facing == NORTH) rotation = 270;
+   sp_human_archer->setRotation( rotation );
+
+   SFML_GlobalRenderWindow::get()->draw( *sp_human_archer );
+
+   return 0;
+
+}
+
+RangedUnit::~RangedUnit()
+{ }
 
 //////////////////////////////////////////////////////////////////////
 // Player ---

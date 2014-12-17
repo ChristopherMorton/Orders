@@ -3,7 +3,7 @@
 #include "config.h"
 #include "savestate.h" 
 #include "level.h"
-#include "projectile.h"
+#include "effects.h"
 #include "savestate.h"
 #include "menustate.h"
 #include "map.h"

@@ -12,6 +12,7 @@ namespace sum
 {
 
 enum UnitType {
+   // Unique
    PLAYER_T,
    MONSTER_T,
    SOLDIER_T,
@@ -19,7 +20,15 @@ enum UnitType {
    BIRD_T,
    BUG_T,
    TARGETPRACTICE_T,
-   SUMMONMARKER_T
+   SUMMONMARKER_T,
+   // Ranged Units
+   R_HUMAN_ARCHER_T,
+   // Melee Units
+   M_HUMAN_SWORDSMAN_T
+};
+
+enum AI_Type {
+   STAND_AND_FIRE
 };
 
 // BASE CLASS
@@ -81,6 +90,32 @@ public:
    virtual int draw() = 0;
 
    virtual ~Unit();
+};
+
+// GENERIC UNIT CLASSES
+
+class RangedUnit : public Unit
+{
+private:
+   RangedUnit(); // disallowed
+   AI_Type ai_type;
+public:
+   RangedUnit( UnitType t, int x, int y, Direction face, int my_team );
+
+   //virtual int addOrder( Order o );
+
+   virtual int doAttack( Order o );
+
+   virtual std::string descriptor();
+
+   virtual int prepareTurn();
+   //virtual int startTurn();
+   //virtual int completeTurn();
+   virtual int update( float dtf );
+   virtual sf::Texture* getTexture();
+   virtual int draw();
+
+   virtual ~RangedUnit();
 };
 
 // SPECIALIZED CLASSES

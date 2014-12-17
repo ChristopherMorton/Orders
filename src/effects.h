@@ -1,5 +1,5 @@
-#ifndef PROJECTILE_H__
-#define PROJECTILE_H__
+#ifndef EFFECTS_H__
+#define EFFECTS_H__
 
 #include <SFML/System/Vector2.hpp>
 
@@ -60,6 +60,7 @@ struct StaticEffect : public Effect
 
 // Speed means units travelled per turn
 Projectile *genProjectile( Effect_Type t, int team, float x, float y, float speed, Unit* target );
+StaticEffect *genEffect( Effect_Type t, float dur, float x, float y );
 
 int initEffects();
 

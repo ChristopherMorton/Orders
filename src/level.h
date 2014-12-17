@@ -3,7 +3,7 @@
 
 #include "types.h"
 #include "units.h"
-#include "projectile.h"
+#include "effects.h"
 
 namespace sum
 {
@@ -28,6 +28,7 @@ namespace sum
 
    int moveUnit( Unit *u, int new_x, int new_y );
    int addProjectile( Effect_Type t, int team, float x, float y, float speed, Unit* target );
+   int addEffect( Effect_Type t, float dur, float x, float y );
 
    int broadcastOrder( Order o );
    int startPlayerCommand( Order o );

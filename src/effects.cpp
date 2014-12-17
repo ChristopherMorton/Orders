@@ -1,4 +1,4 @@
-#include "projectile.h"
+#include "effects.h"
 #include "level.h"
 #include "util.h"
 #include "units.h"
@@ -155,6 +155,17 @@ Projectile *genProjectile( Effect_Type t, int tm, float x, float y, float speed,
    if (target && t <= PR_HOMING_ORB) {
       log("Generating projectile");
       result = new Projectile( t, tm, x, y, speed, target );
+   }
+
+   return result;
+}
+
+StaticEffect *genEffect( Effect_Type t, float dur, float x, float y )
+{
+   StaticEffect *result = NULL;
+   if (t >= SE_SUMMON_CLOUD && t <= SE_SUMMON_CLOUD) {
+      log("Generating effect");
+      result = new StaticEffect( t, dur, x, y );
    }
 
    return result;

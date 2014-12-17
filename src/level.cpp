@@ -76,7 +76,7 @@ Terrain* terrain_grid;
 Unit** unit_grid;
 // Lists
 list<Unit*> unit_list;
-list<Effect*> projectile_list;
+list<Effect*> effect_list;
 
 // Vision
 Vision* vision_grid;
@@ -283,11 +283,11 @@ int moveUnit( Unit *u, int new_x, int new_y )
    return -1;
 }
 
-int removeProjectile( Effect *p )
+int removeEffect( Effect *p )
 {
    if (p) {
-      list<Effect*>::iterator it= find( projectile_list.begin(), projectile_list.end(), p );
-      projectile_list.erase( it );
+      list<Effect*>::iterator it= find( effect_list.begin(), effect_list.end(), p );
+      effect_list.erase( it );
       return 0;
    }
    return -1;
@@ -298,7 +298,18 @@ int addProjectile( Effect_Type t, int team, float x, float y, float speed, Unit*
    Effect *p = genProjectile( t, team, x, y, speed, target );
 
    if (p) {
-      projectile_list.push_back(p);
+      effect_list.push_back(p);
+      return 0;
+   }
+   return -1;
+}
+
+int addEffect( Effect_Type t, float dur, float x, float y )
+{
+   Effect *e = genEffect( t, dur, x, y );
+
+   if (e) {
+      effect_list.push_back(e);
       return 0;
    }
    return -1;
@@ -942,7 +953,7 @@ int completeSummon( Order o )
    if (NULL != u)
    {
       addUnit( u );
-      projectile_list.push_back( new StaticEffect( SE_SUMMON_CLOUD, 0.5, x + 0.5, y + 0.5 ) );
+      effect_list.push_back( new StaticEffect( SE_SUMMON_CLOUD, 0.5, x + 0.5, y + 0.5 ) );
    }
 
    return 0;
@@ -1327,7 +1338,7 @@ void clearAll()
    if (player) delete player;
 
    unit_list.clear();
-   projectile_list.clear();
+   effect_list.clear();
    listening_units.clear();
 }
 
@@ -1575,9 +1586,9 @@ int loadLevel( int level_id )
       if (createLevelFromFile( "res/testlevel.txt" ) == -1)
          return -1;
 
-      GRID_AT(terrain_grid,4,9) = TER_ROCK_1;
       //player->x_grid = 1;
       //player->y_grid = 4;
+      addUnit( new RangedUnit( R_HUMAN_ARCHER_T, 2, 1, EAST, 2 ) );
 
       //writeLevelToFile( "res/testlevel.txt" );
    }
@@ -1709,14 +1720,14 @@ int updateAll( int dt )
       }
       ++it;
    }
-   for (list<Effect*>::iterator it=projectile_list.begin(); it != projectile_list.end(); ++it)
+   for (list<Effect*>::iterator it=effect_list.begin(); it != effect_list.end(); ++it)
    {
-      Effect* proj = (*it);
-      if (proj) {
-         result = proj->update( dtf );
+      Effect* effect = (*it);
+      if (effect) {
+         result = effect->update( dtf );
          if (result == 1) {
-            // Delete the projectile
-            delete proj;
+            // Delete the effect
+            delete effect;
             (*it) = NULL;
          }
       }
@@ -3648,13 +3659,13 @@ void drawUnits()
    }
 }
 
-void drawProjectiles()
+void drawEffects()
 {
-   for (list<Effect*>::iterator it=projectile_list.begin(); it != projectile_list.end(); ++it)
+   for (list<Effect*>::iterator it=effect_list.begin(); it != effect_list.end(); ++it)
    {
-      Effect* proj = (*it);
-      if (proj) {
-         proj->draw();
+      Effect* effect = (*it);
+      if (effect) {
+         effect->draw();
       }
    }
 }
@@ -3741,7 +3752,7 @@ int drawLevel()
    drawBaseTerrain();
    drawTerrain();
    drawUnits();
-   drawProjectiles();
+   drawEffects();
    drawFog();
 
    // Gui
