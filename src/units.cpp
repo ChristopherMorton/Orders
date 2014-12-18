@@ -284,7 +284,7 @@ bool Unit::evaluateConditional( Order o )
       case FALSE:
          return false;
       case ENEMY_IN_RANGE:
-         return getEnemy( x_grid, y_grid, attack_range, facing, team, SELECT_CLOSEST ) != NULL;
+         return getEnemy( x_grid, y_grid, attack_range, facing, this, SELECT_CLOSEST ) != NULL;
       default:
          return true;
    }
@@ -511,7 +511,7 @@ int RangedUnit::doAttack( Order o )
          return -1;
    }
 
-   target = getEnemy( x_grid, y_grid, attack_range, facing, team, selector );
+   target = getEnemy( x_grid, y_grid, attack_range, facing, this, selector );
 
    if (target) {
       addProjectile( PR_HOMING_ORB, team, x_real, y_real, 3.0, target );
@@ -847,7 +847,7 @@ int Monster::doAttack( Order o )
          return -1;
    }
 
-   target = getEnemy( x_grid, y_grid, attack_range, facing, team, selector );
+   target = getEnemy( x_grid, y_grid, attack_range, facing, this, selector );
 
    if (target) {
       log("Monster attack");
@@ -1005,7 +1005,7 @@ int Soldier::doAttack( Order o )
          return -1;
    }
 
-   target = getEnemy( x_grid, y_grid, attack_range, facing, team, selector );
+   target = getEnemy( x_grid, y_grid, attack_range, facing, this, selector );
 
    if (target) {
       log("Soldier attack");
@@ -1164,7 +1164,7 @@ int Worm::doAttack( Order o )
          return -1;
    }
 
-   target = getEnemy( x_grid, y_grid, attack_range, facing, team, selector );
+   target = getEnemy( x_grid, y_grid, attack_range, facing, this, selector );
 
    if (target) {
       log("Worm attack");
@@ -1322,7 +1322,7 @@ int Bird::doAttack( Order o )
          return -1;
    }
 
-   target = getEnemy( x_grid, y_grid, attack_range, facing, team, selector );
+   target = getEnemy( x_grid, y_grid, attack_range, facing, this, selector );
 
    if (target) {
       log("Bird attack");
@@ -1490,7 +1490,7 @@ int Bug::doAttack( Order o )
          return -1;
    }
 
-   target = getEnemy( x_grid, y_grid, attack_range, facing, team, selector );
+   target = getEnemy( x_grid, y_grid, attack_range, facing, this, selector );
 
    if (target) {
       log("Bug pre-generate");

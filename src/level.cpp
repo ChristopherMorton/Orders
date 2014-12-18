@@ -498,13 +498,13 @@ int calculateLineVision( int start_x, int start_y, int end_x, int end_y, float r
    return ret;
 }
 
-int calculateUnitVision( Unit *unit )
+int calculateUnitVision( Unit *unit, bool ai=false )
 {
    int x, y;
    if (unit) {
       
       Vision *v_grid = vision_grid;
-      if (unit->team != 0)
+      if (unit->team != 0 || ai)
          v_grid = ai_vision_grid;
 
       float vision_range_squared = unit->vision_range * unit->vision_range;
@@ -636,8 +636,14 @@ int selectUnit( Vector2f coords )
    return -1;
 }
 
-Unit* getEnemy( int x, int y, float range, Direction dir, int my_team, int selector)
+Unit* getEnemy( int x, int y, float range, Direction dir, Unit *source, int selector)
 {
+   int team;
+   if (source == NULL) team = -1;
+   else {
+      team = source->team;
+      calculateUnitVision( source, true );
+   }
    // First, get search box
    int int_range = (int) range + 1;
    int min_x, max_x, min_y, max_y;
@@ -671,35 +677,37 @@ Unit* getEnemy( int x, int y, float range, Direction dir, int my_team, int selec
    for (int j = min_y; j <= max_y; ++j) {
       for (int i = min_x; i <= max_x; ++i) {
          Unit *u = GRID_AT(unit_grid,i,j);
-         if (u && u->team != my_team && u->alive) {
-            float u_x = u->x_grid - x, u_y = u->y_grid - y;
-            float u_squared = (u_x * u_x) + (u_y * u_y);
-            // Is it really in range?
-            if (u_squared <= range_squared) {
-
-               // Compare based on selector
-               if (NULL == result) {
-                  result = u;
-                  result_r_squared = u_squared;
-               } else if (selector == SELECT_CLOSEST) {
-                  if (u_squared < result_r_squared) {
+         if (u && u->team != team && u->alive) {
+            // Can I see it?
+            if ((team == -1) || (GRID_AT(ai_vision_grid,i,j) == VIS_VISIBLE)) {
+               float u_x = u->x_grid - x, u_y = u->y_grid - y;
+               float u_squared = (u_x * u_x) + (u_y * u_y);
+               // Is it really in range?
+               if (u_squared <= range_squared) {
+                  // Compare based on selector
+                  if (NULL == result) {
                      result = u;
                      result_r_squared = u_squared;
-                  }
-               } else if (selector == SELECT_FARTHEST) {
-                  if (u_squared > result_r_squared) {
-                     result = u;
-                     result_r_squared = u_squared;
-                  }
-               } else if (selector == SELECT_SMALLEST) {
-                  if (u->health < result->health) {
-                     result = u;
-                     result_r_squared = u_squared;
-                  }
-               } else if (selector == SELECT_BIGGEST) {
-                  if (u->health > result->health) {
-                     result = u;
-                     result_r_squared = u_squared;
+                  } else if (selector == SELECT_CLOSEST) {
+                     if (u_squared < result_r_squared) {
+                        result = u;
+                        result_r_squared = u_squared;
+                     }
+                  } else if (selector == SELECT_FARTHEST) {
+                     if (u_squared > result_r_squared) {
+                        result = u;
+                        result_r_squared = u_squared;
+                     }
+                  } else if (selector == SELECT_SMALLEST) {
+                     if (u->health < result->health) {
+                        result = u;
+                        result_r_squared = u_squared;
+                     }
+                  } else if (selector == SELECT_BIGGEST) {
+                     if (u->health > result->health) {
+                        result = u;
+                        result_r_squared = u_squared;
+                     }
                   }
                }
             }
@@ -1590,7 +1598,7 @@ int loadLevel( int level_id )
 
       //player->x_grid = 1;
       //player->y_grid = 4;
-      addUnit( new RangedUnit( R_HUMAN_ARCHER_T, 2, 1, EAST, 2 ) );
+      addUnit( new RangedUnit( R_HUMAN_ARCHER_T, 2, 0, EAST, 2 ) );
 
       //writeLevelToFile( "res/testlevel.txt" );
    }

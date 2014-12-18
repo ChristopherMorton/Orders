@@ -27,9 +27,9 @@ int Projectile::update( float dtf )
    pos.y += (dtf * vel.y);
 
    // Calculate collisions
-   Unit *nearest = getEnemy( pos.x, pos.y, 1.0, ALL_DIR, team, SELECT_CLOSEST );
+   Unit *nearest = getEnemy( pos.x, pos.y, 1.0, ALL_DIR, NULL, SELECT_CLOSEST );
 
-   if (nearest != NULL) {
+   if (nearest != NULL && nearest->team != team) {
       // Is it a hit?
       float dx = (pos.x - nearest->x_real),
             dy = (pos.y - nearest->y_real);
