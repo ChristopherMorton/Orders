@@ -514,7 +514,7 @@ int RangedUnit::doAttack( Order o )
    target = getEnemy( x_grid, y_grid, attack_range, facing, this, selector );
 
    if (target) {
-      addProjectile( PR_HOMING_ORB, team, x_real, y_real, 3.0, attack_range, target );
+      addProjectile( PR_ARROW, team, x_real, y_real, 3.0, attack_range, target );
    }
 
    done_attack = 1;

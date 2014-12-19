@@ -48,9 +48,19 @@ int Projectile::update( float dtf )
 }
 
 Sprite *sp_magic_projectile = NULL;
+Sprite *sp_arrow = NULL;
 
 int Projectile::draw( )
 {
+   if (NULL == sp_arrow) {
+      Texture *tex =SFML_TextureManager::getSingleton().getTexture( "Arrow.png" ); 
+      sp_arrow = new Sprite( *(tex));
+      Vector2u dim = tex->getSize();
+      sp_arrow->setOrigin( dim.x / 2.0, dim.y / 2.0 );
+      normalizeTo1x1( sp_arrow );
+      sp_arrow->scale( 0.4, 0.4 );
+   }
+
    if (NULL == sp_magic_projectile) {
       Texture *tex =SFML_TextureManager::getSingleton().getTexture( "orb0.png" ); 
       sp_magic_projectile = new Sprite( *(tex));
@@ -59,8 +69,17 @@ int Projectile::draw( )
       normalizeTo1x1( sp_magic_projectile );
    }
 
-   sp_magic_projectile->setPosition( pos );
-   SFML_GlobalRenderWindow::get()->draw( *sp_magic_projectile );
+   switch (type) {
+      case PR_ARROW:
+         sp_arrow->setPosition( pos );
+         sp_arrow->setRotation( rotation );
+         SFML_GlobalRenderWindow::get()->draw( *sp_arrow );
+         break;
+      default:
+         sp_magic_projectile->setPosition( pos );
+         SFML_GlobalRenderWindow::get()->draw( *sp_magic_projectile );
+         break;
+   }
 
    return 0;
 }
@@ -77,6 +96,7 @@ Projectile::Projectile( Effect_Type t, int tm, float x, float y, float speed, fl
 
    vel.x = tgt->x_real - x;
    vel.y = tgt->y_real - y;
+   rotation = atan( vel.y / vel.x ) * 180 / 3.1415926;
    // normalize
    float norm = sqrt( (vel.x * vel.x) + (vel.y * vel.y) ); // distance to target - divide by
    norm = speed / norm;

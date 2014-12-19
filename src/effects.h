@@ -33,7 +33,7 @@ struct Projectile : public Effect
 {
    float radius, damage;
    sf::Vector2f pos, vel;
-   float range;
+   float range, rotation;
    int team;
    Unit *target;
 
