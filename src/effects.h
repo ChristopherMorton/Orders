@@ -33,6 +33,7 @@ struct Projectile : public Effect
 {
    float radius, damage;
    sf::Vector2f pos, vel;
+   float range;
    int team;
    Unit *target;
 
@@ -40,7 +41,7 @@ struct Projectile : public Effect
    virtual int draw();
 
    // Speed means units travelled per turn
-   Projectile( Effect_Type t, int team, float x, float y, float speed, Unit* target );
+   Projectile( Effect_Type t, int team, float x, float y, float speed, float range, Unit* target );
 
    virtual ~Projectile();
 };
@@ -59,7 +60,7 @@ struct StaticEffect : public Effect
 };
 
 // Speed means units travelled per turn
-Projectile *genProjectile( Effect_Type t, int team, float x, float y, float speed, Unit* target );
+Projectile *genProjectile( Effect_Type t, int team, float x, float y, float speed, float range, Unit* target );
 StaticEffect *genEffect( Effect_Type t, float dur, float x, float y );
 
 int initEffects();

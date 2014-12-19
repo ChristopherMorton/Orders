@@ -27,7 +27,7 @@ namespace sum
    bool canMoveUnit( int x, int y, int from_x, int from_y, Unit* u );
 
    int moveUnit( Unit *u, int new_x, int new_y );
-   int addProjectile( Effect_Type t, int team, float x, float y, float speed, Unit* target );
+   int addProjectile( Effect_Type t, int team, float x, float y, float speed, float range, Unit* target );
    int addEffect( Effect_Type t, float dur, float x, float y );
 
    int broadcastOrder( Order o );

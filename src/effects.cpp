@@ -22,6 +22,9 @@ Effect::~Effect()
 int Projectile::update( float dtf )
 {
    // Homing recalibrate TODO
+   range -= dtf;
+   if (range <= 0)
+      return 1;
 
    pos.x += (dtf * vel.x);
    pos.y += (dtf * vel.y);
@@ -62,7 +65,7 @@ int Projectile::draw( )
    return 0;
 }
 
-Projectile::Projectile( Effect_Type t, int tm, float x, float y, float speed, Unit* tgt )
+Projectile::Projectile( Effect_Type t, int tm, float x, float y, float speed, float r, Unit* tgt )
 {
    type = t;
    team = tm;
@@ -70,6 +73,7 @@ Projectile::Projectile( Effect_Type t, int tm, float x, float y, float speed, Un
 
    pos.x = x;
    pos.y = y;
+   range = r / speed;
 
    vel.x = tgt->x_real - x;
    vel.y = tgt->y_real - y;
@@ -149,12 +153,12 @@ int initEffects()
    return 0;
 }
 
-Projectile *genProjectile( Effect_Type t, int tm, float x, float y, float speed, Unit* target )
+Projectile *genProjectile( Effect_Type t, int tm, float x, float y, float speed, float range, Unit* target )
 {
    Projectile *result = NULL;
    if (target && t <= PR_HOMING_ORB) {
       log("Generating projectile");
-      result = new Projectile( t, tm, x, y, speed, target );
+      result = new Projectile( t, tm, x, y, speed, range, target );
    }
 
    return result;

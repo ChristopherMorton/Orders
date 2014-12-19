@@ -6,6 +6,7 @@
 #include "effects.h"
 #include "savestate.h"
 #include "menustate.h"
+#include "util.h"
 #include "map.h"
 #include "log.h"
 
@@ -631,7 +632,16 @@ int postload()
 
 int loadingAnimation(int dt)
 {
+   sf::Sprite sp_hgg( *texture_manager->getTexture( "HGGLoadingScreenLogo.png" ) );
+   normalizeTo1x1( &sp_hgg );
+   sp_hgg.setPosition( 1.5, 1 );
+
+   View view;
+   view.setSize( 4, 3 );
+   view.setCenter( 2.0, 1.5 );
+   r_window->setView( view );
    r_window->clear(Color::Black);
+   r_window->draw( sp_hgg );
    r_window->display();
    return 0;
 }

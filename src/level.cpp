@@ -295,9 +295,9 @@ int removeEffect( Effect *p )
    return -1;
 }
 
-int addProjectile( Effect_Type t, int team, float x, float y, float speed, Unit* target )
+int addProjectile( Effect_Type t, int team, float x, float y, float speed, float range, Unit* target )
 {
-   Effect *p = genProjectile( t, team, x, y, speed, target );
+   Effect *p = genProjectile( t, team, x, y, speed, range, target );
 
    if (p) {
       effect_list.push_back(p);

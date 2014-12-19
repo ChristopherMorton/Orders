@@ -514,7 +514,7 @@ int RangedUnit::doAttack( Order o )
    target = getEnemy( x_grid, y_grid, attack_range, facing, this, selector );
 
    if (target) {
-      addProjectile( PR_HOMING_ORB, team, x_real, y_real, 3.0, target );
+      addProjectile( PR_HOMING_ORB, team, x_real, y_real, 3.0, attack_range, target );
    }
 
    done_attack = 1;
@@ -1494,7 +1494,7 @@ int Bug::doAttack( Order o )
 
    if (target) {
       log("Bug pre-generate");
-      addProjectile( PR_HOMING_ORB, team, x_real, y_real, orb_speed, target );
+      addProjectile( PR_HOMING_ORB, team, x_real, y_real, orb_speed, attack_range, target );
    }
 
    log("Bug finishing attack");
