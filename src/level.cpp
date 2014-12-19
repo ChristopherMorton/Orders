@@ -2158,7 +2158,12 @@ IMImageButton *b_o_move_forward,
               *b_o_bug_fireball,
               *b_o_bug_heal,
               *b_o_bug_open_wormhole,
-              *b_o_bug_close_wormhole;
+              *b_o_bug_close_wormhole,
+              *b_monster_image,
+              *b_soldier_image,
+              *b_worm_image,
+              *b_bird_image,
+              *b_bug_image;
 IMTextButton *b_count_1,
              *b_count_2,
              *b_count_3,
@@ -2191,7 +2196,7 @@ bool isMouseOverGui( int x, int y )
    int width = config::width(),
        height = config::height();
 
-   int sec_buffer = 5;
+   int sec_buffer = 5.0;
    float button_size = (((float)width) - (22.0 * sec_buffer)) / 22.0;
 
    if (y > (height - ((sec_buffer * 2) + (button_size * 3))))
@@ -2460,6 +2465,11 @@ void fitGui_Level()
    b_o_monster_burst->setPosition( sec_start_monster + sec_buffer,
                                    height - (sec_buffer + button_size) );
 
+   b_monster_image->setSize( button_size, button_size );
+   b_monster_image->setImageSize( button_size, button_size );
+   b_monster_image->setPosition( sec_start_monster + (sec_buffer * 3) - 3 + button_size,
+                                 height - (button_size) );
+
    // Soldier
    b_soldier_area->setSize( (sec_buffer * 3) + (button_size * 2),
                            (sec_buffer * 3) + (button_size * 3));
@@ -2491,6 +2501,11 @@ void fitGui_Level()
    b_o_soldier_switch_bow->setPosition( sec_start_soldier + (sec_buffer * 2),
                                         height - (sec_buffer + button_size ) );
 
+   b_soldier_image->setSize( button_size, button_size );
+   b_soldier_image->setImageSize( button_size, button_size );
+   b_soldier_image->setPosition( sec_start_soldier + (sec_buffer * 3) - 3 + button_size,
+                             height - (button_size) );
+
    // Worm
    b_worm_area->setSize( (sec_buffer * 3) + (button_size * 2),
                            (sec_buffer * 3) + (button_size * 3));
@@ -2521,6 +2536,11 @@ void fitGui_Level()
    b_o_worm_sprint->setImageSize( button_size, button_size );
    b_o_worm_sprint->setPosition( sec_start_worm + (sec_buffer * 2),
                                  height - (sec_buffer + button_size ) );
+
+   b_worm_image->setSize( button_size, button_size );
+   b_worm_image->setImageSize( button_size, button_size );
+   b_worm_image->setPosition( sec_start_worm + (sec_buffer * 3) - 3 + button_size,
+                             height - (button_size) );
 
    // Bird
    b_bird_area->setSize( (sec_buffer * 3) + (button_size * 3),
@@ -2563,6 +2583,11 @@ void fitGui_Level()
    b_o_bird_land->setPosition( sec_start_bird + (sec_buffer * 2) + button_size,
                                height - (sec_buffer + button_size ) );
 
+   b_bird_image->setSize( button_size, button_size );
+   b_bird_image->setImageSize( button_size, button_size );
+   b_bird_image->setPosition( sec_start_bird + (sec_buffer * 3) - 3 + (button_size * 2),
+                             height - (button_size) );
+
    // Bug
    b_bug_area->setSize( (sec_buffer * 3) + (button_size * 3),
                            (sec_buffer * 3) + (button_size * 3));
@@ -2604,10 +2629,15 @@ void fitGui_Level()
    b_o_bug_close_wormhole->setPosition( sec_start_bug + (sec_buffer * 2) + button_size,
                                         height - (sec_buffer + button_size ) );
 
+   b_bug_image->setSize( button_size, button_size );
+   b_bug_image->setImageSize( button_size, button_size );
+   b_bug_image->setPosition( sec_start_bug + (sec_buffer * 3) - 3 + (button_size * 2),
+                             height - (button_size) );
+
    b_o_bug_meditate->setSize( button_size, button_size );
    b_o_bug_meditate->setImageSize( button_size, button_size );
    b_o_bug_meditate->setPosition( sec_start_bug + (sec_buffer * 2) + (button_size * 2),
-                                  height - (sec_buffer + button_size ) );
+                                  height - (sec_buffer + (button_size * 3) ) );
 
    view_rel_x_to_y = ((float)height) / ((float)width);
 }
@@ -2760,7 +2790,7 @@ int initLevelGui()
    b_o_monster_guard->setNormalTexture( t_manager.getTexture( "MonsterOrderButtonBase.png" ) );
    b_o_monster_guard->setPressedTexture( t_manager.getTexture( "MonsterButtonPressed.png" ) );
    b_o_monster_guard->setHoverTexture( t_manager.getTexture( "MonsterButtonHover.png" ) );
-   b_o_monster_guard->setImage( NULL );
+   b_o_monster_guard->setImage( t_manager.getTexture( "MonsterOrderGuard.png" ) );
    b_o_monster_guard->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Monster: Guard", b_o_monster_guard);
 
@@ -2768,7 +2798,7 @@ int initLevelGui()
    b_o_monster_burst->setNormalTexture( t_manager.getTexture( "MonsterOrderButtonBase.png" ) );
    b_o_monster_burst->setPressedTexture( t_manager.getTexture( "MonsterButtonPressed.png" ) );
    b_o_monster_burst->setHoverTexture( t_manager.getTexture( "MonsterButtonHover.png" ) );
-   b_o_monster_burst->setImage( NULL );
+   b_o_monster_burst->setImage( t_manager.getTexture( "MonsterOrderBurst.png" ) );
    b_o_monster_burst->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Monster: Burst", b_o_monster_burst);
 
@@ -2957,6 +2987,35 @@ int initLevelGui()
    b_o_bug_close_wormhole->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Bug: Close Wormhole", b_o_bug_close_wormhole);
 
+   b_monster_image = new IMImageButton();
+   b_monster_image->setAllTextures( t_manager.getTexture( "MonsterButtonImage.png" ) );
+   b_monster_image->setImage( NULL );
+   b_monster_image->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Monster Image", b_monster_image);
+
+   b_soldier_image = new IMImageButton();
+   b_soldier_image->setAllTextures( t_manager.getTexture( "SoldierButtonImage.png" ) );
+   b_soldier_image->setImage( NULL );
+   b_soldier_image->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Soldier Image", b_soldier_image);
+
+   b_worm_image = new IMImageButton();
+   b_worm_image->setAllTextures( t_manager.getTexture( "WormButtonImage.png" ) );
+   b_worm_image->setImage( NULL );
+   b_worm_image->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Worm Image", b_worm_image);
+
+   b_bird_image = new IMImageButton();
+   b_bird_image->setAllTextures( t_manager.getTexture( "BirdButtonImage.png" ) );
+   b_bird_image->setImage( NULL );
+   b_bird_image->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Bird Image", b_bird_image);
+
+   b_bug_image = new IMImageButton();
+   b_bug_image->setAllTextures( t_manager.getTexture( "BugButtonImage.png" ) );
+   b_bug_image->setImage( NULL );
+   b_bug_image->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Bug Image", b_bug_image);
 
    b_count_1 = new IMTextButton();
    b_count_1->setNormalTexture( t_manager.getTexture( "OrderButtonBase.png" ) );
@@ -3113,35 +3172,35 @@ int initLevelGui()
    gui_manager.registerWidget( "Player command area", b_pl_cmd_area);
 
    b_monster_area = new IMEdgeButton();
-   b_monster_area->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
+   b_monster_area->setAllTextures( t_manager.getTexture( "MonsterColorSoft.png" ) );
    b_monster_area->setCornerAllTextures( t_manager.getTexture( "UICornerBrown3px.png" ) );
    b_monster_area->setEdgeAllTextures( t_manager.getTexture( "UIEdgeBrown3px.png" ) );
    b_monster_area->setEdgeWidth( 3 );
    gui_manager.registerWidget( "Monster area", b_monster_area);
 
    b_soldier_area = new IMEdgeButton();
-   b_soldier_area->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
+   b_soldier_area->setAllTextures( t_manager.getTexture( "SoldierColorSoft.png" ) );
    b_soldier_area->setCornerAllTextures( t_manager.getTexture( "UICornerBrown3px.png" ) );
    b_soldier_area->setEdgeAllTextures( t_manager.getTexture( "UIEdgeBrown3px.png" ) );
    b_soldier_area->setEdgeWidth( 3 );
    gui_manager.registerWidget( "Soldier area", b_soldier_area);
 
    b_worm_area = new IMEdgeButton();
-   b_worm_area->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
+   b_worm_area->setAllTextures( t_manager.getTexture( "WormColorSoft.png" ) );
    b_worm_area->setCornerAllTextures( t_manager.getTexture( "UICornerBrown3px.png" ) );
    b_worm_area->setEdgeAllTextures( t_manager.getTexture( "UIEdgeBrown3px.png" ) );
    b_worm_area->setEdgeWidth( 3 );
    gui_manager.registerWidget( "Worm area", b_worm_area);
 
    b_bird_area = new IMEdgeButton();
-   b_bird_area->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
+   b_bird_area->setAllTextures( t_manager.getTexture( "BirdColorSoft.png" ) );
    b_bird_area->setCornerAllTextures( t_manager.getTexture( "UICornerBrown3px.png" ) );
    b_bird_area->setEdgeAllTextures( t_manager.getTexture( "UIEdgeBrown3px.png" ) );
    b_bird_area->setEdgeWidth( 3 );
    gui_manager.registerWidget( "Bird area", b_bird_area);
 
    b_bug_area = new IMEdgeButton();
-   b_bug_area->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
+   b_bug_area->setAllTextures( t_manager.getTexture( "BugColorSoft.png" ) );
    b_bug_area->setCornerAllTextures( t_manager.getTexture( "UICornerBrown3px.png" ) );
    b_bug_area->setEdgeAllTextures( t_manager.getTexture( "UIEdgeBrown3px.png" ) );
    b_bug_area->setEdgeWidth( 3 );
@@ -3331,6 +3390,12 @@ int drawOrderButtons()
 
    if (b_count_reset->doWidget())
       playerSetCount( 1 );
+
+   b_monster_image->doWidget();
+   b_soldier_image->doWidget();
+   b_worm_image->doWidget();
+   b_bird_image->doWidget();
+   b_bug_image->doWidget();
 
    b_numpad_area->doWidget();
    b_pl_cmd_area->doWidget();

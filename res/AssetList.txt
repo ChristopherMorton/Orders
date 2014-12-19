@@ -48,6 +48,11 @@ IMAGE UIEdgeGrey3px.png
 IMAGE UICenterBrown.png
 IMAGE UICenterGrey.png
 IMAGE UICenterGold.png
+IMAGE MonsterColorSoft.png
+IMAGE SoldierColorSoft.png
+IMAGE WormColorSoft.png
+IMAGE BirdColorSoft.png
+IMAGE BugColorSoft.png
 // General UI
 IMAGE GoBackButtonScratch.png
 IMAGE GuiExitX.png
@@ -93,6 +98,8 @@ IMAGE SoldierButtonPressed.png
 IMAGE WormButtonPressed.png
 IMAGE BirdButtonPressed.png
 IMAGE BugButtonPressed.png
+IMAGE MonsterOrderGuard.png
+IMAGE MonsterOrderBurst.png
 IMAGE CastButtonBase.png
 // Player Commands
 IMAGE PlayerAlert.png

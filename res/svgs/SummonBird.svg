@@ -15,9 +15,9 @@
    version="1.1"
    inkscape:version="0.48.5 r10040"
    sodipodi:docname="SummonBird.svg"
-   inkscape:export-filename="/home/cg/programming/orders/res/PlayerGoAllButton.png"
-   inkscape:export-xdpi="90"
-   inkscape:export-ydpi="90">
+   inkscape:export-filename="/home/cg/programming/orders/res/SummonBird.png"
+   inkscape:export-xdpi="180"
+   inkscape:export-ydpi="180">
   <defs
      id="defs4">
     <clipPath
@@ -104,7 +104,7 @@
      inkscape:current-layer="layer1"
      showgrid="false"
      width="64px"
-     inkscape:window-width="766"
+     inkscape:window-width="574"
      inkscape:window-height="1004"
      inkscape:window-x="0"
      inkscape:window-y="18"
@@ -117,7 +117,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
+        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -129,13 +129,14 @@
     <path
        style="fill:#aaeeff;fill-opacity:1;stroke:#00309a;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1"
        inkscape:transform-center-y="-2.9971004"
-       d="m 32,989.97313 9.084128,19.63557 20.765773,0.052 -14.38754,17.4231 6.985891,23.6675 -22.448253,-13.3396 -22.4482537,13.3396 6.9858927,-23.6675 -14.3875393,-17.4231 20.7657713,-0.052 z"
+       d="m 32,989.97313 -9.084128,19.63557 -20.7657733,0.052 14.3875403,17.4231 -6.9858913,23.6675 22.4482533,-13.3396 22.448253,13.3396 -6.985892,-23.6675 14.387539,-17.4231 -20.765771,-0.052 z"
        id="path3790"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="ccccccccccc" />
     <g
        id="g9058"
-       clip-path="url(#clipPath9069)">
+       clip-path="url(#clipPath9069)"
+       transform="matrix(-1,0,0,1,64,0)">
       <path
          sodipodi:nodetypes="czccsccccc"
          inkscape:connector-curvature="0"
@@ -159,7 +160,7 @@
        sodipodi:nodetypes="ccccccccccc"
        inkscape:connector-curvature="0"
        id="path13102"
-       d="m 32,989.97313 9.084128,19.63557 20.765773,0.052 -14.38754,17.4231 6.985891,23.6675 -22.448253,-13.3396 -22.448254,13.3396 6.985893,-23.6675 -14.3875393,-17.4231 20.7657713,-0.052 z"
+       d="m 32,989.97313 -9.084128,19.63557 -20.7657733,0.052 14.3875403,17.4231 -6.9858913,23.6675 22.4482533,-13.3396 22.448254,13.3396 -6.985893,-23.6675 14.387539,-17.4231 -20.765771,-0.052 z"
        inkscape:transform-center-y="-2.9971004"
        style="fill:#aaeeff;fill-opacity:0;stroke:#00309a;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1" />
   </g>
