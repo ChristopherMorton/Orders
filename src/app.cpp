@@ -63,11 +63,12 @@ void resetView()
 }
 
 void resetWindow()
-{ 
+{
+   ContextSettings settings( 0, 0, 10, 2, 0 );
    if (r_window != NULL)
-      r_window->create(VideoMode(config::width(), config::height(), 32), "Summoner", Style::None);
+      r_window->create(VideoMode(config::width(), config::height(), 32), "Summoner", Style::None, settings);
    else 
-      r_window = new RenderWindow(VideoMode(config::width(), config::height(), 32), "Summoner", Style::None);
+      r_window = new RenderWindow(VideoMode(config::width(), config::height(), 32), "Summoner", Style::None, settings);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -247,6 +248,11 @@ void splashMenu()
 
       if (b_splash_to_map->doWidget())
          openMap();
+
+      CircleShape cir( 50 );
+      cir.setFillColor( Color::Red );
+      cir.setPosition( 400, 400  );
+      SFML_GlobalRenderWindow::get()->draw( cir );
    }
 }
 

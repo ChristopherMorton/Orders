@@ -83,6 +83,8 @@ IMAGE ControlButtonBase.png
 IMAGE ControlStartBlock.png
 IMAGE ControlEndBlock.png
 IMAGE ControlRepeat.png
+IMAGE CastButtonBase.png
+// Unit Button Bases
 IMAGE MonsterOrderButtonBase.png
 IMAGE SoldierOrderButtonBase.png
 IMAGE WormOrderButtonBase.png
@@ -98,9 +100,18 @@ IMAGE SoldierButtonPressed.png
 IMAGE WormButtonPressed.png
 IMAGE BirdButtonPressed.png
 IMAGE BugButtonPressed.png
+IMAGE BirdControlButtonBase.png
+IMAGE BirdControlButtonHover.png
+IMAGE BirdControlButtonPressed.png
+// Unit Button Images
 IMAGE MonsterOrderGuard.png
 IMAGE MonsterOrderBurst.png
-IMAGE CastButtonBase.png
+IMAGE SoldierOrderSwitchAxe.png
+IMAGE SoldierOrderSwitchSpear.png
+IMAGE SoldierOrderSwitchBow.png
+IMAGE WormOrderSprint.png
+IMAGE WormOrderTrailOn.png
+IMAGE WormOrderTrailOff.png
 // Player Commands
 IMAGE PlayerAlert.png
 IMAGE PlayerGoButton.png
@@ -108,8 +119,7 @@ IMAGE PlayerGoAllButton.png
 IMAGE CastHeal.png
 IMAGE CastLightning.png
 IMAGE CastScry.png
-IMAGE CastTelepathy.png
-IMAGE CastEndTelepathy.png
+IMAGE CastConfusion.png
 IMAGE CastTimelock.png
 IMAGE SummonMonster.png
 IMAGE SummonSoldier.png

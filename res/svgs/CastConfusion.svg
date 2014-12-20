@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="64"
+   height="64"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.48.5 r10040"
+   sodipodi:docname="CastConfusion.svg"
+   inkscape:export-filename="/home/cg/programming/orders/res/CastConfusion.png"
+   inkscape:export-xdpi="180"
+   inkscape:export-ydpi="180">
+  <defs
+     id="defs4" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="5.9765625"
+     inkscape:cx="-30.85944"
+     inkscape:cy="35.771985"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     width="64px"
+     inkscape:window-width="1278"
+     inkscape:window-height="1004"
+     inkscape:window-x="0"
+     inkscape:window-y="18"
+     inkscape:window-maximized="0" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-988.3622)">
+    <path
+       sodipodi:type="spiral"
+       style="fill:none;stroke:#ff00ff;stroke-width:2.03051006;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       id="path3048"
+       sodipodi:cx="32.125492"
+       sodipodi:cy="33.715034"
+       sodipodi:expansion="1"
+       sodipodi:revolution="3"
+       sodipodi:radius="11.974801"
+       sodipodi:argument="-20.158552"
+       sodipodi:t0="0"
+       d="m 32.125492,33.715034 c 0.155395,-0.579939 0.858413,-0.07665 0.963897,0.258277 0.285857,0.907636 -0.669948,1.631909 -1.480449,1.669518 -1.449796,0.06727 -2.446145,-1.356398 -2.37514,-2.702623 0.104204,-1.97564 2.04925,-3.276465 3.924797,-3.080761 2.499809,0.260843 4.113154,2.743995 3.786382,5.146971 -0.41121,3.0239 -3.439548,4.95304 -6.369144,4.492002 -3.548134,-0.558378 -5.79476,-4.135537 -5.197624,-7.591317 0.703704,-4.072517 4.831796,-6.637627 8.813491,-5.903245 4.597024,0.847874 7.481261,5.528235 6.608866,10.035664 -0.991271,5.121628 -6.224802,8.325431 -11.257838,7.314487 -5.646306,-1.134126 -9.169991,-6.921461 -8.020108,-12.480011 1.276588,-6.171044 7.618192,-10.014844 13.702185,-8.725729"
+       transform="matrix(0.98497419,0,0,0.98497419,1.3371106,990.13403)" />
+  </g>
+</svg>

@@ -1287,7 +1287,7 @@ Bird::~Bird()
 
 int Bird::addOrder( Order o )
 {
-   if ((o.action <= SKIP) || (o.action >= BIRD_MEMORIZE_START && o.action <= BIRD_LAND)) {
+   if ((o.action <= SKIP) || (o.action >= BIRD_CMD_SHOUT && o.action <= BIRD_FLY)) {
       if (order_count >= max_orders) // No more memory
          return -2;
 

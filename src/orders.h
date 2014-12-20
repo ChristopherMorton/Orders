@@ -51,11 +51,9 @@ namespace sum
       WORM_TRAIL_END,
 
       // Bird
-      BIRD_MEMORIZE_START,
-      BIRD_MEMORIZE_END,
-      BIRD_SHOUT,
+      BIRD_CMD_SHOUT,
+      BIRD_CMD_QUIET,
       BIRD_FLY,
-      BIRD_LAND,
 
       // Bug
       BUG_CAST_SUNDER,
@@ -89,8 +87,7 @@ namespace sum
       PL_CAST_LIGHTNING,
       PL_CAST_TIMELOCK,
       PL_CAST_SCRY,
-      PL_CAST_TELEPATHY,
-      PL_END_TELEPATHY,
+      PL_CAST_CONFUSION,
 
       // Unit summoning
       SUMMON_MONSTER,

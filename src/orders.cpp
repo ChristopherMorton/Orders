@@ -133,20 +133,14 @@ void Order::logSelf()
       case WORM_TRAIL_END:
          s << "WORM_TRAIL_END";
          break;
-      case BIRD_MEMORIZE_START:
-         s << "BIRD_MEMORIZE_START";
+      case BIRD_CMD_SHOUT:
+         s << "BIRD_CMD_SHOUT";
          break;
-      case BIRD_MEMORIZE_END:
-         s << "BIRD_MEMORIZE_END";
-         break;
-      case BIRD_SHOUT:
-         s << "BIRD_SHOUT";
+      case BIRD_CMD_QUIET:
+         s << "BIRD_CMD_QUIET";
          break;
       case BIRD_FLY:
          s << "BIRD_FLY";
-         break;
-      case BIRD_LAND:
-         s << "BIRD_LAND";
          break;
       case BUG_CAST_SUNDER:
          s << "BUG_CAST_SUNDER";
@@ -223,11 +217,8 @@ void Order::logSelf()
       case PL_CAST_SCRY:
          s << "PL_CAST_SCRY";
          break;
-      case PL_CAST_TELEPATHY:
-         s << "PL_CAST_TELEPATHY";
-         break;
-      case PL_END_TELEPATHY:
-         s << "PL_END_TELEPATHY";
+      case PL_CAST_CONFUSION:
+         s << "PL_CAST_CONFUSION";
          break;
       case SUMMON_MONSTER:
          s << "SUMMON_MONSTER";
@@ -324,6 +315,32 @@ Texture *getOrderTexture( Order o )
          base_tex = t_manager.getTexture( "OrderWait.png" );
          break;
 
+         // Unique unit orders
+      case MONSTER_GUARD:
+         base_tex = t_manager.getTexture( "MonsterOrderGuard.png" );
+         break;
+      case MONSTER_BURST:
+         base_tex = t_manager.getTexture( "MonsterOrderBurst.png" );
+         break;
+      case SOLDIER_SWITCH_AXE:
+         base_tex = t_manager.getTexture( "SoldierOrderSwitchAxe.png" );
+         break;
+      case SOLDIER_SWITCH_SPEAR:
+         base_tex = t_manager.getTexture( "SoldierOrderSwitchSpear.png" );
+         break;
+      case SOLDIER_SWITCH_BOW:
+         base_tex = t_manager.getTexture( "SoldierOrderSwitchBow.png" );
+         break;
+      case WORM_TRAIL_START:
+         base_tex = t_manager.getTexture( "WormOrderTrailOn.png" );
+         break;
+      case WORM_TRAIL_END:
+         base_tex = t_manager.getTexture( "WormOrderTrailOff.png" );
+         break;
+      case WORM_SPRINT:
+         base_tex = t_manager.getTexture( "WormOrderSprint.png" );
+         break;
+
       case PL_ALERT_ALL:
          base_tex = t_manager.getTexture( "PlayerAlert.png" );
          break;
@@ -380,11 +397,8 @@ Texture *getOrderTexture( Order o )
       case PL_CAST_SCRY:
          base_tex = t_manager.getTexture( "CastScry.png" );
          break;
-      case PL_CAST_TELEPATHY:
-         base_tex = t_manager.getTexture( "CastTelepathy.png" );
-         break;
-      case PL_END_TELEPATHY:
-         base_tex = t_manager.getTexture( "CastEndTelepathy.png" );
+      case PL_CAST_CONFUSION:
+         base_tex = t_manager.getTexture( "CastConfusion.png" );
          break;
 
       case SUMMON_MONSTER:
@@ -455,11 +469,9 @@ Texture *getOrderButtonTexture( Order o )
          return t_manager.getTexture( "WormOrderButtonBase.png" );
 
       // Bird
-      case BIRD_MEMORIZE_START:
-      case BIRD_MEMORIZE_END:
-      case BIRD_SHOUT:
+      case BIRD_CMD_SHOUT:
+      case BIRD_CMD_QUIET:
       case BIRD_FLY:
-      case BIRD_LAND:
          return t_manager.getTexture( "BirdOrderButtonBase.png" );
 
       // Bug
@@ -476,8 +488,7 @@ Texture *getOrderButtonTexture( Order o )
       case PL_CAST_LIGHTNING:
       case PL_CAST_TIMELOCK:
       case PL_CAST_SCRY:
-      case PL_CAST_TELEPATHY:
-      case PL_END_TELEPATHY:
+      case PL_CAST_CONFUSION:
          return t_manager.getTexture( "CastButtonBase.png" );
 
       default:
