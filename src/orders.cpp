@@ -142,11 +142,11 @@ void Order::logSelf()
       case BIRD_FLY:
          s << "BIRD_FLY";
          break;
-      case BUG_CAST_SUNDER:
-         s << "BUG_CAST_SUNDER";
-         break;
       case BUG_CAST_FIREBALL:
          s << "BUG_CAST_FIREBALL";
+         break;
+      case BUG_CAST_SUNDER:
+         s << "BUG_CAST_SUNDER";
          break;
       case BUG_CAST_HEAL:
          s << "BUG_CAST_HEAL";
@@ -340,6 +340,27 @@ Texture *getOrderTexture( Order o )
       case WORM_SPRINT:
          base_tex = t_manager.getTexture( "WormOrderSprint.png" );
          break;
+      case BIRD_FLY:
+         base_tex = t_manager.getTexture( "BirdOrderFly.png" );
+         break;
+      case BIRD_CMD_SHOUT:
+         base_tex = t_manager.getTexture( "BirdControlShout.png" );
+         break;
+      case BIRD_CMD_QUIET:
+         base_tex = t_manager.getTexture( "BirdControlQuiet.png" );
+         break;
+      case BUG_CAST_FIREBALL:
+         base_tex = t_manager.getTexture( "BugOrderFireball.png" );
+         break;
+      case BUG_CAST_SUNDER:
+         base_tex = t_manager.getTexture( "BugOrderSunder.png" );
+         break;
+      case BUG_OPEN_WORMHOLE:
+         base_tex = t_manager.getTexture( "BugOrderOpenWormhole.png" );
+         break;
+      case BUG_CLOSE_WORMHOLE:
+         base_tex = t_manager.getTexture( "BugOrderCloseWormhole.png" );
+         break;
 
       case PL_ALERT_ALL:
          base_tex = t_manager.getTexture( "PlayerAlert.png" );
@@ -469,14 +490,15 @@ Texture *getOrderButtonTexture( Order o )
          return t_manager.getTexture( "WormOrderButtonBase.png" );
 
       // Bird
-      case BIRD_CMD_SHOUT:
-      case BIRD_CMD_QUIET:
       case BIRD_FLY:
          return t_manager.getTexture( "BirdOrderButtonBase.png" );
+      case BIRD_CMD_SHOUT:
+      case BIRD_CMD_QUIET:
+         return t_manager.getTexture( "BirdControlButtonBase.png" );
 
       // Bug
-      case BUG_CAST_SUNDER:
       case BUG_CAST_FIREBALL:
+      case BUG_CAST_SUNDER:
       case BUG_CAST_HEAL:
       case BUG_OPEN_WORMHOLE:
       case BUG_CLOSE_WORMHOLE:

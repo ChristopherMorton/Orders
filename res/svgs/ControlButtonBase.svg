@@ -14,7 +14,10 @@
    id="svg3998"
    version="1.1"
    inkscape:version="0.48.5 r10040"
-   sodipodi:docname="ControlButtonBase.svg">
+   sodipodi:docname="ControlButtonBase.svg"
+   inkscape:export-filename="/home/cg/programming/orders/res/ControlButtonBase.png"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90">
   <defs
      id="defs4000" />
   <sodipodi:namedview
@@ -31,7 +34,7 @@
      showgrid="true"
      inkscape:document-units="px"
      inkscape:grid-bbox="true"
-     inkscape:window-width="706"
+     inkscape:window-width="1278"
      inkscape:window-height="1004"
      inkscape:window-x="0"
      inkscape:window-y="18"
@@ -44,7 +47,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
+        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -53,15 +56,12 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      transform="translate(0,64)">
-    <rect
-       style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:3.99900001;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+    <path
+       transform="matrix(0.70710678,0.70710678,-0.70710678,0.70710678,0,0)"
+       style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:3.99900007;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1"
+       d="m 1.4142136,-89.095455 87.6812414,0 0,87.6812414 -87.6812414,0 z"
        id="rect4514"
-       width="87.429367"
-       height="87.934746"
-       x="1.540151"
-       y="-89.222206"
-       rx="0"
-       ry="0"
-       transform="matrix(0.70710678,0.70710678,-0.70710678,0.70710678,0,0)" />
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccccc" />
   </g>
 </svg>

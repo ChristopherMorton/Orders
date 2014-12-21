@@ -69,6 +69,9 @@ int Projectile::draw( )
       normalizeTo1x1( sp_magic_projectile );
    }
 
+   if (!isVisible( (int)pos.x, (int)pos.y ))
+      return -1;
+
    switch (type) {
       case PR_ARROW:
          sp_arrow->setPosition( pos );

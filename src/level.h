@@ -23,6 +23,8 @@ namespace sum
    class Unit;
    Unit* getEnemy( int x, int y, float range, Direction dir, Unit *source, int selector);
 
+   bool isVisible( int x, int y );
+
    bool canMove( int x, int y, int from_x, int from_y );
    bool canMoveUnit( int x, int y, int from_x, int from_y, Unit* u );
 

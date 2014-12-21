@@ -249,10 +249,6 @@ void splashMenu()
       if (b_splash_to_map->doWidget())
          openMap();
 
-      CircleShape cir( 50 );
-      cir.setFillColor( Color::Red );
-      cir.setPosition( 400, 400  );
-      SFML_GlobalRenderWindow::get()->draw( cir );
    }
 }
 
@@ -638,14 +634,11 @@ int postload()
 
 int loadingAnimation(int dt)
 {
-   sf::Sprite sp_hgg( *texture_manager->getTexture( "HGGLoadingScreenLogo.png" ) );
-   normalizeTo1x1( &sp_hgg );
-   sp_hgg.setPosition( 1.5, 1 );
+   sf::Sprite sp_hgg( *texture_manager->getTexture( "HGGLoadingScreenLogo128.png" ) );
+   int x = (config::width() - 128) / 2;
+   int y = (config::height() - 128) / 2;
+   sp_hgg.setPosition( x, y );
 
-   View view;
-   view.setSize( 4, 3 );
-   view.setCenter( 2.0, 1.5 );
-   r_window->setView( view );
    r_window->clear(Color::Black);
    r_window->draw( sp_hgg );
    r_window->display();

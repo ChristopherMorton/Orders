@@ -56,8 +56,8 @@ namespace sum
       BIRD_FLY,
 
       // Bug
-      BUG_CAST_SUNDER,
       BUG_CAST_FIREBALL,
+      BUG_CAST_SUNDER,
       BUG_CAST_HEAL,
       BUG_OPEN_WORMHOLE,
       BUG_CLOSE_WORMHOLE,

@@ -54,6 +54,7 @@ IMAGE WormColorSoft.png
 IMAGE BirdColorSoft.png
 IMAGE BugColorSoft.png
 // General UI
+IMAGE HGGLoadingScreenLogo128.png
 IMAGE GoBackButtonScratch.png
 IMAGE GuiExitX.png
 IMAGE GearIcon.png
@@ -112,6 +113,13 @@ IMAGE SoldierOrderSwitchBow.png
 IMAGE WormOrderSprint.png
 IMAGE WormOrderTrailOn.png
 IMAGE WormOrderTrailOff.png
+IMAGE BirdOrderFly.png
+IMAGE BirdControlShout.png
+IMAGE BirdControlQuiet.png
+IMAGE BugOrderFireball.png
+IMAGE BugOrderSunder.png
+IMAGE BugOrderOpenWormhole.png
+IMAGE BugOrderCloseWormhole.png
 // Player Commands
 IMAGE PlayerAlert.png
 IMAGE PlayerGoButton.png

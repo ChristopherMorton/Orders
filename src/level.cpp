@@ -320,6 +320,11 @@ int addEffect( Effect_Type t, float dur, float x, float y )
 //////////////////////////////////////////////////////////////////////
 // Vision ---
 
+bool isVisible( int x, int y )
+{
+   return (GRID_AT(vision_grid,x,y) == VIS_VISIBLE);
+}
+
 bool blocksVision( int x, int y, int from_x, int from_y, Direction ew, Direction ns, int flags )
 {
    Terrain t = GRID_AT(terrain_grid,x,y);
@@ -2152,8 +2157,8 @@ IMImageButton *b_o_move_forward,
               *b_pl_alert_bug,
               *b_pl_cmd_go_bug,
               *b_o_bug_meditate,
-              *b_o_bug_sunder,
               *b_o_bug_fireball,
+              *b_o_bug_sunder,
               *b_o_bug_heal,
               *b_o_bug_open_wormhole,
               *b_o_bug_close_wormhole,
@@ -2189,24 +2194,22 @@ IMEdgeButton *b_numpad_area,
              *b_bird_area,
              *b_bug_area;
 
+const int border = 3;
+const int spacer = 2;
+
 bool isMouseOverGui( int x, int y )
 {
    int width = config::width(),
        height = config::height();
 
-   int sec_buffer = 5.0;
-   float button_size = (((float)width) - (22.0 * sec_buffer)) / 22.0;
+   int button_size = (int)((float)width - (31.0 * spacer) - (9.0 * border)) / 21.0;
 
-   if (y > (height - ((sec_buffer * 2) + (button_size * 3))))
+   if (y > (height - (border + (spacer * 4) + (button_size * 3))))
       return true; // All button areas are this tall
 
-   if (y > (height - ((sec_buffer * 2) + (button_size * 4)))
-         && (x > width / 2))
-      return true; // Unit specialty areas are taller
-
-   if (y > (height - ((sec_buffer * 6) + (button_size * 4)))
-         && x < ((sec_buffer * 2) + (button_size * 5)))
-      return true; // Player command area is tallest of all
+   if (y > (height - ((border * 2) + (spacer * 7) + (button_size * 5)))
+         && x < (border + (spacer * 4) + (button_size * 3)))
+      return true; // Player command area is taller
 
    if (selected_unit && (y < selection_box_height) && (x > width - selection_box_width))
       return true; // Over the selected unit area
@@ -2219,414 +2222,432 @@ void fitGui_Level()
    int width = config::width(),
        height = config::height();
 
-   int border_width = 3;
-   float sec_buffer = border_width + 2;
-   float button_size = (((float)width) - (20.0 * sec_buffer)) / 22.0;
+   float button_size_f = ((float)width - (31.0 * spacer) - (9.0 * border)) / 21.0;
+   int button_size = (int) button_size_f;
+   float adjustment = 0, adjust_ratio = (button_size_f - button_size);
 
    int text_size = floor( button_size / 2);
 
-   float sec_start_numpad = 0,
-       sec_start_conditionals = sec_start_numpad + (sec_buffer * 2) + (button_size * 3),
-       sec_start_movement = sec_start_conditionals + (sec_buffer * 2) + (button_size * 1),
-       sec_start_attack = sec_start_movement + (sec_buffer * 2) + (button_size * 3),
-       sec_start_control = sec_start_attack + (sec_buffer * 2) + (button_size * 2),
-       sec_start_monster = sec_start_control + (sec_buffer * 2) + (button_size * 1) - border_width,
-       sec_start_soldier = sec_start_monster + (sec_buffer * 2) + (button_size * 2),
-       sec_start_worm = sec_start_soldier + (sec_buffer * 2) + (button_size * 2),
-       sec_start_bird = sec_start_worm + (sec_buffer * 2) + (button_size * 2),
-       sec_start_bug = sec_start_bird + (sec_buffer * 2) + (button_size * 3);
+   int sec_start_numpad = 0,
+       sec_start_conditionals = sec_start_numpad + border + (spacer * 4) + (button_size * 3),
+       sec_start_movement = sec_start_conditionals + border + (spacer * 2) + (button_size * 1),
+       sec_start_attack = sec_start_movement + border + (spacer * 4) + (button_size * 3),
+       sec_start_control = sec_start_attack + border + (spacer * 3) + (button_size * 2),
+       sec_start_monster = sec_start_control + border + (spacer * 2) + (button_size * 1),
+       sec_start_soldier = sec_start_monster + border + (spacer * 3) + (button_size * 2),
+       sec_start_worm = sec_start_soldier + border + (spacer * 3) + (button_size * 2),
+       sec_start_bird = sec_start_worm + border + (spacer * 3) + (button_size * 2),
+       sec_start_bug = sec_start_bird + border + (spacer * 3) + (button_size * 2);
+
+   adjustment += (3 * adjust_ratio);
+   sec_start_conditionals += (int) adjustment;
+   adjustment += (1 * adjust_ratio);
+   sec_start_movement += (int) adjustment;
+   adjustment += (3 * adjust_ratio);
+   sec_start_attack += (int) adjustment;
+   adjustment += (2 * adjust_ratio);
+   sec_start_control += (int) adjustment;
+   adjustment += (1 * adjust_ratio);
+   sec_start_monster += (int) adjustment;
+   adjustment += (2 * adjust_ratio);
+   sec_start_soldier += (int) adjustment;
+   adjustment += (2 * adjust_ratio);
+   sec_start_worm += (int) adjustment;
+   adjustment += (2 * adjust_ratio);
+   sec_start_bird += (int) adjustment;
+   adjustment += (2 * adjust_ratio);
+   sec_start_bug += (int) adjustment;
 
    // Numpad
 
-   b_numpad_area->setSize( (sec_buffer * 3) + (button_size * 3),
-                           (sec_buffer * 3) + (button_size * 4));
-   b_numpad_area->setPosition( sec_start_numpad - sec_buffer,
-                               height - ((sec_buffer * 2) + (button_size * 4)));
+   b_numpad_area->setSize( (border * 3) + (spacer * 4) + (button_size * 3),
+                           (border * 2) + (spacer * 5) + (button_size * 4) );
+   b_numpad_area->setPosition( sec_start_numpad - (2 * border),
+                               height - (border + (spacer * 5) + (button_size * 4)) );
    
    b_count_0->setSize( button_size, button_size );
-   b_count_0->setPosition( sec_start_numpad + sec_buffer + button_size,
-                           height - (sec_buffer + button_size));
+   b_count_0->setPosition( sec_start_numpad + (spacer * 2) + button_size,
+                           height - (spacer + button_size));
    b_count_0->setTextSize( text_size );
    b_count_0->centerText();
    
    b_count_1->setSize( button_size, button_size );
-   b_count_1->setPosition( sec_start_numpad + sec_buffer,
-                           height - (sec_buffer + button_size * 4) );
+   b_count_1->setPosition( sec_start_numpad + spacer,
+                           height - ((spacer * 4) + (button_size * 4)) );
    b_count_1->setTextSize( text_size );
    b_count_1->centerText();
 
    b_count_2->setSize( button_size, button_size );
-   b_count_2->setPosition( sec_start_numpad + sec_buffer + button_size,
-                           height - (sec_buffer + button_size * 4) );
+   b_count_2->setPosition( sec_start_numpad + (spacer * 2) + button_size,
+                           height - ((spacer * 4) + (button_size * 4)) );
    b_count_2->setTextSize( text_size );
    b_count_2->centerText();
 
    b_count_3->setSize( button_size, button_size );
-   b_count_3->setPosition( sec_start_numpad + sec_buffer + (button_size * 2),
-                           height - (sec_buffer + button_size * 4) );
+   b_count_3->setPosition( sec_start_numpad + (spacer * 3) + (button_size * 2),
+                           height - ((spacer * 4) + (button_size * 4)) );
    b_count_3->setTextSize( text_size );
    b_count_3->centerText();
 
    b_count_4->setSize( button_size, button_size );
-   b_count_4->setPosition( sec_start_numpad + sec_buffer,
-                           height - (sec_buffer + button_size * 3) );
+   b_count_4->setPosition( sec_start_numpad + spacer,
+                           height - ((spacer * 3) + (button_size * 3)) );
    b_count_4->setTextSize( text_size );
    b_count_4->centerText();
 
    b_count_5->setSize( button_size, button_size );
-   b_count_5->setPosition( sec_start_numpad + sec_buffer + button_size,
-                           height - (sec_buffer + button_size * 3) );
+   b_count_5->setPosition( sec_start_numpad + (spacer * 2) + button_size,
+                           height - ((spacer * 3) + (button_size * 3)) );
    b_count_5->setTextSize( text_size );
    b_count_5->centerText();
 
    b_count_6->setSize( button_size, button_size );
-   b_count_6->setPosition( sec_start_numpad + sec_buffer + (button_size * 2),
-                           height - (sec_buffer + button_size * 3) );
+   b_count_6->setPosition( sec_start_numpad + (spacer * 3) + (button_size * 2),
+                           height - ((spacer * 3) + (button_size * 3)) );
    b_count_6->setTextSize( text_size );
    b_count_6->centerText();
 
    b_count_7->setSize( button_size, button_size );
-   b_count_7->setPosition( sec_start_numpad + sec_buffer,
-                           height - (sec_buffer + button_size * 2) );
+   b_count_7->setPosition( sec_start_numpad + spacer,
+                           height - ((spacer * 2) + (button_size * 2)) );
    b_count_7->setTextSize( text_size );
    b_count_7->centerText();
 
    b_count_8->setSize( button_size, button_size );
-   b_count_8->setPosition( sec_start_numpad + sec_buffer + button_size,
-                           height - (sec_buffer + button_size * 2) );
+   b_count_8->setPosition( sec_start_numpad + (spacer * 2) + button_size,
+                           height - ((spacer * 2) + (button_size * 2)) );
    b_count_8->setTextSize( text_size );
    b_count_8->centerText();
 
    b_count_9->setSize( button_size, button_size );
-   b_count_9->setPosition( sec_start_numpad + sec_buffer + (button_size * 2),
-                           height - (sec_buffer + button_size * 2) );
+   b_count_9->setPosition( sec_start_numpad + (spacer * 3) + (button_size * 2),
+                           height - ((spacer * 2) + (button_size * 2)) );
    b_count_9->setTextSize( text_size );
    b_count_9->centerText();
 
    b_count_infinite->setSize( button_size, button_size );
-   b_count_infinite->setPosition( sec_start_numpad + sec_buffer + (button_size * 2),
-                                  height - (sec_buffer + button_size) );
+   b_count_infinite->setPosition( sec_start_numpad + (spacer * 3) + (button_size * 2),
+                                  height - (spacer + button_size) );
    b_count_infinite->setTextSize( text_size );
    b_count_infinite->centerText();
 
    b_count_reset->setSize( button_size, button_size );
-   b_count_reset->setPosition( sec_start_numpad + sec_buffer,
-                                  height - (sec_buffer + button_size) );
+   b_count_reset->setPosition( sec_start_numpad + spacer,
+                               height - (spacer + button_size) );
    b_count_reset->setTextSize( text_size );
    b_count_reset->centerText();
 
-   count_text->setPosition( sec_start_conditionals + sec_buffer,
-                            height - ((sec_buffer * 3) + (button_size * 4)));
+   count_text->setPosition( sec_start_conditionals + border + spacer,
+                            height - (border + (button_size * 4) + (spacer * 4)));
    count_text->setCharacterSize( text_size );
 
    // Player commands
 
-   b_pl_cmd_area->setSize( (sec_buffer * 3) + (button_size * 3),
-                           (sec_buffer * 3) + (button_size * 1));
-   b_pl_cmd_area->setPosition( sec_start_numpad - sec_buffer,
-                               height - ((sec_buffer * 4) + (button_size * 5)));
+   b_pl_cmd_area->setSize( (border * 3) + (spacer * 4) + (button_size * 3),
+                           (border * 2) + (spacer * 3) + (button_size * 1));
+   b_pl_cmd_area->setPosition( sec_start_numpad - (2 * border),
+                               height - ((border * 2) + (spacer * 7) + (button_size * 5)));
 
    b_pl_alert_all->setSize( button_size, button_size );
-   b_pl_alert_all->setPosition( sec_start_numpad + sec_buffer,
-                                height - ((sec_buffer * 3) + (button_size * 5)) );
+   b_pl_alert_all->setPosition( sec_start_numpad + spacer,
+                                height - ((border * 1) + (spacer * 6) + (button_size * 5)));
 
    b_pl_cmd_go->setSize( button_size, button_size );
-   b_pl_cmd_go->setPosition( sec_start_numpad + sec_buffer + button_size,
-                             height - ((sec_buffer * 3) + (button_size * 5)) );
+   b_pl_cmd_go->setPosition( sec_start_numpad + (spacer * 2) + button_size,
+                             height - ((border * 1) + (spacer * 6) + (button_size * 5)));
 
    b_pl_cmd_go_all->setSize( button_size, button_size );
-   b_pl_cmd_go_all->setPosition( sec_start_numpad + sec_buffer + (button_size * 2),
-                                 height - ((sec_buffer * 3) + (button_size * 5)) );
+   b_pl_cmd_go_all->setPosition( sec_start_numpad + (spacer * 3) + (button_size * 2),
+                                 height - ((border * 1) + (spacer * 6) + (button_size * 5)));
 
    // Conditionals
 
-   b_conditional_area->setSize( (sec_buffer * 3) + (button_size * 1),
-                                (sec_buffer * 3) + (button_size * 3));
-   b_conditional_area->setPosition( sec_start_conditionals - sec_buffer,
-                                    height - ((sec_buffer * 2) + (button_size * 3)));
+   b_conditional_area->setSize( (border * 3) + (spacer * 2) + (button_size * 1),
+                                (border * 2) + (spacer * 4) + (button_size * 3));
+   b_conditional_area->setPosition( sec_start_conditionals - (2 * border),
+                                    height - (border + (spacer * 4) + (button_size * 3)));
 
    // Movement
 
-   b_movement_area->setSize( (sec_buffer * 3) + (button_size * 3),
-                             (sec_buffer * 3) + (button_size * 3));
-   b_movement_area->setPosition( sec_start_movement - sec_buffer,
-                                 height - ((sec_buffer * 2) + (button_size * 3)));
+   b_movement_area->setSize( (border * 3) + (spacer * 4) + (button_size * 3),
+                             (border * 2) + (spacer * 4) + (button_size * 3));
+   b_movement_area->setPosition( sec_start_movement - (2 * border),
+                                 height - (border + (spacer * 4) + (button_size * 3)));
 
    b_o_move_forward->setSize( button_size, button_size );
    b_o_move_forward->setImageSize( button_size, button_size );
-   b_o_move_forward->setPosition( sec_start_movement + sec_buffer + (button_size * 2),
-                                  height - (sec_buffer + (button_size * 3)));
+   b_o_move_forward->setPosition( sec_start_movement + (spacer * 3) + (button_size * 2),
+                                  height - ((spacer * 3) + (button_size * 3)));
 
    b_o_move_backward->setSize( button_size, button_size );
    b_o_move_backward->setImageSize( button_size, button_size );
-   b_o_move_backward->setPosition( sec_start_movement + sec_buffer,
-                                   height - (sec_buffer + (button_size * 3)));
+   b_o_move_backward->setPosition( sec_start_movement + spacer,
+                                   height - ((spacer * 3) + (button_size * 3)));
 
    b_o_wait->setSize( button_size, button_size );
    b_o_wait->setImageSize( button_size, button_size );
-   b_o_wait->setPosition( sec_start_movement + sec_buffer + button_size,
-                          height - (sec_buffer + (button_size * 3)));
+   b_o_wait->setPosition( sec_start_movement + (spacer * 2) + button_size,
+                          height - ((spacer * 3) + (button_size * 3)));
 
    b_o_turn_north->setSize( button_size, button_size );
    b_o_turn_north->setImageSize( button_size, button_size );
-   b_o_turn_north->setPosition( sec_start_movement + sec_buffer + button_size,
-                                height - (sec_buffer + (button_size * 2)));
+   b_o_turn_north->setPosition( sec_start_movement + (spacer * 2) + button_size,
+                                height - ((spacer * 2) + (button_size * 2)));
 
    b_o_turn_east->setSize( button_size, button_size );
    b_o_turn_east->setImageSize( button_size, button_size );
-   b_o_turn_east->setPosition( sec_start_movement + sec_buffer + (button_size * 2),
-                               height - (sec_buffer + (button_size * 1)));
+   b_o_turn_east->setPosition( sec_start_movement + (spacer * 3) + (button_size * 2),
+                               height - (spacer + (button_size * 1)));
 
    b_o_turn_south->setSize( button_size, button_size );
    b_o_turn_south->setImageSize( button_size, button_size );
-   b_o_turn_south->setPosition( sec_start_movement + sec_buffer + button_size,
-                                height - (sec_buffer + (button_size * 1)));
+   b_o_turn_south->setPosition( sec_start_movement + (spacer * 2) + button_size,
+                                height - (spacer + (button_size * 1)));
 
    b_o_turn_west->setSize( button_size, button_size );
    b_o_turn_west->setImageSize( button_size, button_size );
-   b_o_turn_west->setPosition( sec_start_movement + sec_buffer,
-                               height - (sec_buffer + (button_size * 1)));
+   b_o_turn_west->setPosition( sec_start_movement + spacer,
+                               height - (spacer + (button_size * 1)));
 
    // Attack
 
-   b_attack_area->setSize( (sec_buffer * 3) + (button_size * 2),
-                           (sec_buffer * 3) + (button_size * 3));
-   b_attack_area->setPosition( sec_start_attack - sec_buffer,
-                               height - ((sec_buffer * 2) + (button_size * 3)));
+   b_attack_area->setSize( (border * 3) + (spacer * 3) + (button_size * 2),
+                           (border * 2) + (spacer * 4) + (button_size * 3));
+   b_attack_area->setPosition( sec_start_attack - (2 * border),
+                               height - (border + (spacer * 4) + (button_size * 3)));
 
    b_o_attack_smallest->setSize( button_size, button_size );
    b_o_attack_smallest->setImageSize( button_size, button_size );
-   b_o_attack_smallest->setPosition( sec_start_attack + sec_buffer,
-                                     height - (sec_buffer + (button_size * 2)));
+   b_o_attack_smallest->setPosition( sec_start_attack + spacer,
+                                     height - ((spacer * 2) + (button_size * 2)));
 
    b_o_attack_biggest->setSize( button_size, button_size );
    b_o_attack_biggest->setImageSize( button_size, button_size );
-   b_o_attack_biggest->setPosition( sec_start_attack + sec_buffer + button_size,
-                                    height - (sec_buffer + (button_size * 2)));
+   b_o_attack_biggest->setPosition( sec_start_attack + (spacer * 2) + button_size,
+                                    height - ((spacer * 2) + (button_size * 2)));
 
    b_o_attack_closest->setSize( button_size, button_size );
    b_o_attack_closest->setImageSize( button_size, button_size );
-   b_o_attack_closest->setPosition( sec_start_attack + sec_buffer,
-                                    height - (sec_buffer + (button_size * 1)));
+   b_o_attack_closest->setPosition( sec_start_attack + spacer,
+                                    height - (spacer + (button_size * 1)));
 
    b_o_attack_farthest->setSize( button_size, button_size );
    b_o_attack_farthest->setImageSize( button_size, button_size );
-   b_o_attack_farthest->setPosition( sec_start_attack + sec_buffer + button_size,
-                                     height - (sec_buffer + (button_size * 1)));
+   b_o_attack_farthest->setPosition( sec_start_attack + (spacer * 2) + button_size,
+                                     height - (spacer + (button_size * 1)));
 
    // Control
 
-   b_control_area->setSize( (sec_buffer * 3) + (button_size * 1),
-                           (sec_buffer * 3) + (button_size * 3));
-   b_control_area->setPosition( sec_start_control - sec_buffer,
-                                height - ((sec_buffer * 2) + (button_size * 3)));
+   b_control_area->setSize( (border * 3) + (spacer * 2) + (button_size * 1),
+                            (border * 2) + (spacer * 4) + (button_size * 3));
+   b_control_area->setPosition( sec_start_control - (2 * border),
+                                height - (border + (spacer * 4) + (button_size * 3)));
 
    b_o_start_block->setSize( button_size, button_size );
    b_o_start_block->setImageSize( button_size, button_size );
-   b_o_start_block->setPosition( sec_start_control + sec_buffer,
-                                 height - (sec_buffer + (button_size * 3)));
+   b_o_start_block->setPosition( sec_start_control + spacer,
+                                 height - ((spacer * 3) + (button_size * 3)));
 
    b_o_end_block->setSize( button_size, button_size );
    b_o_end_block->setImageSize( button_size, button_size );
-   b_o_end_block->setPosition( sec_start_control + sec_buffer,
-                               height - (sec_buffer + (button_size * 2)));
+   b_o_end_block->setPosition( sec_start_control + spacer,
+                               height - ((spacer * 2) + (button_size * 2)));
 
    b_o_repeat->setSize( button_size, button_size );
    b_o_repeat->setImageSize( button_size, button_size );
-   b_o_repeat->setPosition( sec_start_control + sec_buffer,
-                            height - (sec_buffer + (button_size * 1)));
+   b_o_repeat->setPosition( sec_start_control + spacer,
+                            height - ((spacer * 1) + (button_size * 1)));
 
    // Units
 
    // Monster
-   b_monster_area->setSize( (sec_buffer * 3) + (button_size * 2),
-                            (sec_buffer * 3) + (button_size * 3));
-   b_monster_area->setPosition( sec_start_monster,
-                                height - ((sec_buffer * 2) + (button_size * 3)));
+   b_monster_area->setSize( (border * 3) + (spacer * 3) + (button_size * 2),
+                            (border * 2) + (spacer * 4) + (button_size * 3));
+   b_monster_area->setPosition( sec_start_monster - (2 * border),
+                                height - (border + (spacer * 4) + (button_size * 3)));
 
    b_pl_alert_monster->setSize( button_size, button_size );
    b_pl_alert_monster->setImageSize( button_size, button_size );
-   b_pl_alert_monster->setPosition( sec_start_monster + sec_buffer,
-                                    height - (sec_buffer + (button_size * 3)) );
+   b_pl_alert_monster->setPosition( sec_start_monster + spacer,
+                                    height - ((spacer * 3) + (button_size * 3)) );
 
    b_pl_cmd_go_monster->setSize( button_size, button_size );
    b_pl_cmd_go_monster->setImageSize( button_size, button_size );
-   b_pl_cmd_go_monster->setPosition( sec_start_monster + sec_buffer + button_size,
-                                     height - (sec_buffer + (button_size * 3)) );
+   b_pl_cmd_go_monster->setPosition( sec_start_monster + (spacer * 2) + button_size,
+                                     height - ((spacer * 3) + (button_size * 3)) );
 
    b_o_monster_guard->setSize( button_size, button_size );
    b_o_monster_guard->setImageSize( button_size, button_size );
-   b_o_monster_guard->setPosition( sec_start_monster + sec_buffer,
-                                   height - (sec_buffer + (button_size * 2)) );
+   b_o_monster_guard->setPosition( sec_start_monster + spacer,
+                                   height - ((spacer * 2) + (button_size * 2)) );
 
    b_o_monster_burst->setSize( button_size, button_size );
    b_o_monster_burst->setImageSize( button_size, button_size );
-   b_o_monster_burst->setPosition( sec_start_monster + sec_buffer,
-                                   height - (sec_buffer + button_size) );
+   b_o_monster_burst->setPosition( sec_start_monster + spacer,
+                                   height - (spacer + button_size) );
 
    b_monster_image->setSize( button_size, button_size );
    b_monster_image->setImageSize( button_size, button_size );
-   b_monster_image->setPosition( sec_start_monster + (sec_buffer * 3) - border_width + button_size,
+   b_monster_image->setPosition( sec_start_monster + (spacer * 3) + button_size,
                                  height - (button_size) );
 
    // Soldier
-   b_soldier_area->setSize( (sec_buffer * 3) + (button_size * 2),
-                           (sec_buffer * 3) + (button_size * 3));
-   b_soldier_area->setPosition( sec_start_soldier,
-                                height - ((sec_buffer * 2) + (button_size * 3)));
+   b_soldier_area->setSize( (border * 3) + (spacer * 3) + (button_size * 2),
+                            (border * 2) + (spacer * 4) + (button_size * 3));
+   b_soldier_area->setPosition( sec_start_soldier - (2 * border),
+                                height - (border + (spacer * 4) + (button_size * 3)));
 
    b_pl_alert_soldier->setSize( button_size, button_size );
    b_pl_alert_soldier->setImageSize( button_size, button_size );
-   b_pl_alert_soldier->setPosition( sec_start_soldier + (sec_buffer * 2),
-                                    height - (sec_buffer + (button_size * 3)) );
+   b_pl_alert_soldier->setPosition( sec_start_soldier + spacer,
+                                    height - ((spacer * 3) + (button_size * 3)) );
 
    b_pl_cmd_go_soldier->setSize( button_size, button_size );
    b_pl_cmd_go_soldier->setImageSize( button_size, button_size );
-   b_pl_cmd_go_soldier->setPosition( sec_start_soldier + (sec_buffer * 2) + button_size,
-                                     height - (sec_buffer + (button_size * 3)) );
+   b_pl_cmd_go_soldier->setPosition( sec_start_soldier + (spacer * 2) + button_size,
+                                     height - ((spacer * 3) + (button_size * 3)) );
 
    b_o_soldier_switch_axe->setSize( button_size, button_size );
    b_o_soldier_switch_axe->setImageSize( button_size, button_size );
-   b_o_soldier_switch_axe->setPosition( sec_start_soldier + (sec_buffer * 2),
-                                        height - (sec_buffer + (button_size * 2)) );
+   b_o_soldier_switch_axe->setPosition( sec_start_soldier + spacer,
+                                        height - ((spacer * 2) + (button_size * 2)) );
 
    b_o_soldier_switch_spear->setSize( button_size, button_size );
    b_o_soldier_switch_spear->setImageSize( button_size, button_size );
-   b_o_soldier_switch_spear->setPosition( sec_start_soldier + (sec_buffer * 2) + button_size,
-                                          height - (sec_buffer + (button_size * 2)) );
+   b_o_soldier_switch_spear->setPosition( sec_start_soldier + (spacer * 2) + button_size,
+                                          height - ((spacer * 2) + (button_size * 2)) );
    
    b_o_soldier_switch_bow->setSize( button_size, button_size );
    b_o_soldier_switch_bow->setImageSize( button_size, button_size );
-   b_o_soldier_switch_bow->setPosition( sec_start_soldier + (sec_buffer * 2),
-                                        height - (sec_buffer + button_size ) );
+   b_o_soldier_switch_bow->setPosition( sec_start_soldier + spacer,
+                                        height - (spacer + button_size ) );
 
    b_soldier_image->setSize( button_size, button_size );
    b_soldier_image->setImageSize( button_size, button_size );
-   b_soldier_image->setPosition( sec_start_soldier + (sec_buffer * 3) - border_width + button_size,
-                             height - (button_size) );
+   b_soldier_image->setPosition( sec_start_soldier + (spacer * 3) + button_size,
+                                 height - (button_size) );
 
    // Worm
-   b_worm_area->setSize( (sec_buffer * 3) + (button_size * 2),
-                           (sec_buffer * 3) + (button_size * 3));
-   b_worm_area->setPosition( sec_start_worm,
-                                height - ((sec_buffer * 2) + (button_size * 3)));
+   b_worm_area->setSize( (border * 3) + (spacer * 3) + (button_size * 2),
+                         (border * 2) + (spacer * 4) + (button_size * 3));
+   b_worm_area->setPosition( sec_start_worm - (2 * border),
+                             height - (border + (spacer * 4) + (button_size * 3)));
 
    b_pl_alert_worm->setSize( button_size, button_size );
    b_pl_alert_worm->setImageSize( button_size, button_size );
-   b_pl_alert_worm->setPosition( sec_start_worm + (sec_buffer * 2),
-                                 height - (sec_buffer + (button_size * 3)) );
+   b_pl_alert_worm->setPosition( sec_start_worm + spacer,
+                                 height - ((spacer * 3) + (button_size * 3)) );
 
    b_pl_cmd_go_worm->setSize( button_size, button_size );
    b_pl_cmd_go_worm->setImageSize( button_size, button_size );
-   b_pl_cmd_go_worm->setPosition( sec_start_worm + (sec_buffer * 2) + button_size,
-                                  height - (sec_buffer + (button_size * 3)) );
+   b_pl_cmd_go_worm->setPosition( sec_start_worm + (spacer * 2) + button_size,
+                                  height - ((spacer * 3) + (button_size * 3)) );
 
    b_o_worm_trail_on->setSize( button_size, button_size );
    b_o_worm_trail_on->setImageSize( button_size, button_size );
-   b_o_worm_trail_on->setPosition( sec_start_worm + (sec_buffer * 2),
-                                   height - (sec_buffer + (button_size * 2)) );
+   b_o_worm_trail_on->setPosition( sec_start_worm + spacer,
+                                   height - ((spacer * 2) + (button_size * 2)) );
 
    b_o_worm_trail_off->setSize( button_size, button_size );
    b_o_worm_trail_off->setImageSize( button_size, button_size );
-   b_o_worm_trail_off->setPosition( sec_start_worm + (sec_buffer * 2) + button_size,
-                                    height - (sec_buffer + (button_size * 2)) );
+   b_o_worm_trail_off->setPosition( sec_start_worm + (spacer * 2) + button_size,
+                                    height - ((spacer * 2) + (button_size * 2)) );
 
    b_o_worm_sprint->setSize( button_size, button_size );
    b_o_worm_sprint->setImageSize( button_size, button_size );
-   b_o_worm_sprint->setPosition( sec_start_worm + (sec_buffer * 2),
-                                 height - (sec_buffer + button_size ) );
+   b_o_worm_sprint->setPosition( sec_start_worm + spacer,
+                                 height - (spacer + button_size ) );
 
    b_worm_image->setSize( button_size, button_size );
    b_worm_image->setImageSize( button_size, button_size );
-   b_worm_image->setPosition( sec_start_worm + (sec_buffer * 3) - border_width + button_size,
-                             height - (button_size) );
+   b_worm_image->setPosition( sec_start_worm + (spacer * 3) + button_size,
+                              height - (button_size) );
 
    // Bird
-   b_bird_area->setSize( (sec_buffer * 3) + (button_size * 3),
-                         (sec_buffer * 3) + (button_size * 3));
-   b_bird_area->setPosition( sec_start_bird,
-                                height - ((sec_buffer * 2) + (button_size * 3)));
+   b_bird_area->setSize( (border * 3) + (spacer * 3) + (button_size * 2),
+                         (border * 2) + (spacer * 4) + (button_size * 3));
+   b_bird_area->setPosition( sec_start_bird - (2 * border),
+                             height - (border + (spacer * 4) + (button_size * 3)));
 
    b_pl_alert_bird->setSize( button_size, button_size );
    b_pl_alert_bird->setImageSize( button_size, button_size );
-   b_pl_alert_bird->setPosition( sec_start_bird + (sec_buffer * 2),
-                                 height - (sec_buffer + (button_size * 3)) );
+   b_pl_alert_bird->setPosition( sec_start_bird + spacer,
+                                 height - ((spacer * 3) + (button_size * 3)) );
 
    b_pl_cmd_go_bird->setSize( button_size, button_size );
    b_pl_cmd_go_bird->setImageSize( button_size, button_size );
-   b_pl_cmd_go_bird->setPosition( sec_start_bird + (sec_buffer * 2) + button_size,
-                                  height - (sec_buffer + (button_size * 3)) );
+   b_pl_cmd_go_bird->setPosition( sec_start_bird + (spacer * 2) + button_size,
+                                  height - ((spacer * 3) + (button_size * 3)) );
 
    b_cmd_bird_shout->setSize( button_size, button_size );
    b_cmd_bird_shout->setImageSize( button_size, button_size );
-   b_cmd_bird_shout->setPosition( sec_start_bird + (sec_buffer * 2),
-                                height - (sec_buffer + button_size) );
+   b_cmd_bird_shout->setPosition( sec_start_bird + spacer,
+                                height - ((spacer * 2) + (button_size * 2)) );
 
    b_cmd_bird_quiet->setSize( button_size, button_size );
    b_cmd_bird_quiet->setImageSize( button_size, button_size );
-   b_cmd_bird_quiet->setPosition( sec_start_bird + (sec_buffer * 2) + button_size,
-                                height - (sec_buffer + button_size) );
+   b_cmd_bird_quiet->setPosition( sec_start_bird + (spacer * 2) + button_size,
+                                height - ((spacer * 2) + (button_size * 2)) );
 
    b_o_bird_fly->setSize( button_size, button_size );
    b_o_bird_fly->setImageSize( button_size, button_size );
-   b_o_bird_fly->setPosition( sec_start_bird + (sec_buffer * 2),
-                              height - (sec_buffer + (button_size * 2) ) );
+   b_o_bird_fly->setPosition( sec_start_bird + spacer,
+                              height - (spacer + button_size) );
 
    b_bird_image->setSize( button_size, button_size );
    b_bird_image->setImageSize( button_size, button_size );
-   b_bird_image->setPosition( sec_start_bird + (sec_buffer * 3) - border_width + (button_size * 2),
-                             height - (button_size) );
+   b_bird_image->setPosition( sec_start_bird + (spacer * 3) + button_size,
+                              height - (button_size) );
 
    // Bug
-   b_bug_area->setSize( (sec_buffer * 3) + (button_size * 3),
-                           (sec_buffer * 3) + (button_size * 3));
-   b_bug_area->setPosition( sec_start_bug,
-                                height - ((sec_buffer * 2) + (button_size * 3)));
+   b_bug_area->setSize( (border * 3) + (spacer * 6) + (button_size * 3),
+                        (border * 2) + (spacer * 4) + (button_size * 3));
+   b_bug_area->setPosition( sec_start_bug - (2 * border),
+                            height - (border + (spacer * 4) + (button_size * 3)));
 
    b_pl_alert_bug->setSize( button_size, button_size );
    b_pl_alert_bug->setImageSize( button_size, button_size );
-   b_pl_alert_bug->setPosition( sec_start_bug + (sec_buffer * 2),
-                                height - (sec_buffer + (button_size * 3)) );
+   b_pl_alert_bug->setPosition( sec_start_bug + spacer,
+                                height - ((spacer * 3) + (button_size * 3)) );
 
    b_pl_cmd_go_bug->setSize( button_size, button_size );
    b_pl_cmd_go_bug->setImageSize( button_size, button_size );
-   b_pl_cmd_go_bug->setPosition( sec_start_bug + (sec_buffer * 2) + button_size,
-                                 height - (sec_buffer + (button_size * 3)) );
-
-   b_o_bug_sunder->setSize( button_size, button_size );
-   b_o_bug_sunder->setImageSize( button_size, button_size );
-   b_o_bug_sunder->setPosition( sec_start_bug + (sec_buffer * 2),
-                                height - (sec_buffer + (button_size * 2)) );
+   b_pl_cmd_go_bug->setPosition( sec_start_bug + (spacer * 2) + button_size,
+                                 height - ((spacer * 3) + (button_size * 3)) );
 
    b_o_bug_fireball->setSize( button_size, button_size );
    b_o_bug_fireball->setImageSize( button_size, button_size );
-   b_o_bug_fireball->setPosition( sec_start_bug + (sec_buffer * 2) + button_size,
-                                  height - (sec_buffer + (button_size * 2)) );
+   b_o_bug_fireball->setPosition( sec_start_bug + spacer,
+                                  height - ((spacer * 2) + (button_size * 2)) );
+
+   b_o_bug_sunder->setSize( button_size, button_size );
+   b_o_bug_sunder->setImageSize( button_size, button_size );
+   b_o_bug_sunder->setPosition( sec_start_bug + (spacer * 2) + button_size,
+                                height - ((spacer * 2) + (button_size * 2)) );
 
    b_o_bug_heal->setSize( button_size, button_size );
    b_o_bug_heal->setImageSize( button_size, button_size );
-   b_o_bug_heal->setPosition( sec_start_bug + (sec_buffer * 2) + (button_size * 2),
-                              height - (sec_buffer + (button_size * 2)) );
+   b_o_bug_heal->setPosition( sec_start_bug + (spacer * 3) + (button_size * 2),
+                              height - ((spacer * 2) + (button_size * 2)) );
 
    b_o_bug_open_wormhole->setSize( button_size, button_size );
    b_o_bug_open_wormhole->setImageSize( button_size, button_size );
-   b_o_bug_open_wormhole->setPosition( sec_start_bug + (sec_buffer * 2),
-                                        height - (sec_buffer + button_size ) );
+   b_o_bug_open_wormhole->setPosition( sec_start_bug + spacer,
+                                        height - (spacer + button_size ) );
 
    b_o_bug_close_wormhole->setSize( button_size, button_size );
    b_o_bug_close_wormhole->setImageSize( button_size, button_size );
-   b_o_bug_close_wormhole->setPosition( sec_start_bug + (sec_buffer * 2) + button_size,
-                                        height - (sec_buffer + button_size ) );
-
-   b_bug_image->setSize( button_size, button_size );
-   b_bug_image->setImageSize( button_size, button_size );
-   b_bug_image->setPosition( sec_start_bug + (sec_buffer * 3) - border_width + (button_size * 2),
-                             height - (button_size) );
+   b_o_bug_close_wormhole->setPosition( sec_start_bug + (spacer * 2) + button_size,
+                                        height - (spacer + button_size ) );
 
    b_o_bug_meditate->setSize( button_size, button_size );
    b_o_bug_meditate->setImageSize( button_size, button_size );
-   b_o_bug_meditate->setPosition( sec_start_bug + (sec_buffer * 2) + (button_size * 2),
-                                  height - (sec_buffer + (button_size * 3) ) );
+   b_o_bug_meditate->setPosition( sec_start_bug + (spacer * 3) + (button_size * 2),
+                                  height - ((spacer * 3) + (button_size * 3) ) );
+
+   b_bug_image->setSize( button_size, button_size );
+   b_bug_image->setImageSize( button_size, button_size );
+   b_bug_image->setPosition( width - button_size, height - button_size );
 
    view_rel_x_to_y = ((float)height) / ((float)width);
 }
@@ -2720,19 +2741,25 @@ int initLevelGui()
    gui_manager.registerWidget( "Order: attack farthest", b_o_attack_farthest);
 
    b_o_start_block = new IMImageButton();
-   b_o_start_block->setAllTextures( t_manager.getTexture( "ControlButtonBase.png" ) );
+   b_o_start_block->setNormalTexture( t_manager.getTexture( "ControlButtonBase.png" ) );
+   b_o_start_block->setPressedTexture( t_manager.getTexture( "ControlButtonPressed.png" ) );
+   b_o_start_block->setHoverTexture( t_manager.getTexture( "ControlButtonHover.png" ) );
    b_o_start_block->setImage(  t_manager.getTexture( "ControlStartBlock.png" ) );
    b_o_start_block->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Control: start block", b_o_start_block);
 
    b_o_end_block = new IMImageButton();
-   b_o_end_block->setAllTextures( t_manager.getTexture( "ControlButtonBase.png" ) );
+   b_o_end_block->setNormalTexture( t_manager.getTexture( "ControlButtonBase.png" ) );
+   b_o_end_block->setPressedTexture( t_manager.getTexture( "ControlButtonPressed.png" ) );
+   b_o_end_block->setHoverTexture( t_manager.getTexture( "ControlButtonHover.png" ) );
    b_o_end_block->setImage(  t_manager.getTexture( "ControlEndBlock.png" ) );
    b_o_end_block->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Control: end block", b_o_end_block);
 
    b_o_repeat = new IMImageButton();
-   b_o_repeat->setAllTextures( t_manager.getTexture( "ControlButtonBase.png" ) );
+   b_o_repeat->setNormalTexture( t_manager.getTexture( "ControlButtonBase.png" ) );
+   b_o_repeat->setPressedTexture( t_manager.getTexture( "ControlButtonPressed.png" ) );
+   b_o_repeat->setHoverTexture( t_manager.getTexture( "ControlButtonHover.png" ) );
    b_o_repeat->setImage(  t_manager.getTexture( "ControlRepeat.png" ) );
    b_o_repeat->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Control: repeat", b_o_repeat);
@@ -2880,7 +2907,7 @@ int initLevelGui()
    b_o_bird_fly->setNormalTexture( t_manager.getTexture( "BirdOrderButtonBase.png" ) );
    b_o_bird_fly->setPressedTexture( t_manager.getTexture( "BirdButtonPressed.png" ) );
    b_o_bird_fly->setHoverTexture( t_manager.getTexture( "BirdButtonHover.png" ) );
-   b_o_bird_fly->setImage( NULL );
+   b_o_bird_fly->setImage( t_manager.getTexture( "BirdOrderFly.png" ) );
    b_o_bird_fly->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Bird: Fly", b_o_bird_fly);
 
@@ -2888,7 +2915,7 @@ int initLevelGui()
    b_cmd_bird_shout->setNormalTexture( t_manager.getTexture( "BirdControlButtonBase.png" ) );
    b_cmd_bird_shout->setPressedTexture( t_manager.getTexture( "BirdControlButtonPressed.png" ) );
    b_cmd_bird_shout->setHoverTexture( t_manager.getTexture( "BirdControlButtonHover.png" ) );
-   b_cmd_bird_shout->setImage( NULL );
+   b_cmd_bird_shout->setImage( t_manager.getTexture( "BirdControlShout.png" ) );
    b_cmd_bird_shout->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Bird: Shout", b_cmd_bird_shout);
 
@@ -2896,7 +2923,7 @@ int initLevelGui()
    b_cmd_bird_quiet->setNormalTexture( t_manager.getTexture( "BirdControlButtonBase.png" ) );
    b_cmd_bird_quiet->setPressedTexture( t_manager.getTexture( "BirdControlButtonPressed.png" ) );
    b_cmd_bird_quiet->setHoverTexture( t_manager.getTexture( "BirdControlButtonHover.png" ) );
-   b_cmd_bird_quiet->setImage( NULL );
+   b_cmd_bird_quiet->setImage( t_manager.getTexture( "BirdControlQuiet.png" ) );
    b_cmd_bird_quiet->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Bird: Quiet", b_cmd_bird_quiet);
 
@@ -2920,21 +2947,21 @@ int initLevelGui()
    b_o_bug_meditate->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Bug: Meditate", b_o_bug_meditate);
 
-   b_o_bug_sunder = new IMImageButton();
-   b_o_bug_sunder->setNormalTexture( t_manager.getTexture( "BugOrderButtonBase.png" ) );
-   b_o_bug_sunder->setPressedTexture( t_manager.getTexture( "BugButtonPressed.png" ) );
-   b_o_bug_sunder->setHoverTexture( t_manager.getTexture( "BugButtonHover.png" ) );
-   b_o_bug_sunder->setImage( NULL );
-   b_o_bug_sunder->setImageOffset( 0, 0 );
-   gui_manager.registerWidget( "Bug: Sunder", b_o_bug_sunder);
-
    b_o_bug_fireball = new IMImageButton();
    b_o_bug_fireball->setNormalTexture( t_manager.getTexture( "BugOrderButtonBase.png" ) );
    b_o_bug_fireball->setPressedTexture( t_manager.getTexture( "BugButtonPressed.png" ) );
    b_o_bug_fireball->setHoverTexture( t_manager.getTexture( "BugButtonHover.png" ) );
-   b_o_bug_fireball->setImage( NULL );
+   b_o_bug_fireball->setImage( t_manager.getTexture( "BugOrderFireball.png" ) );
    b_o_bug_fireball->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Bug: Fireball", b_o_bug_fireball);
+
+   b_o_bug_sunder = new IMImageButton();
+   b_o_bug_sunder->setNormalTexture( t_manager.getTexture( "BugOrderButtonBase.png" ) );
+   b_o_bug_sunder->setPressedTexture( t_manager.getTexture( "BugButtonPressed.png" ) );
+   b_o_bug_sunder->setHoverTexture( t_manager.getTexture( "BugButtonHover.png" ) );
+   b_o_bug_sunder->setImage( t_manager.getTexture( "BugOrderSunder.png" ) );
+   b_o_bug_sunder->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Bug: Sunder", b_o_bug_sunder);
 
    b_o_bug_heal = new IMImageButton();
    b_o_bug_heal->setNormalTexture( t_manager.getTexture( "BugOrderButtonBase.png" ) );
@@ -2948,7 +2975,7 @@ int initLevelGui()
    b_o_bug_open_wormhole->setNormalTexture( t_manager.getTexture( "BugOrderButtonBase.png" ) );
    b_o_bug_open_wormhole->setPressedTexture( t_manager.getTexture( "BugButtonPressed.png" ) );
    b_o_bug_open_wormhole->setHoverTexture( t_manager.getTexture( "BugButtonHover.png" ) );
-   b_o_bug_open_wormhole->setImage( NULL );
+   b_o_bug_open_wormhole->setImage( t_manager.getTexture( "BugOrderOpenWormhole.png" ) );
    b_o_bug_open_wormhole->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Bug: Open Wormhole", b_o_bug_open_wormhole);
 
@@ -2956,7 +2983,7 @@ int initLevelGui()
    b_o_bug_close_wormhole->setNormalTexture( t_manager.getTexture( "BugOrderButtonBase.png" ) );
    b_o_bug_close_wormhole->setPressedTexture( t_manager.getTexture( "BugButtonPressed.png" ) );
    b_o_bug_close_wormhole->setHoverTexture( t_manager.getTexture( "BugButtonHover.png" ) );
-   b_o_bug_close_wormhole->setImage( NULL );
+   b_o_bug_close_wormhole->setImage( t_manager.getTexture( "BugOrderCloseWormhole.png" ) );
    b_o_bug_close_wormhole->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Bug: Close Wormhole", b_o_bug_close_wormhole);
 
@@ -3306,11 +3333,11 @@ int drawOrderButtons()
    if (b_o_bug_meditate->doWidget())
       playerAddOrder( BUG_MEDITATE );
 
-   if (b_o_bug_sunder->doWidget())
-      playerAddOrder( BUG_CAST_SUNDER );
-
    if (b_o_bug_fireball->doWidget())
       playerAddOrder( BUG_CAST_FIREBALL );
+
+   if (b_o_bug_sunder->doWidget())
+      playerAddOrder( BUG_CAST_SUNDER );
 
    if (b_o_bug_heal->doWidget())
       playerAddOrder( BUG_CAST_HEAL );
@@ -3369,12 +3396,12 @@ int drawOrderButtons()
    b_conditional_area->doWidget();
    b_movement_area->doWidget();
    b_attack_area->doWidget();
+   b_control_area->doWidget();
    b_monster_area->doWidget();
    b_soldier_area->doWidget();
    b_worm_area->doWidget();
    b_bird_area->doWidget();
    b_bug_area->doWidget();
-   b_control_area->doWidget(); // at the end for overlap reasons
 
    // Draw current count
    if (order_prep_count != 1) {

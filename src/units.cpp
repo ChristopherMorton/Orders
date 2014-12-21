@@ -1455,7 +1455,7 @@ Bug::~Bug()
 
 int Bug::addOrder( Order o )
 {
-   if ((o.action <= SKIP) || (o.action >= BUG_MEDITATE && o.action <= BUG_MEDITATE)) {
+   if ((o.action <= SKIP) || (o.action >= BUG_CAST_FIREBALL && o.action <= BUG_MEDITATE)) {
       if (order_count >= max_orders) // No more memory
          return -2;
 
