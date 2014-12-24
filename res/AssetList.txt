@@ -75,6 +75,7 @@ IMAGE OrderTurnNorth.png
 IMAGE OrderTurnEast.png
 IMAGE OrderTurnSouth.png
 IMAGE OrderTurnWest.png
+IMAGE OrderTurnNearestEnemy.png
 IMAGE OrderWait.png
 IMAGE OrderAttackSmallest.png
 IMAGE OrderAttackBiggest.png
@@ -116,8 +117,10 @@ IMAGE WormOrderTrailOff.png
 IMAGE BirdOrderFly.png
 IMAGE BirdControlShout.png
 IMAGE BirdControlQuiet.png
+IMAGE BugOrderMeditate.png
 IMAGE BugOrderFireball.png
 IMAGE BugOrderSunder.png
+IMAGE BugOrderHeal.png
 IMAGE BugOrderOpenWormhole.png
 IMAGE BugOrderCloseWormhole.png
 // Player Commands

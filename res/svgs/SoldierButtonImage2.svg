@@ -15,7 +15,7 @@
    id="svg2"
    version="1.1"
    inkscape:version="0.48.5 r10040"
-   sodipodi:docname="SoldierButtonImage.svg"
+   sodipodi:docname="SoldierButtonImage2.svg"
    inkscape:export-filename="/home/cg/programming/orders/res/SoldierButtonImage.png"
    inkscape:export-xdpi="180"
    inkscape:export-ydpi="180">
@@ -121,9 +121,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="3.578125"
-     inkscape:cx="43.764666"
-     inkscape:cy="65.285886"
+     inkscape:zoom="5.9166667"
+     inkscape:cx="2.8464756"
+     inkscape:cy="31.773571"
      inkscape:document-units="px"
      inkscape:current-layer="layer2"
      showgrid="false"
@@ -164,13 +164,15 @@
     <path
        inkscape:connector-curvature="0"
        style="fill:#803300;fill-opacity:1;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
-       d="m 41.310095,0.173223 -25.25,64 -8.96875,0 26,-64 8.21875,0 z"
+       d="m 45.310095,0.173223 -25.25,64 -8.96875,0 26,-64 8.21875,0 z"
        id="path4218" />
     <path
        style="fill:#ff6600;fill-opacity:1;stroke:#803300;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
-       d="m 63.966345,44.048223 c -5.054952,5.988939 -9.862935,9.337648 -16.65625,9.125 -8.67685,-1.679312 -13.778413,-3.743587 -20.986969,-9.869491 l -9.332552,-6.232388 -1.707738,2.573511 -2.45971,-3.000921 -1.1875,-4.375 8.875,0.125 -7.8125,-0.25 -0.125,-3.78125 9.25,-0.9375 -7.21875,0.46875 -0.375,-3.6875 9.125,-2.46875 6.96875,11.125 c 4.486968,5.6737 9.778039,7.316783 18.236969,8.279289 6.821733,-1.211916 11.060192,-4.168505 15.40625,-10.6875 z"
+       d="m 27.681778,20.40493 -8.375,2.34375 -0.625,4.4375 7.46875,-0.59375 -9.419014,1.444542 -0.25,4.53125 8.1875,-0.5 -9.794014,0.963028 0.8125,5.625 2.46875,3.375 L 20,38.1875 25.15625,39.257042 30.3125,43.3125 c 8.560669,6.125904 15.508286,9.88616 25.75,10.5 4.168492,0.24984 6.357463,-1.213647 7.9375,-2.40625 L 64,26.9375 C 61.078175,28.812906 58.619638,35.423903 56.349472,41.40625 51.397206,38.059628 49.561741,37.811981 38.3125,34.485916 L 36.09375,28.4375 z"
        id="path4222"
        inkscape:connector-curvature="0"
-       sodipodi:nodetypes="cccccccccccccccccc" />
+       sodipodi:nodetypes="cccccccccccccscccccc"
+       inkscape:export-xdpi="180"
+       inkscape:export-ydpi="180" />
   </g>
 </svg>

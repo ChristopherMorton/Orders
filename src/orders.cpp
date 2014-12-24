@@ -5,6 +5,7 @@
 
 #include "SFML_GlobalRenderWindow.hpp"
 #include "SFML_TextureManager.hpp"
+#include "IMGuiManager.hpp"
 
 #include <SFML/Graphics.hpp>
 
@@ -17,6 +18,10 @@ namespace sum
 void Order::initOrder( Order_Action a, Order_Conditional c, int cnt )
 {
    action = a;
+
+   if (a == BUG_MEDITATE)
+      cnt *= MEDITATE_DURATION;
+
    condition = c;
    count = cnt;
    iteration = 0;
@@ -75,6 +80,9 @@ void Order::logSelf()
          break;
       case TURN_WEST:
          s << "TURN_WEST";
+         break;
+      case TURN_NEAREST_ENEMY:
+         s << "TURN_NEAREST_ENEMY";
          break;
       case FOLLOW_PATH:
          s << "FOLLOW_PATH";
@@ -247,11 +255,41 @@ void Order::logSelf()
       case TRUE:
          s << "TRUE";
          break;
-      case FALSE:
-         s << "FALSE";
+      case ENEMY_ADJACENT:
+         s << "ENEMY_ADJACENT";
+         break;
+      case ENEMY_NOT_ADJACENT:
+         s << "ENEMY_NOT_ADJACENT";
+         break;
+      case ENEMY_AHEAD:
+         s << "ENEMY_AHEAD";
+         break;
+      case ENEMY_NOT_AHEAD:
+         s << "ENEMY_NOT_AHEAD";
          break;
       case ENEMY_IN_RANGE:
          s << "ENEMY_IN_RANGE";
+         break;
+      case ENEMY_NOT_IN_RANGE:
+         s << "ENEMY_NOT_IN_RANGE";
+         break;
+      case ALLY_ADJACENT:
+         s << "ALLY_ADJACENT";
+         break;
+      case ALLY_NOT_ADJACENT:
+         s << "ALLY_NOT_ADJACENT";
+         break;
+      case ALLY_AHEAD:
+         s << "ALLY_AHEAD";
+         break;
+      case ALLY_NOT_AHEAD:
+         s << "ALLY_NOT_AHEAD";
+         break;
+      case ALLY_IN_RANGE:
+         s << "ALLY_IN_RANGE";
+         break;
+      case ALLY_NOT_IN_RANGE:
+         s << "ALLY_NOT_IN_RANGE";
          break;
       case NUM_CONDITIONALS:
          s << "NUM_CONDITIONALS";
@@ -286,6 +324,9 @@ Texture *getOrderTexture( Order o )
          break;
       case TURN_WEST:
          base_tex = t_manager.getTexture( "OrderTurnWest.png" );
+         break;
+      case TURN_NEAREST_ENEMY:
+         base_tex = t_manager.getTexture( "OrderTurnNearestEnemy.png" );
          break;
 
       case ATTACK_CLOSEST:
@@ -349,11 +390,17 @@ Texture *getOrderTexture( Order o )
       case BIRD_CMD_QUIET:
          base_tex = t_manager.getTexture( "BirdControlQuiet.png" );
          break;
+      case BUG_MEDITATE:
+         base_tex = t_manager.getTexture( "BugOrderMeditate.png" );
+         break;
       case BUG_CAST_FIREBALL:
          base_tex = t_manager.getTexture( "BugOrderFireball.png" );
          break;
       case BUG_CAST_SUNDER:
          base_tex = t_manager.getTexture( "BugOrderSunder.png" );
+         break;
+      case BUG_CAST_HEAL:
+         base_tex = t_manager.getTexture( "BugOrderHeal.png" );
          break;
       case BUG_OPEN_WORMHOLE:
          base_tex = t_manager.getTexture( "BugOrderOpenWormhole.png" );
@@ -459,6 +506,7 @@ Texture *getOrderButtonTexture( Order o )
       case TURN_EAST:
       case TURN_SOUTH:
       case TURN_WEST: 
+      case TURN_NEAREST_ENEMY: 
       case FOLLOW_PATH:
       case ATTACK_CLOSEST:
       case ATTACK_FARTHEST:
@@ -518,6 +566,105 @@ Texture *getOrderButtonTexture( Order o )
    };
 }
 
+void drawCount( int count, int x, int y, int size, bool plus, int char_size )
+{
+   Text *count_text = new Text();
+   stringstream ss;
+   ss << count;
+   if (plus)
+      ss << "+";
+   count_text->setString( String(ss.str()) );
+   count_text->setFont( *menu_font );
+   count_text->setColor( Color::Black );
+   count_text->setCharacterSize( char_size );
+   FloatRect text_size = count_text->getGlobalBounds();
+   float text_x = (size - text_size.width) + x,
+         text_y = (size - char_size) + y;
+   count_text->setPosition( text_x, text_y );
+
+   RectangleShape *count_rect = new RectangleShape();
+   count_rect->setSize( Vector2f((text_size.width + 2), (text_size.height + (char_size / 4))) );
+   count_rect->setPosition( text_x - 1, text_y + 1 );
+   count_rect->setFillColor( Color::White );
+   count_rect->setOutlineColor( Color::Black );
+   count_rect->setOutlineThickness( 1.0 );
+
+   IMGuiManager::getSingleton().pushSprite( count_text );
+   IMGuiManager::getSingleton().pushSprite( count_rect );
+}
+
+void drawCondition( Order_Conditional c, int x_b, int y_b, int size )
+{
+   SFML_TextureManager &t_manager = SFML_TextureManager::getSingleton();
+   Sprite *sp_base = new Sprite(),
+          *sp_cond = new Sprite();
+   switch (c)
+   {
+      case ENEMY_ADJACENT:
+      case ENEMY_AHEAD:
+      case ENEMY_IN_RANGE:
+      case ALLY_ADJACENT:
+      case ALLY_AHEAD:
+      case ALLY_IN_RANGE:
+         sp_base->setTexture( *t_manager.getTexture( "ConditionalButtonBase.png" ) );
+         break;
+      case ENEMY_NOT_ADJACENT:
+      case ENEMY_NOT_AHEAD:
+      case ENEMY_NOT_IN_RANGE:
+      case ALLY_NOT_ADJACENT:
+      case ALLY_NOT_AHEAD:
+      case ALLY_NOT_IN_RANGE:
+         sp_base->setTexture( *t_manager.getTexture( "ConditionalSelectedRed.png" ) );
+         break;
+      default:
+         delete sp_base;
+         delete sp_cond;
+         return;
+   }
+   switch (c)
+   {
+      case ENEMY_ADJACENT:
+      case ENEMY_NOT_ADJACENT:
+         sp_cond->setTexture( *t_manager.getTexture( "ConditionalEnemyAdjacent.png" ) );
+         break;
+      case ENEMY_AHEAD:
+      case ENEMY_NOT_AHEAD:
+         sp_cond->setTexture( *t_manager.getTexture( "ConditionalEnemyAhead.png" ) );
+         break;
+      case ENEMY_IN_RANGE:
+      case ENEMY_NOT_IN_RANGE:
+         sp_cond->setTexture( *t_manager.getTexture( "ConditionalEnemyInRange.png" ) );
+         break;
+      case ALLY_ADJACENT:
+      case ALLY_NOT_ADJACENT:
+         sp_cond->setTexture( *t_manager.getTexture( "ConditionalAllyAdjacent.png" ) );
+         break;
+      case ALLY_AHEAD:
+      case ALLY_NOT_AHEAD:
+         sp_cond->setTexture( *t_manager.getTexture( "ConditionalAllyAhead.png" ) );
+         break;
+      case ALLY_IN_RANGE:
+      case ALLY_NOT_IN_RANGE:
+         sp_cond->setTexture( *t_manager.getTexture( "ConditionalAllyInRange.png" ) );
+         break;
+      default:
+         delete sp_base;
+         delete sp_cond;
+         return;
+   }
+
+   int x = x_b - (size / 10), y = y_b + (size * 6 / 10);
+   int s = size / 2;
+   normalizeTo1x1( sp_base );
+   sp_base->scale( s, s );
+   normalizeTo1x1( sp_cond );
+   sp_cond->scale( s, s );
+   sp_base->setPosition( x, y );
+   sp_cond->setPosition( x, y );
+   IMGuiManager::getSingleton().pushSprite( sp_cond );
+   IMGuiManager::getSingleton().pushSprite( sp_base );
+}
+
 void drawOrder( Order o, int x, int y, int size )
 {
    // Base order
@@ -537,46 +684,18 @@ void drawOrder( Order o, int x, int y, int size )
       SFML_GlobalRenderWindow::get()->draw( sp_button );
    }
 
-
    Sprite sp_order( *base_tex );
    normalizeTo1x1( &sp_order );
    sp_order.scale( size, size );
    sp_order.setPosition( x, y );
    SFML_GlobalRenderWindow::get()->draw( sp_order );
 
-
-
-   // Count
    if (o.count != 1 && o.action < PL_ALERT_ALL)
-   {
-
-      Text count_text;
-      stringstream ss;
-      ss << o.count;
-      count_text.setString( String(ss.str()) );
-      count_text.setFont( *menu_font );
-      count_text.setColor( Color::Black );
-      count_text.setCharacterSize( 10 );
-      FloatRect text_size = count_text.getGlobalBounds();
-      float text_x = (size - text_size.width) + x,
-            text_y = (size - text_size.height) + y;
-      count_text.setPosition( text_x, text_y );
-
-      RectangleShape count_rect;
-      count_rect.setSize( Vector2f((text_size.width), (text_size.height + 2)) );
-      count_rect.setPosition( text_x - 1, text_y - 1 );
-      count_rect.setFillColor( Color::White );
-      count_rect.setOutlineColor( Color::Black );
-      count_rect.setOutlineThickness( 1.0 );
-
-      SFML_GlobalRenderWindow::get()->draw( count_rect );
-      SFML_GlobalRenderWindow::get()->draw( count_text );
-   }
+      drawCount( o.count, x, y, size );
 
    // Condition
-   if (o.condition != TRUE && o.action < PL_ALERT_ALL) {
-
-   }
+   if (o.condition != TRUE && o.action < PL_ALERT_ALL)
+      drawCondition( o.condition, x, y, size );
 }
 
 };

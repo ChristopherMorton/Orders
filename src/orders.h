@@ -14,6 +14,7 @@ namespace sum
       TURN_EAST,
       TURN_SOUTH,
       TURN_WEST,
+      TURN_NEAREST_ENEMY,
 
       FOLLOW_PATH,
 
@@ -104,11 +105,23 @@ namespace sum
    enum Order_Conditional
    {
       TRUE,
-      FALSE,
+      ENEMY_ADJACENT,
+      ENEMY_NOT_ADJACENT,
+      ENEMY_AHEAD,
+      ENEMY_NOT_AHEAD,
       ENEMY_IN_RANGE,
+      ENEMY_NOT_IN_RANGE,
+      ALLY_ADJACENT,
+      ALLY_NOT_ADJACENT,
+      ALLY_AHEAD,
+      ALLY_NOT_AHEAD,
+      ALLY_IN_RANGE,
+      ALLY_NOT_IN_RANGE,
 
       NUM_CONDITIONALS
    };
+
+#define MEDITATE_DURATION 10
 
    struct Order
    {
@@ -131,6 +144,7 @@ namespace sum
 
    sf::Texture *getOrderTexture( Order o );
    void drawOrder( Order o, int x, int y, int size );
+   void drawCount( int count, int x, int y , int size, bool plus = false, int char_size = 10 );
 };
 
 #endif 

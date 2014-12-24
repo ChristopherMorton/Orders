@@ -83,27 +83,28 @@ int Unit::prepareBasicOrder( Order &o, bool cond_result )
                return 0;
             }
          case TURN_NORTH:
-            if (cond_result == true) {
+            if (cond_result == true)
                TurnTo(NORTH);
-            } else {
-            }
             return 0;
          case TURN_EAST:
-            if (cond_result == true) {
+            if (cond_result == true)
                TurnTo(EAST);
-            } else {
-            }
             return 0;
          case TURN_SOUTH:
-            if (cond_result == true) {
+            if (cond_result == true)
                TurnTo(SOUTH);
-            } else {
-            }
             return 0;
          case TURN_WEST:
-            if (cond_result == true) {
+            if (cond_result == true)
                TurnTo(WEST);
-            } else {
+            return 0;
+         case TURN_NEAREST_ENEMY:
+            if (cond_result == true) {
+               Unit *u = getEnemy( x_grid, y_grid, attack_range, ALL_DIR, this, SELECT_CLOSEST );
+               if (u) {
+                  Direction d = getDirection( x_grid, y_grid, u->x_grid, u->y_grid );
+                  TurnTo(d);
+               }
             }
             return 0;
 
@@ -230,6 +231,7 @@ int Unit::updateBasicOrder( float dtf, Order o )
          case TURN_EAST:
          case TURN_SOUTH:
          case TURN_WEST:
+         case TURN_NEAREST_ENEMY:
             log("ERROR: update on turn order");
             return -2;
             
@@ -281,8 +283,6 @@ bool Unit::evaluateConditional( Order o )
    switch (o.condition) {
       case TRUE:
          return true;
-      case FALSE:
-         return false;
       case ENEMY_IN_RANGE:
          return getEnemy( x_grid, y_grid, attack_range, facing, this, SELECT_CLOSEST ) != NULL;
       default:

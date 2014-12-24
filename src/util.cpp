@@ -12,3 +12,22 @@ void normalizeTo1x1( sf::Sprite *s )
       s->setScale( scale_x, scale_y );
    }
 }
+
+sum::Direction getDirection( int x, int y, int to_x, int to_y )
+{
+   int dx = to_x - x,
+       dy = to_y - y;
+
+   if (abs(dx) > abs(dy)) {
+      if (dx > 0)
+         return sum::EAST;
+      else
+         return sum::WEST;
+   } else {
+      if (dy > 0)
+         return sum::SOUTH;
+      else
+         return sum::NORTH;
+   }
+   return sum::ALL_DIR;
+}
