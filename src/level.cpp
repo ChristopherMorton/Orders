@@ -4226,7 +4226,7 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
 
    virtual bool mouseButtonReleased( const Event::MouseButtonEvent &mbr )
    {
-      if (mbr.button == Mouse::Left && key_shift_down == 0) {
+      if (left_mouse_down == 1) {
          left_mouse_down = 0;
          int left_mouse_up_time = game_clock->getElapsedTime().asMilliseconds();
 
@@ -4235,8 +4235,7 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
             selectUnit( coordsWindowToView( mbr.x, mbr.y ) );
 
       }
-      if (mbr.button == Mouse::Right ||
-         (mbr.button == Mouse::Left && key_shift_down == 1)) {
+      if (right_mouse_down == 1) {
          right_mouse_down = 0;
          int right_mouse_up_time = game_clock->getElapsedTime().asMilliseconds();
 
