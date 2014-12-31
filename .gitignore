@@ -2,6 +2,7 @@
 *.tmp
 *.lock
 *.swp
+*.swo
 *.out
 *~
 

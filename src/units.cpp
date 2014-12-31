@@ -737,9 +737,7 @@ int Player::draw()
 
    Vector2u dim (player_anim_idle.image_size_x, player_anim_idle.image_size_y);
    sp_player->setOrigin( dim.x / 2.0, dim.y / 2.0 );
-   float scale_x = 1.0 / dim.x;
-   float scale_y = 1.0 / dim.y;
-   sp_player->setScale( scale_x, scale_y );
+   sp_player->setScale( 1.0 / dim.x, 1.0 / dim.y );
 
    sp_player->setPosition( x_real, y_real );
 
@@ -762,6 +760,14 @@ string Player::descriptor()
 
 //////////////////////////////////////////////////////////////////////
 // Monster ---
+
+Animation monster_anim_idle;
+
+void initMonsterAnimations()
+{
+   Texture *t = SFML_TextureManager::getSingleton().getTexture( "MonsterScratch.png" );
+   monster_anim_idle.load( t, 128, 128, 1, 1000 );
+}
 
 // *tors
 Monster::Monster()
@@ -887,19 +893,17 @@ sf::Texture* Monster::getTexture()
    return SFML_TextureManager::getSingleton().getTexture( "MonsterScratch.png" );
 }
 
-Sprite *sp_monster = NULL;
-
 int Monster::draw()
 {
-   if (NULL == sp_monster) {
-      sp_monster = new Sprite(*getTexture());
-      Vector2u dim = getTexture()->getSize();
-      sp_monster->setOrigin( dim.x / 2.0, dim.y / 2.0 );
-      normalizeTo1x1( sp_monster );
-      //sp_monster->scale( 0.5, 0.5 );
-   }
+   // Select sprite
+   Sprite *sp_monster = monster_anim_idle.getSprite( (int)(progress * 1000) );
+   if (NULL == sp_monster) return -1;
 
+   // Move/scale sprite
    sp_monster->setPosition( x_real, y_real );
+   Vector2u dim (monster_anim_idle.image_size_x, monster_anim_idle.image_size_y);
+   sp_monster->setOrigin( dim.x / 2.0, dim.y / 2.0 );
+   sp_monster->setScale( 1.0 / dim.x, 1.0 / dim.y );
 
    int rotation;
    if (facing == EAST) rotation = 0;
@@ -920,6 +924,14 @@ string Monster::descriptor()
 
 //////////////////////////////////////////////////////////////////////
 // Soldier ---
+
+Animation soldier_anim_idle;
+
+void initSoldierAnimations()
+{
+   Texture *t = SFML_TextureManager::getSingleton().getTexture( "SoldierScratch.png" );
+   soldier_anim_idle.load( t, 128, 128, 1, 1000 );
+}
 
 // *tors
 Soldier::Soldier()
@@ -1045,19 +1057,17 @@ sf::Texture* Soldier::getTexture()
    return SFML_TextureManager::getSingleton().getTexture( "SoldierScratch.png" );
 }
 
-Sprite *sp_soldier = NULL;
-
 int Soldier::draw()
 {
-   if (NULL == sp_soldier) {
-      sp_soldier = new Sprite(*getTexture());
-      Vector2u dim = getTexture()->getSize();
-      sp_soldier->setOrigin( dim.x / 2.0, dim.y / 2.0 );
-      normalizeTo1x1( sp_soldier );
-      sp_soldier->scale( 0.7, 0.7 );
-   }
+   // Select sprite
+   Sprite *sp_soldier = soldier_anim_idle.getSprite( (int)(progress * 1000) );
+   if (NULL == sp_soldier) return -1;
 
+   // Move/scale sprite
    sp_soldier->setPosition( x_real, y_real );
+   Vector2u dim (soldier_anim_idle.image_size_x, soldier_anim_idle.image_size_y);
+   sp_soldier->setOrigin( dim.x / 2.0, dim.y / 2.0 );
+   sp_soldier->setScale( 0.7 / dim.x, 0.7 / dim.y );
 
    int rotation;
    if (facing == EAST) rotation = 0;
@@ -1079,6 +1089,14 @@ string Soldier::descriptor()
 
 //////////////////////////////////////////////////////////////////////
 // Worm ---
+
+Animation worm_anim_idle;
+
+void initWormAnimations()
+{
+   Texture *t = SFML_TextureManager::getSingleton().getTexture( "WormScratch.png" );
+   worm_anim_idle.load( t, 128, 128, 1, 1000 );
+}
 
 // *tors
 Worm::Worm()
@@ -1204,19 +1222,17 @@ sf::Texture* Worm::getTexture()
    return SFML_TextureManager::getSingleton().getTexture( "WormScratch.png" );
 }
 
-Sprite *sp_worm = NULL;
-
 int Worm::draw()
 {
-   if (NULL == sp_worm) {
-      sp_worm = new Sprite(*getTexture());
-      Vector2u dim = getTexture()->getSize();
-      sp_worm->setOrigin( dim.x / 2.0, dim.y / 2.0 );
-      normalizeTo1x1( sp_worm );
-      sp_worm->scale( 0.4, 0.4 );
-   }
+   // Select sprite
+   Sprite *sp_worm = worm_anim_idle.getSprite( (int)(progress * 1000) );
+   if (NULL == sp_worm) return -1;
 
+   // Move/scale sprite
    sp_worm->setPosition( x_real, y_real );
+   Vector2u dim (worm_anim_idle.image_size_x, worm_anim_idle.image_size_y);
+   sp_worm->setOrigin( dim.x / 2.0, dim.y / 2.0 );
+   sp_worm->setScale( 0.4 / dim.x, 0.4 / dim.y );
 
    int rotation;
    if (facing == EAST) rotation = 0;
@@ -1237,6 +1253,14 @@ string Worm::descriptor()
 
 //////////////////////////////////////////////////////////////////////
 // Bird ---
+
+Animation bird_anim_idle;
+
+void initBirdAnimations()
+{
+   Texture *t = SFML_TextureManager::getSingleton().getTexture( "BirdScratch.png" );
+   bird_anim_idle.load( t, 128, 128, 1, 1000 );
+}
 
 // *tors
 Bird::Bird()
@@ -1366,15 +1390,15 @@ Sprite *sp_bird = NULL;
 
 int Bird::draw()
 {
-   if (NULL == sp_bird) {
-      sp_bird = new Sprite(*getTexture());
-      Vector2u dim = getTexture()->getSize();
-      sp_bird->setOrigin( dim.x / 2.0, dim.y / 2.0 );
-      normalizeTo1x1( sp_bird );
-      sp_bird->scale( 0.8, 0.8 );
-   }
+   // Select sprite
+   Sprite *sp_bird = bird_anim_idle.getSprite( (int)(progress * 1000) );
+   if (NULL == sp_bird) return -1;
 
+   // Move/scale sprite
    sp_bird->setPosition( x_real, y_real );
+   Vector2u dim (bird_anim_idle.image_size_x, bird_anim_idle.image_size_y);
+   sp_bird->setOrigin( dim.x / 2.0, dim.y / 2.0 );
+   sp_bird->setScale( 0.5 / dim.x, 0.5 / dim.y );
 
    int rotation;
    if (facing == EAST) rotation = 0;
@@ -1532,20 +1556,17 @@ sf::Texture* Bug::getTexture()
    return SFML_TextureManager::getSingleton().getTexture( "BugScratch.png" );
 }
 
-//Sprite *sp_bug = NULL;
-
 int Bug::draw()
 {
+   // Select sprite
    Sprite *sp_bug = bug_anim_idle.getSprite( (int)(progress * 1000) );
    if (NULL == sp_bug) return -1;
 
+   // Move/scale sprite
+   sp_bug->setPosition( x_real, y_real );
    Vector2u dim (bug_anim_idle.image_size_x, bug_anim_idle.image_size_y);
    sp_bug->setOrigin( dim.x / 2.0, dim.y / 2.0 );
-   float scale_x = 0.5 / dim.x;
-   float scale_y = 0.5 / dim.y;
-   sp_bug->setScale( scale_x, scale_y );
-
-   sp_bug->setPosition( x_real, y_real );
+   sp_bug->setScale( 0.5 / dim.x, 0.5 / dim.y );
 
    int rotation;
    if (facing == EAST) rotation = 0;
@@ -1557,29 +1578,6 @@ int Bug::draw()
    SFML_GlobalRenderWindow::get()->draw( *sp_bug );
 
    return 0;
-
-   /*
-   if (NULL == sp_bug) {
-      sp_bug = new Sprite(*getTexture());
-      Vector2u dim = getTexture()->getSize();
-      sp_bug->setOrigin( dim.x / 2.0, dim.y / 2.0 );
-      normalizeTo1x1( sp_bug );
-      sp_bug->scale( 0.5, 0.5 );
-   }
-
-   sp_bug->setPosition( x_real, y_real );
-
-   int rotation;
-   if (facing == EAST) rotation = 0;
-   if (facing == SOUTH) rotation = 90;
-   if (facing == WEST) rotation = 180;
-   if (facing == NORTH) rotation = 270;
-   sp_bug->setRotation( rotation );
-
-   SFML_GlobalRenderWindow::get()->draw( *sp_bug );
-
-   return 0;
-   */
 }
 
 string Bug::descriptor()
@@ -1821,6 +1819,10 @@ string TargetPractice::descriptor()
 
 int initUnits()
 {
+   initMonsterAnimations();
+   initSoldierAnimations();
+   initWormAnimations();
+   initBirdAnimations();
    initBugAnimations();
    return 0;
 }
