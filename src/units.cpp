@@ -15,6 +15,9 @@
 //////////////////////////////////////////////////////////////////////
 // Definitions ---
 
+#define DEATH_TIME 400
+#define DEATH_FADE_TIME 300
+
 #define PLAYER_MAX_HEALTH 100
 #define PLAYER_MAX_ORDERS 500
 
@@ -31,7 +34,7 @@
 #define WORM_BASE_HEALTH 40
 #define WORM_BASE_MEMORY 14
 #define WORM_BASE_VISION 8.5
-#define WORM_BASE_SPEED 0.1
+#define WORM_BASE_SPEED 0.2
 
 #define BIRD_BASE_HEALTH 200
 #define BIRD_BASE_MEMORY 16
@@ -364,6 +367,8 @@ int Unit::addOrder( Order o )
 
 int Unit::prepareTurn()
 {
+   if (alive != 1) return 0;
+
    if (active == 2) active = 1; // Start an active turn
 
    this_turn_order = Order( WAIT );
@@ -391,13 +396,20 @@ int Unit::prepareTurn()
 
 int Unit::startTurn()
 {
+   if (alive != 1) return 0;
+
    startBasicOrder();
    return 0;
 }
 
 int Unit::update( float dtf )
 {
-   if (!alive)
+   if (alive < 0) {
+      alive += (int) (1000.0 * dtf);
+      if (alive >= 0) alive = 0;
+   }
+
+   if (alive == 0)
       return 1;
 
    progress += dtf;
@@ -411,6 +423,8 @@ int Unit::update( float dtf )
 // Run completeBasicOrder, update iterations, select next order
 int Unit::completeTurn()
 {
+   if (alive != 1) return 0;
+
    if (active == 1 && current_order != final_order) {
       int r = completeBasicOrder(this_turn_order);
       Order &o = order_queue[current_order];
@@ -430,7 +444,7 @@ int Unit::takeDamage( float damage )
    health -= damage;
    if (health <= 0) {
       // Dead!
-      alive = false;
+      alive = -( DEATH_TIME + DEATH_FADE_TIME );
       return -1;
    }
 
@@ -452,11 +466,11 @@ RangedUnit::RangedUnit()
 RangedUnit::RangedUnit( UnitType t, int x, int y, Direction face, int my_team )
 {
    if ( t < R_HUMAN_ARCHER_T || t > R_HUMAN_ARCHER_T ) {
-      alive = false;
+      alive = 0;
       return;
    }
 
-   alive = true;
+   alive = 1;
 
    type = t;
    x_grid = x;
@@ -538,7 +552,7 @@ int RangedUnit::prepareTurn()
 
 int RangedUnit::update( float dtf )
 {
-   if (!alive)
+   if (alive == 0)
       return 1;
 
    progress += dtf;
@@ -616,7 +630,7 @@ Player* Player::initPlayer( int grid_x, int grid_y, Direction facing )
 
 int Player::init( int x, int y, Direction face )
 {
-   alive = true;
+   alive = 1;
 
    radius = 0.4;
 
@@ -718,7 +732,7 @@ int Player::completeTurn()
 
 int Player::update( float dtf )
 {
-   if (!alive)
+   if (alive == 0)
       return 1;
 
    progress += dtf;
@@ -781,7 +795,7 @@ Monster::Monster( int x, int y, Direction face )
 
    type = MONSTER_T;
 
-   alive = true;
+   alive = 1;
 
    radius = 0.5;
 
@@ -945,7 +959,7 @@ Soldier::Soldier( int x, int y, Direction face )
 
    type = SOLDIER_T;
 
-   alive = true;
+   alive = 1;
 
    radius = 0.2;
 
@@ -1091,11 +1105,27 @@ string Soldier::descriptor()
 // Worm ---
 
 Animation worm_anim_idle;
+Animation worm_anim_move;
+Animation worm_anim_attack_start;
+Animation worm_anim_attack_end;
+Animation worm_anim_death;
 
 void initWormAnimations()
 {
-   Texture *t = SFML_TextureManager::getSingleton().getTexture( "WormScratch.png" );
+   Texture *t = SFML_TextureManager::getSingleton().getTexture( "WormAnimIdle.png" );
    worm_anim_idle.load( t, 128, 128, 1, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "WormAnimMove.png" );
+   worm_anim_move.load( t, 128, 128, 11, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "WormAnimAttackStart.png" );
+   worm_anim_attack_start.load( t, 128, 128, 8, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "WormAnimAttackEnd.png" );
+   worm_anim_attack_end.load( t, 128, 128, 8, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "WormAnimDeath.png" );
+   worm_anim_death.load( t, 128, 128, 8, DEATH_TIME );
 }
 
 // *tors
@@ -1110,7 +1140,7 @@ Worm::Worm( int x, int y, Direction face )
 
    type = WORM_T;
 
-   alive = true;
+   alive = 1;
 
    radius = 0.2;
 
@@ -1194,25 +1224,76 @@ int Worm::doAttack( Order o )
 }
 
 /*
-int Worm::startTurn()
+int Worm::prepareTurn()
 {
-   if (current_order < order_count) {
-      Order o = order_queue[current_order];
-      startBasicOrder(o);
+   if (alive != 1) return 0;
+
+   if (active == 2) active = 1; // Start an active turn
+
+   this_turn_order = Order( WAIT );
+
+   while (active == 1 && 
+          current_order != final_order) {
+      this_turn_order = order_queue[current_order];
+      bool decision = evaluateConditional(this_turn_order);
+      int r = prepareBasicOrder(this_turn_order, decision);
+      // if prepareBasicOrder returns 0, it's a 0-length instruction (e.g. turn)
+      if (r == 0) {
+         current_order++;
+         continue;
+      }
+      else 
+         break;
    }
 
+   if (current_order == final_order)
+      this_turn_order = Order( WAIT );
+
+   progress = 0;
+   return 0;
+}
+
+int Worm::startTurn()
+{
+   if (alive != 1) return 0;
+
+   startBasicOrder();
    return 0;
 }
 
 int Worm::completeTurn()
 {
+   if (alive == 0) return 0;
+
+   if (active == 1 && current_order != final_order) {
+      int r = completeBasicOrder(this_turn_order);
+      Order &o = order_queue[current_order];
+      o.iteration++;
+      if (o.iteration >= o.count && o.count != -1) { 
+         current_order++;
+         o.iteration = 0;
+      }
+      return r;
+   }
 
    return 0;
 }
 
 int Worm::update( float dtf )
 {
+   if (alive < 0) {
+      alive += (int) (1000 + dtf);
+      if (alive >= 0) alive = 0;
+   }
 
+   if (alive == 0)
+      return 1;
+
+   progress += dtf;
+   if (active == 1 && current_order != final_order) {
+      Order &o = this_turn_order;
+      return updateBasicOrder( dtf, o );
+   }
    return 0;
 }
 */
@@ -1225,7 +1306,26 @@ sf::Texture* Worm::getTexture()
 int Worm::draw()
 {
    // Select sprite
-   Sprite *sp_worm = worm_anim_idle.getSprite( (int)(progress * 1000) );
+   Sprite *sp_worm = NULL;
+   if (alive < 0) {
+      // Death animation
+      int t = alive + DEATH_TIME + DEATH_FADE_TIME;
+      if (t >= DEATH_TIME) t = DEATH_TIME - 1;
+      sp_worm = worm_anim_death.getSprite( t );
+
+      int alpha = 255;
+      if (alive > -DEATH_FADE_TIME)
+         alpha = 255 - ((DEATH_FADE_TIME + alive) * 256 / DEATH_FADE_TIME);
+      sp_worm->setColor( Color( 255, 255, 255, alpha ) );
+   } else if (this_turn_order.action == MOVE_FORWARD)
+      sp_worm = worm_anim_move.getSprite( (int)(progress * 1000) );
+   else if (this_turn_order.action >= ATTACK_CLOSEST && this_turn_order.action <= ATTACK_SMALLEST) {
+      if (done_attack)
+         sp_worm = worm_anim_attack_end.getSprite( (int)( ((progress - speed) / (1-speed)) * 1000) );
+      else
+         sp_worm = worm_anim_attack_start.getSprite( (int)( (progress / speed) * 1000) );
+   } else
+      sp_worm = worm_anim_idle.getSprite( (int)(progress * 1000) );
    if (NULL == sp_worm) return -1;
 
    // Move/scale sprite
@@ -1274,7 +1374,7 @@ Bird::Bird( int x, int y, Direction face )
 
    type = BIRD_T;
 
-   alive = true;
+   alive = 1;
 
    radius = 0.2;
 
@@ -1440,7 +1540,7 @@ Bug::Bug( int x, int y, Direction face )
 
    type = BUG_T;
 
-   alive = true;
+   alive = 1;
 
    radius = 0.4;
 
@@ -1598,7 +1698,7 @@ SummonMarker::SummonMarker( )
    y_real = y_grid + 0.5;
    TurnTo( SOUTH );
 
-   alive = false;
+   alive = 0;
 
    health = max_health = 0;
 
@@ -1751,7 +1851,7 @@ TargetPractice::TargetPractice( int x, int y, Direction face )
    y_real = y_grid + 0.5;
    TurnTo( face );
 
-   alive = true;
+   alive = 1;
 
    health = max_health = 200;
 

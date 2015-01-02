@@ -31,6 +31,12 @@ IMAGE WormScratch.png
 IMAGE BirdScratch.png
 IMAGE BugScratch.png
 IMAGE BugScratchWiggleAnimation.png
+// Unit Animations
+IMAGE WormAnimIdle.png
+IMAGE WormAnimMove.png
+IMAGE WormAnimAttackStart.png
+IMAGE WormAnimAttackEnd.png
+IMAGE WormAnimDeath.png
 // Map things
 IMAGE MapScratch.png
 IMAGE MapButtonScratch.png

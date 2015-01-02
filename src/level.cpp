@@ -684,7 +684,7 @@ Unit* getEnemy( int x, int y, float range, Direction dir, Unit *source, int sele
    for (int j = min_y; j <= max_y; ++j) {
       for (int i = min_x; i <= max_x; ++i) {
          Unit *u = GRID_AT(unit_grid,i,j);
-         if (u && u->team != team && u->alive) {
+         if (u && u->team != team && (u->alive == 1)) {
             // Can I see it?
             if ((team == -1) || (GRID_AT(ai_vision_grid,i,j) == VIS_VISIBLE)) {
                float u_x = u->x_grid - x, u_y = u->y_grid - y;
@@ -1682,7 +1682,7 @@ int updatePause( int dt )
       return 2;
    else if (pause_state < 0) {
       float factor = (float)(FULLY_PAUSED + pause_state) / (float)FULLY_PAUSED;
-      int d_pause = dt / 10;
+      int d_pause = (dt / 10) + 1;
       dt *= factor;
       pause_state -= d_pause;
       if (pause_state <= -FULLY_PAUSED)
@@ -1690,7 +1690,7 @@ int updatePause( int dt )
    }
    else if (pause_state > 0) {
       float factor = (float)(FULLY_PAUSED + pause_state) / (float)FULLY_PAUSED;
-      int d_pause = dt / 10;
+      int d_pause = (dt / 10) + 1;
       dt *= factor;
       pause_state -= d_pause;
       if (pause_state <= 0)
@@ -3796,7 +3796,7 @@ int drawSelectedUnit()
    RenderWindow *gui_window = SFML_GlobalRenderWindow::get();
 
    if (selected_unit != NULL) {
-      if (selected_unit->alive == false) {
+      if (selected_unit->alive != 1) {
          selected_unit = NULL;
          return -1;
       }

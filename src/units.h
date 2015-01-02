@@ -43,7 +43,7 @@ public:
    int team; // 0 = player
    UnitType type;
 
-   bool alive;
+   int alive;
 
    float health, max_health;
    float speed; // 0.0-1.0 = when do moves complete?
