@@ -1113,7 +1113,7 @@ Animation worm_anim_death;
 void initWormAnimations()
 {
    Texture *t = SFML_TextureManager::getSingleton().getTexture( "WormAnimIdle.png" );
-   worm_anim_idle.load( t, 128, 128, 1, 1000 );
+   worm_anim_idle.load( t, 128, 128, 10, 1000 );
 
    t = SFML_TextureManager::getSingleton().getTexture( "WormAnimMove.png" );
    worm_anim_move.load( t, 128, 128, 11, 1000 );
