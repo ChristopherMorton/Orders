@@ -482,6 +482,9 @@ RangedUnit::RangedUnit( UnitType t, int x, int y, Direction face, int my_team )
 
    alive = 1;
 
+   aff_poison = 0;
+   aff_confusion = 0;
+
    type = t;
    x_grid = x;
    y_grid = y;
@@ -661,6 +664,9 @@ int Player::init( int x, int y, Direction face )
 {
    alive = 1;
 
+   aff_poison = 0;
+   aff_confusion = 0;
+
    radius = 0.4;
 
    x_grid = x;
@@ -812,7 +818,7 @@ Animation monster_anim_attack_end;
 void initMonsterAnimations()
 {
    Texture *t = SFML_TextureManager::getSingleton().getTexture( "MonsterAnimIdle.png" );
-   monster_anim_idle.load( t, 128, 128, 1, 1000 );
+   monster_anim_idle.load( t, 128, 128, 8, 1000 );
 
    t = SFML_TextureManager::getSingleton().getTexture( "MonsterAnimMove.png" );
    monster_anim_move.load( t, 128, 128, 14, 1000 );
@@ -837,6 +843,9 @@ Monster::Monster( int x, int y, Direction face )
    type = MONSTER_T;
 
    alive = 1;
+
+   aff_poison = 0;
+   aff_confusion = 0;
 
    radius = 0.5;
 
@@ -1031,6 +1040,9 @@ Soldier::Soldier( int x, int y, Direction face )
 
    alive = 1;
 
+   aff_poison = 0;
+   aff_confusion = 0;
+
    radius = 0.2;
 
    x_grid = x;
@@ -1210,6 +1222,9 @@ Worm::Worm( int x, int y, Direction face )
    type = WORM_T;
 
    alive = 1;
+
+   aff_poison = 0;
+   aff_confusion = 0;
 
    radius = 0.2;
 
@@ -1455,6 +1470,9 @@ Bird::Bird( int x, int y, Direction face )
 
    alive = 1;
 
+   aff_poison = 0;
+   aff_confusion = 0;
+
    radius = 0.2;
 
    x_grid = x;
@@ -1620,6 +1638,9 @@ Bug::Bug( int x, int y, Direction face )
 
    alive = 1;
 
+   aff_poison = 0;
+   aff_confusion = 0;
+
    radius = 0.4;
 
    x_grid = x;
@@ -1778,6 +1799,9 @@ SummonMarker::SummonMarker( )
 
    alive = 0;
 
+   aff_poison = 0;
+   aff_confusion = 0;
+
    health = max_health = 0;
 
    vision_range = 0;
@@ -1930,6 +1954,9 @@ TargetPractice::TargetPractice( int x, int y, Direction face )
    TurnTo( face );
 
    alive = 1;
+
+   aff_poison = 0;
+   aff_confusion = 0;
 
    health = max_health = 200;
 
