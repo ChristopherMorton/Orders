@@ -24,7 +24,7 @@
 #define MONSTER_BASE_HEALTH 600
 #define MONSTER_BASE_MEMORY 10
 #define MONSTER_BASE_VISION 3.5
-#define MONSTER_BASE_SPEED 0.1
+#define MONSTER_BASE_SPEED 0.3
 
 #define SOLDIER_BASE_HEALTH 300
 #define SOLDIER_BASE_MEMORY 16
@@ -373,6 +373,16 @@ int Unit::prepareTurn()
 
    this_turn_order = Order( WAIT );
 
+   if (aff_poison) {
+      aff_poison--;
+      takeDamage( 10 );
+   }
+   if (aff_confusion) {
+      aff_confusion--;
+      if (aff_confusion %= 2)
+         return 0;
+   }
+
    while (active == 1 && 
           current_order != final_order) {
       this_turn_order = order_queue[current_order];
@@ -542,6 +552,20 @@ std::string RangedUnit::descriptor()
 
 int RangedUnit::prepareTurn()
 {
+   if (alive != 1) return 0;
+
+   this_turn_order = Order( WAIT );
+
+   if (aff_poison) {
+      aff_poison--;
+      takeDamage( 10 );
+   }
+   if (aff_confusion) {
+      aff_confusion--;
+      if (aff_confusion %= 2)
+         return 0;
+   }
+
    if (ai_type == STAND_AND_FIRE) {
       this_turn_order = Order( ATTACK_CLOSEST );
       done_attack = 0;
@@ -552,6 +576,11 @@ int RangedUnit::prepareTurn()
 
 int RangedUnit::update( float dtf )
 {
+   if (alive < 0) {
+      alive += (int) (1000.0 * dtf);
+      if (alive >= 0) alive = 0;
+   }
+
    if (alive == 0)
       return 1;
 
@@ -776,11 +805,23 @@ string Player::descriptor()
 // Monster ---
 
 Animation monster_anim_idle;
+Animation monster_anim_move;
+Animation monster_anim_attack_start;
+Animation monster_anim_attack_end;
 
 void initMonsterAnimations()
 {
-   Texture *t = SFML_TextureManager::getSingleton().getTexture( "MonsterScratch.png" );
+   Texture *t = SFML_TextureManager::getSingleton().getTexture( "MonsterAnimIdle.png" );
    monster_anim_idle.load( t, 128, 128, 1, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "MonsterAnimMove.png" );
+   monster_anim_move.load( t, 128, 128, 14, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "MonsterAnimAttackStart.png" );
+   monster_anim_attack_start.load( t, 128, 128, 8, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "MonsterAnimAttackEnd.png" );
+   monster_anim_attack_end.load( t, 128, 128, 7, 1000 );
 }
 
 // *tors
@@ -867,11 +908,14 @@ int Monster::doAttack( Order o )
          return -1;
    }
 
-   target = getEnemy( x_grid, y_grid, attack_range, facing, this, selector );
+   int t_x = x_grid, t_y = y_grid;
+   if (addDirection( facing, t_x, t_y ) != -1)
+      target = GRID_AT(unit_grid,t_x,t_y);
 
    if (target) {
       log("Monster attack");
-      // TODO: Melee attack
+      target->takeDamage( 15 );
+      // TODO: Animate
    }
 
    done_attack = 1;
@@ -904,13 +948,39 @@ int Monster::update( float dtf )
 
 sf::Texture* Monster::getTexture()
 {
-   return SFML_TextureManager::getSingleton().getTexture( "MonsterScratch.png" );
+   return SFML_TextureManager::getSingleton().getTexture( "MonsterStatic.png" );
 }
 
 int Monster::draw()
 {
    // Select sprite
-   Sprite *sp_monster = monster_anim_idle.getSprite( (int)(progress * 1000) );
+   Sprite *sp_monster = NULL;
+   /*if (alive < 0) {
+      // Death animation
+      int t = alive + DEATH_TIME + DEATH_FADE_TIME;
+      if (t >= DEATH_TIME) t = DEATH_TIME - 1;
+      sp_monster = monster_anim_death.getSprite( t );
+
+      int alpha = 255;
+      if (alive > -DEATH_FADE_TIME)
+         alpha = 255 - ((DEATH_FADE_TIME + alive) * 256 / DEATH_FADE_TIME);
+      sp_monster->setColor( Color( 255, 255, 255, alpha ) );
+   } else*/ 
+   if (this_turn_order.action == MOVE_FORWARD) {
+      sp_monster = monster_anim_move.getSprite( (int)(progress * 1000) );
+   } else if (this_turn_order.action >= ATTACK_CLOSEST && this_turn_order.action <= ATTACK_SMALLEST) {
+      if (done_attack) {
+         int d_anim = (int)( ((progress - speed) / (1-speed)) * 1000);
+         if (d_anim >= 1000) d_anim = 999;
+         sp_monster = monster_anim_attack_end.getSprite( d_anim );
+      } else {
+         int d_anim = (int)( (progress / speed) * 1000);
+         if (d_anim >= 1000) d_anim = 999;
+         sp_monster = monster_anim_attack_start.getSprite( d_anim );
+         sp_monster = monster_anim_attack_start.getSprite( (int)( (progress / speed) * 1000) );
+      }
+   } else
+      sp_monster = monster_anim_idle.getSprite( (int)(progress * 1000) );
    if (NULL == sp_monster) return -1;
 
    // Move/scale sprite
@@ -1035,7 +1105,6 @@ int Soldier::doAttack( Order o )
 
    if (target) {
       log("Soldier attack");
-      // TODO: Melee poison attack
    }
 
    done_attack = 1;
@@ -1113,7 +1182,7 @@ Animation worm_anim_death;
 void initWormAnimations()
 {
    Texture *t = SFML_TextureManager::getSingleton().getTexture( "WormAnimIdle.png" );
-   worm_anim_idle.load( t, 128, 128, 10, 1000 );
+   worm_anim_idle.load( t, 128, 128, 8, 1000 );
 
    t = SFML_TextureManager::getSingleton().getTexture( "WormAnimMove.png" );
    worm_anim_move.load( t, 128, 128, 11, 1000 );
@@ -1212,11 +1281,15 @@ int Worm::doAttack( Order o )
          return -1;
    }
 
-   target = getEnemy( x_grid, y_grid, attack_range, facing, this, selector );
+   int t_x = x_grid, t_y = y_grid;
+   if (addDirection( facing, t_x, t_y ) != -1)
+      target = GRID_AT(unit_grid,t_x,t_y);
 
    if (target) {
       log("Worm attack");
-      // TODO: Melee poison attack
+      target->takeDamage( 10 );
+      target->aff_poison += 20;
+      // TODO: Animate
    }
 
    done_attack = 1;
@@ -1300,7 +1373,7 @@ int Worm::update( float dtf )
 
 sf::Texture* Worm::getTexture()
 {
-   return SFML_TextureManager::getSingleton().getTexture( "WormScratch.png" );
+   return SFML_TextureManager::getSingleton().getTexture( "WormStatic.png" );
 }
 
 int Worm::draw()
@@ -1320,19 +1393,25 @@ int Worm::draw()
    } else if (this_turn_order.action == MOVE_FORWARD)
       sp_worm = worm_anim_move.getSprite( (int)(progress * 1000) );
    else if (this_turn_order.action >= ATTACK_CLOSEST && this_turn_order.action <= ATTACK_SMALLEST) {
-      if (done_attack)
-         sp_worm = worm_anim_attack_end.getSprite( (int)( ((progress - speed) / (1-speed)) * 1000) );
-      else
-         sp_worm = worm_anim_attack_start.getSprite( (int)( (progress / speed) * 1000) );
+      if (done_attack) {
+         int d_anim = (int)( ((progress - speed) / (1-speed)) * 1000);
+         if (d_anim >= 1000) d_anim = 999;
+         sp_worm = worm_anim_attack_end.getSprite( d_anim );
+      } else {
+         int d_anim = (int)( (progress / speed) * 1000);
+         if (d_anim >= 1000) d_anim = 999;
+         sp_worm = worm_anim_attack_start.getSprite( d_anim );
+      }
    } else
       sp_worm = worm_anim_idle.getSprite( (int)(progress * 1000) );
    if (NULL == sp_worm) return -1;
 
    // Move/scale sprite
-   sp_worm->setPosition( x_real, y_real );
    Vector2u dim (worm_anim_idle.image_size_x, worm_anim_idle.image_size_y);
    sp_worm->setOrigin( dim.x / 2.0, dim.y / 2.0 );
    sp_worm->setScale( 0.4 / dim.x, 0.4 / dim.y );
+
+   sp_worm->setPosition( x_real, y_real );
 
    int rotation;
    if (facing == EAST) rotation = 0;
@@ -1450,7 +1529,6 @@ int Bird::doAttack( Order o )
 
    if (target) {
       log("Bird attack");
-      // TODO: Melee poison attack
    }
 
    done_attack = 1;

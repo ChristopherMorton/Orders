@@ -31,7 +31,11 @@ IMAGE WormScratch.png
 IMAGE BirdScratch.png
 IMAGE BugScratch.png
 IMAGE BugScratchWiggleAnimation.png
+IMAGE MonsterStatic.png
+IMAGE WormStatic.png
 // Unit Animations
+IMAGE MonsterAnimIdle.png
+IMAGE MonsterAnimMove.png
 IMAGE WormAnimIdle.png
 IMAGE WormAnimMove.png
 IMAGE WormAnimAttackStart.png

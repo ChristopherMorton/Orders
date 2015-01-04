@@ -45,6 +45,9 @@ public:
 
    int alive;
 
+   int aff_poison;
+   int aff_confusion;
+
    float health, max_health;
    float speed; // 0.0-1.0 = when do moves complete?
    float vision_range;

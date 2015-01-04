@@ -5,6 +5,8 @@
 #include "units.h"
 #include "effects.h"
 
+#define GRID_AT(GRID,X,Y) (GRID[((X) + ((Y) * level_dim_x))])
+
 namespace sum
 {
    void setLevelListener( bool set = true );
@@ -42,6 +44,9 @@ namespace sum
    extern Unit *selected_unit;
 
    int initLevelGui();
+
+   extern int level_dim_x, level_dim_y;
+   extern Unit **unit_grid;
 };
 
 #endif

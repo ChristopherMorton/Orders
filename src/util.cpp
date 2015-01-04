@@ -1,6 +1,9 @@
 #include "util.h"
+#include "level.h"
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Texture.hpp>
+
+using namespace sum;
 
 void normalizeTo1x1( sf::Sprite *s )
 {
@@ -13,21 +16,38 @@ void normalizeTo1x1( sf::Sprite *s )
    }
 }
 
-sum::Direction getDirection( int x, int y, int to_x, int to_y )
+Direction getDirection( int x, int y, int to_x, int to_y )
 {
    int dx = to_x - x,
        dy = to_y - y;
 
    if (abs(dx) > abs(dy)) {
       if (dx > 0)
-         return sum::EAST;
+         return EAST;
       else
-         return sum::WEST;
+         return WEST;
    } else {
       if (dy > 0)
-         return sum::SOUTH;
+         return SOUTH;
       else
-         return sum::NORTH;
+         return NORTH;
    }
-   return sum::ALL_DIR;
+   return ALL_DIR;
+}
+
+int addDirection( Direction d, int &x, int &y )
+{
+   if (d == NORTH)
+      --y;
+   else if (d == SOUTH)
+      ++y;
+   else if (d == EAST)
+      ++x;
+   else if (d == WEST)
+      --x;
+
+   if (x < 0 || y < 0 || x >= level_dim_x || y >= level_dim_y)
+      return -1;
+
+   return 0;
 }

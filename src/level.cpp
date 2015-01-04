@@ -102,8 +102,6 @@ int key_shift_down = 0;
 //////////////////////////////////////////////////////////////////////
 // Utility ---
 
-#define GRID_AT(GRID,X,Y) (GRID[((X) + ((Y) * level_dim_x))])
-
 Vector2f coordsWindowToView( int window_x, int window_y )
 {
    RenderWindow *r_window = SFML_GlobalRenderWindow::get();
