@@ -175,9 +175,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1"
-     inkscape:cx="64"
-     inkscape:cy="64"
+     inkscape:zoom="0.5"
+     inkscape:cx="469.70791"
+     inkscape:cy="226.50599"
      inkscape:document-units="px"
      inkscape:current-layer="layer2"
      showgrid="true"
@@ -206,7 +206,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
+        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -395,13 +395,134 @@
        id="path3935"
        d="m 46.245704,960.87176 2.06488,2.29431"
        style="fill:none;stroke:#000000;stroke-width:1.07832646;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;display:inline" />
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="-128"
+       y="0"
+       id="text11423"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan11425"
+         x="-128"
+         y="0">Static</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="-192"
+       y="128"
+       id="text11427"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan11429"
+         x="-192"
+         y="128">Idle (a)</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="-192"
+       y="384"
+       id="text11435"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan11437"
+         x="-192"
+         y="384">Attack (a)</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="-192"
+       y="256"
+       id="text11455"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan11457"
+         x="-192"
+         y="256">Move (a)</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text11459"
+       y="512"
+       x="-192"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         y="512"
+         x="-192"
+         id="tspan11461"
+         sodipodi:role="line">Idle (s)</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text11463"
+       y="768"
+       x="-192"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         y="768"
+         x="-192"
+         id="tspan11465"
+         sodipodi:role="line">Attack (s)</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text11467"
+       y="640"
+       x="-192"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         y="640"
+         x="-192"
+         id="tspan11469"
+         sodipodi:role="line">Move (s)</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="-192"
+       y="896"
+       id="text11471"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan11473"
+         x="-192"
+         y="896">Idle (b)</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="-192"
+       y="1152"
+       id="text11475"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan11477"
+         x="-192"
+         y="1152">Attack (b)</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="-192"
+       y="1024"
+       id="text11479"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan11481"
+         x="-192"
+         y="1024">Move (b)</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="-192"
+       y="1280"
+       id="text11483"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan11485"
+         x="-192"
+         y="1280">Death</tspan></text>
   </g>
   <g
      inkscape:label="Head"
      inkscape:groupmode="layer"
      id="layer1"
      transform="translate(0,-924.36218)"
-     style="display:none">
+     style="display:inline">
     <path
        style="fill:#ff6600;fill-opacity:1;stroke:#803300;stroke-width:2.43643332;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1"
        d="m 55.471674,978.0181 0,21.2296 c 2.580346,-2.234 5.782016,-3.5382 9.289722,-3.5382 3.202158,0 6.14499,1.1398 8.60159,3.033 l 0,-20.2186 c -2.4566,1.8924 -5.399432,3.0324 -8.60159,3.0324 -3.507706,0 -6.709376,-1.3038 -9.289722,-3.5382 z"

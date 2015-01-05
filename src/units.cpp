@@ -12,6 +12,8 @@
 
 #include <SFML/Graphics.hpp>
 
+#include <set>
+
 //////////////////////////////////////////////////////////////////////
 // Definitions ---
 
@@ -283,11 +285,29 @@ int Unit::completeBasicOrder( Order &o )
 
 bool Unit::evaluateConditional( Order o )
 {
+   bool s = true;
    switch (o.condition) {
       case TRUE:
          return true;
+      case ENEMY_NOT_ADJACENT:
+         s = false;
+      case ENEMY_ADJACENT:
+      case ENEMY_NOT_AHEAD:
+         s = false;
+      case ENEMY_AHEAD:
+      case ENEMY_NOT_IN_RANGE:
+         s = false;
       case ENEMY_IN_RANGE:
-         return getEnemy( x_grid, y_grid, attack_range, facing, this, SELECT_CLOSEST ) != NULL;
+         return s != !(getEnemy( x_grid, y_grid, attack_range, facing, this, SELECT_CLOSEST ) != NULL);
+      case ALLY_NOT_ADJACENT:
+         s = false;
+      case ALLY_ADJACENT:
+      case ALLY_NOT_AHEAD:
+         s = false;
+      case ALLY_AHEAD:
+      case ALLY_NOT_IN_RANGE:
+         s = false;
+      case ALLY_IN_RANGE:
       default:
          return true;
    }
@@ -383,9 +403,12 @@ int Unit::prepareTurn()
          return 0;
    }
 
-   while (active == 1 && 
-          current_order != final_order) {
+   // TODO: Make this work safely, no endless loops
+   set<int> visited_orders;
+   while (active == 1 && current_order != final_order 
+         && visited_orders.find( current_order ) != visited_orders.end()) {
       this_turn_order = order_queue[current_order];
+      visited_orders.insert( current_order );
       bool decision = evaluateConditional(this_turn_order);
       int r = prepareBasicOrder(this_turn_order, decision);
       // if prepareBasicOrder returns 0, it's a 0-length instruction (e.g. turn)

@@ -23,7 +23,9 @@ namespace sum
 #define SELECT_BIGGEST 3
 #define SELECT_SMALLEST 4
    class Unit;
-   Unit* getEnemy( int x, int y, float range, Direction dir, Unit *source, int selector);
+   Unit* getEnemy( int x, int y, float range, Direction dir, Unit *source, int selector, bool ally = false);
+   Unit* getEnemyLine( int x, int y, float range, Direction dir, Unit *source, int selector, bool ally = false);
+   Unit* getEnemyAdjacent( int x, int y, Unit *source, int selector, bool ally = false);
 
    bool isVisible( int x, int y );
 

@@ -639,7 +639,37 @@ int selectUnit( Vector2f coords )
    return -1;
 }
 
-Unit* getEnemy( int x, int y, float range, Direction dir, Unit *source, int selector)
+Unit* enemySelector( int selector, Unit* u_cur, Unit* u_new, float cur_r_squared, float new_r_squared )
+{
+   // Compare based on selector
+   if (NULL == u_cur) {
+      return u_new;
+   } else if (selector == SELECT_CLOSEST) {
+      if (new_r_squared < cur_r_squared)
+         return u_new;
+      else
+         return u_cur;
+   } else if (selector == SELECT_FARTHEST) {
+      if (new_r_squared > cur_r_squared)
+         return u_new;
+      else
+         return u_cur;
+   } else if (selector == SELECT_SMALLEST) {
+      if (u_new->health < u_cur->health)
+         return u_new;
+      else
+         return u_cur;
+   } else if (selector == SELECT_BIGGEST) {
+      if (u_new->health > u_cur->health)
+         return u_new;
+      else
+         return u_cur;
+   }
+
+   return NULL;
+}
+
+Unit* getEnemyBox( int x, int y, int min_x, int max_x, int min_y, int max_y, float range, Unit *source, int selector, bool ally )
 {
    int team;
    if (source == NULL) team = -1;
@@ -647,29 +677,7 @@ Unit* getEnemy( int x, int y, float range, Direction dir, Unit *source, int sele
       team = source->team;
       calculateUnitVision( source, true );
    }
-   // First, get search box
-   int int_range = (int) range + 1;
-   int min_x, max_x, min_y, max_y;
-   min_x = x - int_range;
-   max_x = x + int_range;
-   min_y = y - int_range;
-   max_y = y + int_range;
-   switch (dir) {
-      case NORTH:
-         max_y = y;
-         break;
-      case SOUTH:
-         min_y = y;
-         break;
-      case WEST:
-         max_x = x;
-         break;
-      case EAST:
-         min_x = x;
-         break;
-      default:
-         break;
-   }
+
    if (min_x < 0) min_x = 0;
    if (max_x >= level_dim_x) max_x = level_dim_x - 1;
    if (min_y < 0) min_y = 0;
@@ -682,7 +690,8 @@ Unit* getEnemy( int x, int y, float range, Direction dir, Unit *source, int sele
    for (int j = min_y; j <= max_y; ++j) {
       for (int i = min_x; i <= max_x; ++i) {
          Unit *u = GRID_AT(unit_grid,i,j);
-         if (u && u->team != team && (u->alive == 1)) {
+         if (u && (u->alive == 1) &&
+               ((ally == false && (u->team != team)) || (ally == true && (u->team == team)))) {
             // Can I see it?
             if ((team == -1) || (GRID_AT(ai_vision_grid,i,j) == VIS_VISIBLE)) {
                float u_x = u->x_grid - x, u_y = u->y_grid - y;
@@ -690,7 +699,11 @@ Unit* getEnemy( int x, int y, float range, Direction dir, Unit *source, int sele
                // Is it really in range?
                if (u_squared <= range_squared) {
                   // Compare based on selector
-                  if (NULL == result) {
+                  if (result != enemySelector( selector, result, u, result_r_squared, u_squared )) {
+                     result = u;
+                     result_r_squared = u_squared;
+                  }
+                  /*if (NULL == result) {
                      result = u;
                      result_r_squared = u_squared;
                   } else if (selector == SELECT_CLOSEST) {
@@ -714,7 +727,79 @@ Unit* getEnemy( int x, int y, float range, Direction dir, Unit *source, int sele
                         result_r_squared = u_squared;
                      }
                   }
+                  */
                }
+            }
+         }
+      }
+   }
+
+   return result;
+}
+
+Unit* getEnemy( int x, int y, float range, Direction dir, Unit *source, int selector, bool ally )
+{
+   // Set up search box
+   int int_range = (int) range + 1;
+   int min_x, max_x, min_y, max_y;
+   min_x = x - int_range;
+   max_x = x + int_range;
+   min_y = y - int_range;
+   max_y = y + int_range;
+   switch (dir) {
+      case NORTH:
+         max_y = y;
+         break;
+      case SOUTH:
+         min_y = y;
+         break;
+      case WEST:
+         max_x = x;
+         break;
+      case EAST:
+         min_x = x;
+         break;
+      default:
+         break;
+   }
+
+   return getEnemyBox( x, y, min_x, max_x, min_y, max_y, range, source, selector, ally );
+}
+
+Unit* getEnemyLine( int x, int y, float range, Direction dir, Unit *source, int selector, bool ally )
+{
+   // Split it up
+   if (dir == NORTH)
+      return getEnemyBox( x, y, x, x, y - 1, y - (int)range, range, source, selector, ally );
+   else if (dir == SOUTH)
+      return getEnemyBox( x, y, x, x, y + 1, y + (int)range, range, source, selector, ally );
+   else if (dir == WEST)
+      return getEnemyBox( x, y, x - 1, x - (int)range, y, y, range, source, selector, ally );
+   else if (dir == EAST)
+      return getEnemyBox( x, y, x + 1, x + (int)range, y, y, range, source, selector, ally );
+
+   return NULL;
+}
+
+Unit* getEnemyAdjacent( int x, int y, Unit *source, int selector, bool ally )
+{
+   int team;
+   if (source == NULL) team = -1;
+   else {
+      team = source->team;
+   }
+
+   Unit *result = NULL, *u = NULL;
+   int x0, y0;
+   for (int d = (int)NORTH; d < (int)ALL_DIR; ++d) {
+      x0 = x;
+      y0 = y;
+      if (addDirection( (Direction)d, x0, y0 ) == 0) {
+         u = GRID_AT(unit_grid,x0,y0);
+         if (u && (u->alive == 1) &&
+               ((ally == false && (u->team != team)) || (ally == true && (u->team == team)))) {
+            if (result != enemySelector( selector, result, u, 1, 1 )) {
+               result = u;
             }
          }
       }
