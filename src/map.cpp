@@ -50,7 +50,6 @@ string s_map_start_level = "Start Level";
 
 int selected_level = -1;
 int *a_selection_grid;
-#define GRID_AT(GRID,X,Y) (GRID[((X) + ((Y) * c_map_dimension))])
 
 const int c_map_dimension = 30;
 const float c_view_size = 9;

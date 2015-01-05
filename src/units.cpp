@@ -814,6 +814,7 @@ Animation monster_anim_idle;
 Animation monster_anim_move;
 Animation monster_anim_attack_start;
 Animation monster_anim_attack_end;
+Animation monster_anim_death;
 
 void initMonsterAnimations()
 {
@@ -828,6 +829,9 @@ void initMonsterAnimations()
 
    t = SFML_TextureManager::getSingleton().getTexture( "MonsterAnimAttackEnd.png" );
    monster_anim_attack_end.load( t, 128, 128, 7, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "MonsterAnimDeath.png" );
+   monster_anim_death.load( t, 128, 128, 7, DEATH_TIME );
 }
 
 // *tors
@@ -897,25 +901,7 @@ int Monster::addOrder( Order o )
 int Monster::doAttack( Order o )
 {
    log("Monster doAttack");
-   int selector = SELECT_CLOSEST;
    Unit *target = NULL;
-   switch(o.action) {
-      case ATTACK_CLOSEST:
-         selector = SELECT_CLOSEST;
-         break;
-      case ATTACK_FARTHEST:
-         selector = SELECT_FARTHEST;
-         break;
-      case ATTACK_SMALLEST:
-         selector = SELECT_SMALLEST;
-         break;
-      case ATTACK_BIGGEST:
-         selector = SELECT_BIGGEST;
-         break;
-      default:
-         log("ERROR: doAttack called on non-attack order");
-         return -1;
-   }
 
    int t_x = x_grid, t_y = y_grid;
    if (addDirection( facing, t_x, t_y ) != -1)
@@ -964,7 +950,7 @@ int Monster::draw()
 {
    // Select sprite
    Sprite *sp_monster = NULL;
-   /*if (alive < 0) {
+   if (alive < 0) {
       // Death animation
       int t = alive + DEATH_TIME + DEATH_FADE_TIME;
       if (t >= DEATH_TIME) t = DEATH_TIME - 1;
@@ -974,7 +960,7 @@ int Monster::draw()
       if (alive > -DEATH_FADE_TIME)
          alpha = 255 - ((DEATH_FADE_TIME + alive) * 256 / DEATH_FADE_TIME);
       sp_monster->setColor( Color( 255, 255, 255, alpha ) );
-   } else*/ 
+   } else 
    if (this_turn_order.action == MOVE_FORWARD) {
       sp_monster = monster_anim_move.getSprite( (int)(progress * 1000) );
    } else if (this_turn_order.action >= ATTACK_CLOSEST && this_turn_order.action <= ATTACK_SMALLEST) {
@@ -1276,25 +1262,7 @@ int Worm::addOrder( Order o )
 int Worm::doAttack( Order o )
 {
    log("Worm doAttack");
-   int selector = SELECT_CLOSEST;
    Unit *target = NULL;
-   switch(o.action) {
-      case ATTACK_CLOSEST:
-         selector = SELECT_CLOSEST;
-         break;
-      case ATTACK_FARTHEST:
-         selector = SELECT_FARTHEST;
-         break;
-      case ATTACK_SMALLEST:
-         selector = SELECT_SMALLEST;
-         break;
-      case ATTACK_BIGGEST:
-         selector = SELECT_BIGGEST;
-         break;
-      default:
-         log("ERROR: doAttack called on non-attack order");
-         return -1;
-   }
 
    int t_x = x_grid, t_y = y_grid;
    if (addDirection( facing, t_x, t_y ) != -1)
