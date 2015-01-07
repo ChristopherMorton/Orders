@@ -28,10 +28,14 @@
 #define MONSTER_BASE_VISION 3.5
 #define MONSTER_BASE_SPEED 0.3
 
+#define MONSTER_CLAW_DAMAGE 10
+
 #define SOLDIER_BASE_HEALTH 300
 #define SOLDIER_BASE_MEMORY 16
 #define SOLDIER_BASE_VISION 6.5
-#define SOLDIER_BASE_SPEED 0.1
+#define SOLDIER_BASE_SPEED 0.4
+
+#define SOLDIER_AXE_DAMAGE 35
 
 #define WORM_BASE_HEALTH 40
 #define WORM_BASE_MEMORY 14
@@ -292,22 +296,27 @@ bool Unit::evaluateConditional( Order o )
       case ENEMY_NOT_ADJACENT:
          s = false;
       case ENEMY_ADJACENT:
+         return s != !(getEnemyAdjacent( x_grid, y_grid, this, SELECT_CLOSEST, false ) != NULL);
       case ENEMY_NOT_AHEAD:
          s = false;
       case ENEMY_AHEAD:
+         return s != !(getEnemyLine( x_grid, y_grid, attack_range, facing, this, SELECT_CLOSEST, false ) != NULL);
       case ENEMY_NOT_IN_RANGE:
          s = false;
       case ENEMY_IN_RANGE:
-         return s != !(getEnemy( x_grid, y_grid, attack_range, facing, this, SELECT_CLOSEST ) != NULL);
+         return s != !(getEnemy( x_grid, y_grid, attack_range, facing, this, SELECT_CLOSEST, false ) != NULL);
       case ALLY_NOT_ADJACENT:
          s = false;
       case ALLY_ADJACENT:
+         return s != !(getEnemyAdjacent( x_grid, y_grid, this, SELECT_CLOSEST, true ) != NULL);
       case ALLY_NOT_AHEAD:
          s = false;
       case ALLY_AHEAD:
+         return s != !(getEnemyLine( x_grid, y_grid, attack_range, facing, this, SELECT_CLOSEST, true ) != NULL);
       case ALLY_NOT_IN_RANGE:
          s = false;
       case ALLY_IN_RANGE:
+         return s != !(getEnemy( x_grid, y_grid, attack_range, facing, this, SELECT_CLOSEST, true ) != NULL);
       default:
          return true;
    }
@@ -395,7 +404,7 @@ int Unit::prepareTurn()
 
    if (aff_poison) {
       aff_poison--;
-      takeDamage( 10 );
+      takeDamage( MONSTER_CLAW_DAMAGE );
    }
    if (aff_confusion) {
       aff_confusion--;
@@ -403,10 +412,9 @@ int Unit::prepareTurn()
          return 0;
    }
 
-   // TODO: Make this work safely, no endless loops
    set<int> visited_orders;
    while (active == 1 && current_order != final_order 
-         && visited_orders.find( current_order ) != visited_orders.end()) {
+         && visited_orders.find( current_order ) == visited_orders.end()) {
       this_turn_order = order_queue[current_order];
       visited_orders.insert( current_order );
       bool decision = evaluateConditional(this_turn_order);
@@ -472,7 +480,7 @@ int Unit::completeTurn()
    return 0;
 }
 
-int Unit::takeDamage( float damage )
+int Unit::takeDamage( float damage, int flags )
 {
    health -= damage;
    if (health <= 0) {
@@ -1028,11 +1036,23 @@ string Monster::descriptor()
 // Soldier ---
 
 Animation soldier_anim_idle;
+Animation soldier_anim_idle_axe;
+Animation soldier_anim_attack_start_axe;
+Animation soldier_anim_attack_end_axe;
 
 void initSoldierAnimations()
 {
-   Texture *t = SFML_TextureManager::getSingleton().getTexture( "SoldierScratch.png" );
+   Texture *t = SFML_TextureManager::getSingleton().getTexture( "SoldierStatic.png" );
    soldier_anim_idle.load( t, 128, 128, 1, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "SoldierAnimIdleAxe.png" );
+   soldier_anim_idle_axe.load( t, 128, 128, 1, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "SoldierAnimAttackStartAxe.png" );
+   soldier_anim_attack_start_axe.load( t, 128, 128, 8, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "SoldierAnimAttackEndAxe.png" );
+   soldier_anim_attack_end_axe.load( t, 128, 128, 9, 1000 );
 }
 
 // *tors
@@ -1061,6 +1081,8 @@ Soldier::Soldier( int x, int y, Direction face )
    TurnTo(face);
 
    health = max_health = SOLDIER_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
+
+   stance = 0;
 
    vision_range = SOLDIER_BASE_VISION * (1.0 + ((float)focus_vision / 25.0));
    attack_range = 1.3;
@@ -1101,31 +1123,47 @@ int Soldier::addOrder( Order o )
 
 int Soldier::doAttack( Order o )
 {
-   log("Soldier doAttack");
-   int selector = SELECT_CLOSEST;
    Unit *target = NULL;
-   switch(o.action) {
-      case ATTACK_CLOSEST:
-         selector = SELECT_CLOSEST;
-         break;
-      case ATTACK_FARTHEST:
-         selector = SELECT_FARTHEST;
-         break;
-      case ATTACK_SMALLEST:
-         selector = SELECT_SMALLEST;
-         break;
-      case ATTACK_BIGGEST:
-         selector = SELECT_BIGGEST;
-         break;
-      default:
-         log("ERROR: doAttack called on non-attack order");
-         return -1;
+   if (stance == 0) {
+      int t_x = x_grid, t_y = y_grid;
+      if (addDirection( facing, t_x, t_y ) != -1)
+         target = GRID_AT(unit_grid,t_x,t_y);
+
+      if (target) {
+         log("Soldier axe attack");
+         target->takeDamage( SOLDIER_AXE_DAMAGE );
+         // TODO: Animate
+      }
    }
+   else if (stance == 1) {
+      // TODO: Selection of lance target
 
-   target = getEnemy( x_grid, y_grid, attack_range, facing, this, selector );
+   }
+   else if (stance == 2) {
+      int selector = SELECT_CLOSEST;
+      switch(o.action) {
+         case ATTACK_CLOSEST:
+            selector = SELECT_CLOSEST;
+            break;
+         case ATTACK_FARTHEST:
+            selector = SELECT_FARTHEST;
+            break;
+         case ATTACK_SMALLEST:
+            selector = SELECT_SMALLEST;
+            break;
+         case ATTACK_BIGGEST:
+            selector = SELECT_BIGGEST;
+            break;
+         default:
+            log("ERROR: doAttack called on non-attack order");
+            return -1;
+      }
+      target = getEnemy( x_grid, y_grid, attack_range, facing, this, selector );
 
-   if (target) {
-      log("Soldier attack");
+      if (target) {
+         log("Soldier bow attack");
+         addProjectile( PR_ARROW, team, x_real, y_real, 3.0, attack_range, target );
+      }
    }
 
    done_attack = 1;
@@ -1158,20 +1196,46 @@ int Soldier::update( float dtf )
 
 sf::Texture* Soldier::getTexture()
 {
-   return SFML_TextureManager::getSingleton().getTexture( "SoldierScratch.png" );
+   return SFML_TextureManager::getSingleton().getTexture( "SoldierStatic.png" );
 }
 
 int Soldier::draw()
 {
    // Select sprite
-   Sprite *sp_soldier = soldier_anim_idle.getSprite( (int)(progress * 1000) );
+   Sprite *sp_soldier = NULL;
+   /*if (alive < 0) {
+      // Death animation
+      int t = alive + DEATH_TIME + DEATH_FADE_TIME;
+      if (t >= DEATH_TIME) t = DEATH_TIME - 1;
+      sp_soldier = soldier.getSprite( t );
+
+      int alpha = 255;
+      if (alive > -DEATH_FADE_TIME)
+         alpha = 255 - ((DEATH_FADE_TIME + alive) * 256 / DEATH_FADE_TIME);
+      sp_soldier->setColor( Color( 255, 255, 255, alpha ) );
+   } else if (this_turn_order.action == MOVE_FORWARD)
+      sp_soldier = soldier_anim_move.getSprite( (int)(progress * 1000) );
+   else*/ if (this_turn_order.action >= ATTACK_CLOSEST && this_turn_order.action <= ATTACK_SMALLEST) {
+      if (done_attack) {
+         int d_anim = (int)( ((progress - speed) / (1-speed)) * 1000);
+         if (d_anim >= 1000) d_anim = 999;
+         if (stance == 0) sp_soldier = soldier_anim_attack_end_axe.getSprite( d_anim );
+      } else {
+         int d_anim = (int)( (progress / speed) * 1000);
+         if (d_anim >= 1000) d_anim = 999;
+         if (stance == 0) sp_soldier = soldier_anim_attack_start_axe.getSprite( d_anim );
+      }
+   } else {
+      if (stance == 0) sp_soldier = soldier_anim_idle_axe.getSprite( (int)(progress * 1000) );
+      else sp_soldier = soldier_anim_idle.getSprite( (int)(progress * 1000) );
+   }
    if (NULL == sp_soldier) return -1;
 
    // Move/scale sprite
    sp_soldier->setPosition( x_real, y_real );
    Vector2u dim (soldier_anim_idle.image_size_x, soldier_anim_idle.image_size_y);
    sp_soldier->setOrigin( dim.x / 2.0, dim.y / 2.0 );
-   sp_soldier->setScale( 0.7 / dim.x, 0.7 / dim.y );
+   sp_soldier->setScale( 0.8 / dim.x, 0.8 / dim.y );
 
    int rotation;
    if (facing == EAST) rotation = 0;

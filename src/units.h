@@ -81,7 +81,7 @@ public:
 
    virtual int doAttack( Order o ) = 0;
 
-   virtual int takeDamage( float damage );
+   virtual int takeDamage( float damage, int flags = 0 );
 
    virtual std::string descriptor();
 
@@ -197,6 +197,8 @@ private:
    Soldier(); // Disallowed 
 
 public:
+   int stance; // 0 - axe, 1 - spear, 2 - bow
+
    Soldier( int grid_x, int grid_y, Direction face );
 
    virtual int addOrder( Order o );
