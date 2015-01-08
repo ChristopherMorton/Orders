@@ -1711,7 +1711,7 @@ int loadLevel( int level_id )
 
       //player->x_grid = 1;
       //player->y_grid = 4;
-      addUnit( new RangedUnit( R_HUMAN_ARCHER_T, 2, 2, EAST, 2 ) );
+      addUnit( new RangedUnit( R_HUMAN_ARCHER_T, 3, 2, EAST, 2 ) );
 
       //writeLevelToFile( "res/testlevel.txt" );
    }

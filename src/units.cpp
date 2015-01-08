@@ -994,6 +994,8 @@ int Monster::draw()
    } else 
    if (this_turn_order.action == MOVE_FORWARD) {
       sp_monster = monster_anim_move.getSprite( (int)(progress * 1000) );
+   } else if (this_turn_order.action == MOVE_BACK) {
+      sp_monster = monster_anim_move.getSprite( 999 - (int)(progress * 1000) );
    } else if (this_turn_order.action >= ATTACK_CLOSEST && this_turn_order.action <= ATTACK_SMALLEST) {
       if (done_attack) {
          int d_anim = (int)( ((progress - speed) / (1-speed)) * 1000);
@@ -1037,6 +1039,7 @@ string Monster::descriptor()
 
 Animation soldier_anim_idle;
 Animation soldier_anim_idle_axe;
+Animation soldier_anim_move_axe;
 Animation soldier_anim_attack_start_axe;
 Animation soldier_anim_attack_end_axe;
 
@@ -1046,13 +1049,16 @@ void initSoldierAnimations()
    soldier_anim_idle.load( t, 128, 128, 1, 1000 );
 
    t = SFML_TextureManager::getSingleton().getTexture( "SoldierAnimIdleAxe.png" );
-   soldier_anim_idle_axe.load( t, 128, 128, 1, 1000 );
+   soldier_anim_idle_axe.load( t, 128, 128, 10, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "SoldierAnimMoveAxe.png" );
+   soldier_anim_move_axe.load( t, 128, 128, 16, 1000 );
 
    t = SFML_TextureManager::getSingleton().getTexture( "SoldierAnimAttackStartAxe.png" );
-   soldier_anim_attack_start_axe.load( t, 128, 128, 8, 1000 );
+   soldier_anim_attack_start_axe.load( t, 128, 128, 10, 1000 );
 
    t = SFML_TextureManager::getSingleton().getTexture( "SoldierAnimAttackEndAxe.png" );
-   soldier_anim_attack_end_axe.load( t, 128, 128, 9, 1000 );
+   soldier_anim_attack_end_axe.load( t, 128, 128, 8, 1000 );
 }
 
 // *tors
@@ -1213,9 +1219,11 @@ int Soldier::draw()
       if (alive > -DEATH_FADE_TIME)
          alpha = 255 - ((DEATH_FADE_TIME + alive) * 256 / DEATH_FADE_TIME);
       sp_soldier->setColor( Color( 255, 255, 255, alpha ) );
-   } else if (this_turn_order.action == MOVE_FORWARD)
-      sp_soldier = soldier_anim_move.getSprite( (int)(progress * 1000) );
-   else*/ if (this_turn_order.action >= ATTACK_CLOSEST && this_turn_order.action <= ATTACK_SMALLEST) {
+   } else*/ if (this_turn_order.action == MOVE_FORWARD) {
+      if (stance == 0) sp_soldier = soldier_anim_move_axe.getSprite( (int)(progress * 1000) );
+   } else if (this_turn_order.action == MOVE_BACK) {
+      if (stance == 0) sp_soldier = soldier_anim_move_axe.getSprite( 999 - (int)(progress * 1000) );
+   } else if (this_turn_order.action >= ATTACK_CLOSEST && this_turn_order.action <= ATTACK_SMALLEST) {
       if (done_attack) {
          int d_anim = (int)( ((progress - speed) / (1-speed)) * 1000);
          if (d_anim >= 1000) d_anim = 999;
@@ -1460,9 +1468,12 @@ int Worm::draw()
       if (alive > -DEATH_FADE_TIME)
          alpha = 255 - ((DEATH_FADE_TIME + alive) * 256 / DEATH_FADE_TIME);
       sp_worm->setColor( Color( 255, 255, 255, alpha ) );
-   } else if (this_turn_order.action == MOVE_FORWARD)
+   } else if (this_turn_order.action == MOVE_FORWARD) {
       sp_worm = worm_anim_move.getSprite( (int)(progress * 1000) );
-   else if (this_turn_order.action >= ATTACK_CLOSEST && this_turn_order.action <= ATTACK_SMALLEST) {
+   } else if (this_turn_order.action == MOVE_BACK) {
+      // TODO: Worm should have different retreat animation
+      sp_worm = worm_anim_move.getSprite( 999 - (int)(progress * 1000) );
+   } else if (this_turn_order.action >= ATTACK_CLOSEST && this_turn_order.action <= ATTACK_SMALLEST) {
       if (done_attack) {
          int d_anim = (int)( ((progress - speed) / (1-speed)) * 1000);
          if (d_anim >= 1000) d_anim = 999;
