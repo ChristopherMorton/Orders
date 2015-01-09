@@ -24,6 +24,8 @@
 
 #define MOUSE_DOWN_SELECT_TIME 200
 
+#define GRID_AT(GRID,X,Y) (GRID[((X) + ((Y) * c_map_dimension))])
+
 using namespace sf;
 
 namespace sum

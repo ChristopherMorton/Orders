@@ -824,7 +824,7 @@ int runApp()
    SFML_GlobalRenderWindow::set( r_window );
    gui_manager->setRenderWindow( r_window );
 
-   texture_manager->addSearchDirectory( "res/" ); 
+   texture_manager->addSearchDirectory( "./res/" ); 
 
    // Setup event listeners
    MainWindowListener w_listener;

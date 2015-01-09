@@ -44,7 +44,8 @@ sf::Sprite *Animation::getSprite( int dt )
 
    int frame = getFrame( dt, duration, num_images );
 
-   sprite->setTextureRect( IntRect( (frame * image_size_x), 0, image_size_x, image_size_y ) );
+   const IntRect ir( (frame * image_size_x), 0, image_size_x, image_size_y );
+   sprite->setTextureRect( ir );
 
    return sprite;
 }

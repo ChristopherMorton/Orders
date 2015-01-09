@@ -59,6 +59,8 @@ using namespace std;
 namespace sum
 {
 
+#define GRID_AT(GRID,X,Y) (GRID[((X) + ((Y) * level_dim_x))])
+
 //////////////////////////////////////////////////////////////////////
 // Base Unit ---
 
@@ -545,6 +547,8 @@ RangedUnit::RangedUnit( UnitType t, int x, int y, Direction face, int my_team )
       default:
          break;
    }
+
+   progress = 0;
 }
 
 int RangedUnit::doAttack( Order o )
@@ -723,6 +727,7 @@ int Player::init( int x, int y, Direction face )
 
    active = 0;
    team = 0; 
+   progress = 0;
 
    return 0;
 }
@@ -905,6 +910,7 @@ Monster::Monster( int x, int y, Direction face )
 
    active = 0;
    team = 0;
+   progress = 0;
 }
 
 Monster::~Monster()
@@ -1103,6 +1109,7 @@ Soldier::Soldier( int x, int y, Direction face )
 
    active = 0;
    team = 0;
+   progress = 0;
 }
 
 Soldier::~Soldier()
@@ -1330,6 +1337,7 @@ Worm::Worm( int x, int y, Direction face )
 
    active = 0;
    team = 0;
+   progress = 0;
 }
 
 Worm::~Worm()
@@ -1562,6 +1570,7 @@ Bird::Bird( int x, int y, Direction face )
 
    active = 0;
    team = 0;
+   progress = 0;
 }
 
 Bird::~Bird()
@@ -1732,6 +1741,7 @@ Bug::Bug( int x, int y, Direction face )
 
    active = 0;
    team = 0;
+   progress = 0;
 }
 
 Bug::~Bug()
@@ -1885,6 +1895,7 @@ SummonMarker::SummonMarker( )
 
    active = 0;
    team = 0;
+   progress = 0;
 }
 
 SummonMarker *theSummonMarker = NULL;
@@ -2041,6 +2052,7 @@ TargetPractice::TargetPractice( int x, int y, Direction face )
 
    active = 0;
    team = 99;
+   progress = 0;
 }
 
 int TargetPractice::addOrder( Order o )

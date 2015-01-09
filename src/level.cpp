@@ -38,6 +38,8 @@ using namespace std;
 
 namespace sum {
 
+#define GRID_AT(GRID,X,Y) (GRID[((X) + ((Y) * level_dim_x))])
+
 //////////////////////////////////////////////////////////////////////
 // Global app-state variables ---
 
@@ -556,6 +558,7 @@ int calculateUnitVision( Unit *unit, bool ai=false )
 
 int calculateVision()
 {
+   /*
    if (false == vision_enabled) {
       int x, y;
       for (x = 0; x < level_dim_x; ++x) {
@@ -566,6 +569,7 @@ int calculateVision()
 
       return -1;
    }
+   */
 
    int x, y;
    for (x = 0; x < level_dim_x; ++x) {
@@ -1580,6 +1584,7 @@ int createLevelFromFile( string filename )
    char* fileContents;
    if(level_file.is_open())
    {
+      level_file.seekg(0, ios::end);
       fileSize = level_file.tellg();
       fileContents = new char[fileSize];
       level_file.seekg(0, ios::beg);
@@ -1605,8 +1610,7 @@ int createLevelFromFile( string filename )
 
          for (x = 0; x < dim_x; ++x) {
             for (y = 0; y < dim_y; ++y) {
-               GRID_AT(terrain_grid,x,y) = parseTerrain( fileContents[counter] );
-               counter++;
+               GRID_AT(terrain_grid,x,y) = parseTerrain( fileContents[counter++] );
             }
          }
 
@@ -1636,7 +1640,7 @@ int writeLevelToFile( string filename )
                  // Could be some other metadata here
                  + (level_dim_x * level_dim_y) // terrain data
                  + 1 // count of units
-                 + (4 * unitcount) // unit descriptions
+                 + (4 * (unitcount+1)) // unit descriptions
                  // Should be something here for buildings
                  ;
    char *fileContents = new char[writesize];
@@ -1721,6 +1725,9 @@ int loadLevel( int level_id )
 
    vision_enabled = true;
    calculateVision();
+
+   turn = 0;
+   turn_progress = 0;
 
    return 0;
 }
@@ -4106,6 +4113,8 @@ void drawEffects()
 
 int drawFog()
 {
+   if (false == vision_enabled) return -1;
+
    SFML_TextureManager &t_manager = SFML_TextureManager::getSingleton();
    RenderWindow *r_window = SFML_GlobalRenderWindow::get();
 
@@ -4247,6 +4256,12 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
          playerAddCount( 8 );
       if (key_press.code == Keyboard::Num9)
          playerAddCount( 9 );
+
+
+      // Debugging
+      if (key_press.code == Keyboard::V)
+         vision_enabled = !vision_enabled;
+
 
       // TODO: Make key-bindings something you can change/save
 

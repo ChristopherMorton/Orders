@@ -589,8 +589,8 @@ void drawCount( int count, int x, int y, int size, bool plus, int char_size )
    count_rect->setOutlineColor( Color::Black );
    count_rect->setOutlineThickness( 1.0 );
 
-   IMGuiManager::getSingleton().pushSprite( count_text );
-   IMGuiManager::getSingleton().pushSprite( count_rect );
+   IMGuiManager::getSingleton().pushSprite( count_text, true );
+   IMGuiManager::getSingleton().pushSprite( count_rect, true );
 }
 
 void drawCondition( Order_Conditional c, int x_b, int y_b, int size )
@@ -661,8 +661,8 @@ void drawCondition( Order_Conditional c, int x_b, int y_b, int size )
    sp_cond->scale( s, s );
    sp_base->setPosition( x, y );
    sp_cond->setPosition( x, y );
-   IMGuiManager::getSingleton().pushSprite( sp_cond );
-   IMGuiManager::getSingleton().pushSprite( sp_base );
+   IMGuiManager::getSingleton().pushSprite( sp_cond, true );
+   IMGuiManager::getSingleton().pushSprite( sp_base, true );
 }
 
 void drawOrder( Order o, int x, int y, int size )
