@@ -295,9 +295,9 @@ int removeEffect( Effect *p )
    return -1;
 }
 
-int addProjectile( Effect_Type t, int team, float x, float y, float speed, float range, Unit* target )
+int addProjectile( Effect_Type t, int team, float x, float y, float speed, float range, Unit* target, float fastforward )
 {
-   Effect *p = genProjectile( t, team, x, y, speed, range, target );
+   Effect *p = genProjectile( t, team, x, y, speed, range, target, fastforward );
 
    if (p) {
       effect_list.push_back(p);
@@ -306,9 +306,9 @@ int addProjectile( Effect_Type t, int team, float x, float y, float speed, float
    return -1;
 }
 
-int addEffect( Effect_Type t, float dur, float x, float y )
+int addEffect( Effect_Type t, float dur, float x, float y, float rot )
 {
-   Effect *e = genEffect( t, dur, x, y );
+   Effect *e = genEffect( t, dur, x, y, rot );
 
    if (e) {
       effect_list.push_back(e);
@@ -1078,7 +1078,7 @@ int completeSummon( Order o )
    if (NULL != u)
    {
       addUnit( u );
-      effect_list.push_back( new StaticEffect( SE_SUMMON_CLOUD, 0.5, x + 0.5, y + 0.5 ) );
+      addEffect( SE_SUMMON_CLOUD, 0.5, x + 0.5, y + 0.5, 0 );
    }
 
    return 0;
@@ -1716,6 +1716,7 @@ int loadLevel( int level_id )
       //player->x_grid = 1;
       //player->y_grid = 4;
       addUnit( new RangedUnit( R_HUMAN_ARCHER_T, 3, 2, EAST, 2 ) );
+      addUnit( new TargetPractice( 3, 3, EAST ) );
 
       //writeLevelToFile( "res/testlevel.txt" );
    }

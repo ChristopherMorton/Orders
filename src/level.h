@@ -24,6 +24,7 @@ namespace sum
    Unit* getEnemy( int x, int y, float range, Direction dir, Unit *source, int selector, bool ally = false);
    Unit* getEnemyLine( int x, int y, float range, Direction dir, Unit *source, int selector, bool ally = false);
    Unit* getEnemyAdjacent( int x, int y, Unit *source, int selector, bool ally = false);
+   Unit* getEnemyBox( int x, int y, int min_x, int max_x, int min_y, int max_y, float range, Unit *source, int selector, bool ally = false );
 
    bool isVisible( int x, int y );
 
@@ -31,8 +32,8 @@ namespace sum
    bool canMoveUnit( int x, int y, int from_x, int from_y, Unit* u );
 
    int moveUnit( Unit *u, int new_x, int new_y );
-   int addProjectile( Effect_Type t, int team, float x, float y, float speed, float range, Unit* target );
-   int addEffect( Effect_Type t, float dur, float x, float y );
+   int addProjectile( Effect_Type t, int team, float x, float y, float speed, float range, Unit* target, float fastforward = 0 );
+   int addEffect( Effect_Type t, float dur, float x, float y, float rot );
 
    int broadcastOrder( Order o );
    int startPlayerCommand( Order o );

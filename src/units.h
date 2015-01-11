@@ -207,6 +207,7 @@ public:
 
    virtual std::string descriptor();
 
+   virtual int prepareTurn();
    //virtual int startTurn();
    //virtual int completeTurn();
    //virtual int update( float dtf );

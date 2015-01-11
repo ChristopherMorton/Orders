@@ -98,6 +98,7 @@ Projectile::Projectile( Effect_Type t, int tm, float x, float y, float speed, fl
    range = r / speed;
 
    vel.x = tgt->x_real - x;
+   if (vel.x == 0) vel.x = 0.0001;
    vel.y = tgt->y_real - y;
    rotation = atan( vel.y / vel.x ) * 180 / 3.1415926;
    // normalize
@@ -114,6 +115,8 @@ Projectile::Projectile( Effect_Type t, int tm, float x, float y, float speed, fl
       case PR_HOMING_ORB:
          radius = 0.1;
          damage = 30.0;
+         break;
+      default:
          break;
    }
 }
@@ -133,6 +136,7 @@ int StaticEffect::update( float dtf )
 }
 
 Sprite *sp_summon_cloud = NULL;
+Sprite *sp_spear_anim = NULL;
 
 int StaticEffect::draw()
 {
@@ -143,23 +147,35 @@ int StaticEffect::draw()
       sp_summon_cloud->setOrigin( dim.x / 2.0, dim.y / 2.0 );
       normalizeTo1x1( sp_summon_cloud );
    }
+   if (NULL == sp_spear_anim) {
+      Texture *tex =SFML_TextureManager::getSingleton().getTexture( "SpearAttackVisualEffect.png" ); 
+      sp_spear_anim = new Sprite( *(tex));
+      Vector2u dim = tex->getSize();
+      sp_spear_anim->setOrigin( 0, dim.y / 2.0 );
+      normalizeTo1x1( sp_spear_anim );
+      sp_spear_anim->scale( 3.0, 1.0 );
+   }
 
    Sprite *sp = NULL;
    if (type == SE_SUMMON_CLOUD)
       sp = sp_summon_cloud;
+   else if (type == SE_SPEAR_ANIM)
+      sp = sp_spear_anim;
 
    if (NULL != sp) {
       sp->setPosition( pos );
+      sp->setRotation( rotation );
       SFML_GlobalRenderWindow::get()->draw( *sp );
    }
 
    return 0;
 }
 
-StaticEffect::StaticEffect( Effect_Type t, float dur, float x, float y )
+StaticEffect::StaticEffect( Effect_Type t, float dur, float x, float y, float rot )
 {
    type = t;
    duration = dur;
+   rotation = rot;
    pos = Vector2f( x, y );
 }
 
@@ -176,7 +192,7 @@ int initEffects()
    return 0;
 }
 
-Projectile *genProjectile( Effect_Type t, int tm, float x, float y, float speed, float range, Unit* target )
+Projectile *genProjectile( Effect_Type t, int tm, float x, float y, float speed, float range, Unit* target, float fastforward )
 {
    Projectile *result = NULL;
    if (target && t <= PR_HOMING_ORB) {
@@ -184,15 +200,18 @@ Projectile *genProjectile( Effect_Type t, int tm, float x, float y, float speed,
       result = new Projectile( t, tm, x, y, speed, range, target );
    }
 
+   if (fastforward > 0)
+      result->update( fastforward );
+
    return result;
 }
 
-StaticEffect *genEffect( Effect_Type t, float dur, float x, float y )
+StaticEffect *genEffect( Effect_Type t, float dur, float x, float y, float rotation )
 {
    StaticEffect *result = NULL;
-   if (t >= SE_SUMMON_CLOUD && t <= SE_SUMMON_CLOUD) {
+   if (t >= SE_SUMMON_CLOUD && t <= SE_SPEAR_ANIM) {
       log("Generating effect");
-      result = new StaticEffect( t, dur, x, y );
+      result = new StaticEffect( t, dur, x, y, rotation );
    }
 
    return result;

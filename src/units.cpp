@@ -13,6 +13,7 @@
 #include <SFML/Graphics.hpp>
 
 #include <set>
+#include <cmath>
 
 //////////////////////////////////////////////////////////////////////
 // Definitions ---
@@ -36,6 +37,7 @@
 #define SOLDIER_BASE_SPEED 0.4
 
 #define SOLDIER_AXE_DAMAGE 35
+#define SOLDIER_SPEAR_DAMAGE 30
 
 #define WORM_BASE_HEALTH 40
 #define WORM_BASE_MEMORY 14
@@ -420,7 +422,7 @@ int Unit::prepareTurn()
       this_turn_order = order_queue[current_order];
       visited_orders.insert( current_order );
       bool decision = evaluateConditional(this_turn_order);
-      int r = prepareBasicOrder(this_turn_order, decision);
+      int r = prepareBasicOrder(order_queue[current_order], decision);
       // if prepareBasicOrder returns 0, it's a 0-length instruction (e.g. turn)
       if (r == 0) {
          current_order++;
@@ -576,7 +578,7 @@ int RangedUnit::doAttack( Order o )
    target = getEnemy( x_grid, y_grid, attack_range, facing, this, selector );
 
    if (target) {
-      addProjectile( PR_ARROW, team, x_real, y_real, 3.0, attack_range, target );
+      addProjectile( PR_ARROW, team, x_real, y_real, 3.0, attack_range, target, 0.1 );
    }
 
    done_attack = 1;
@@ -1048,6 +1050,14 @@ Animation soldier_anim_idle_axe;
 Animation soldier_anim_move_axe;
 Animation soldier_anim_attack_start_axe;
 Animation soldier_anim_attack_end_axe;
+Animation soldier_anim_idle_spear;
+Animation soldier_anim_move_spear;
+Animation soldier_anim_attack_start_spear;
+Animation soldier_anim_attack_end_spear;
+Animation soldier_anim_idle_bow;
+Animation soldier_anim_move_bow;
+Animation soldier_anim_attack_start_bow;
+Animation soldier_anim_attack_end_bow;
 
 void initSoldierAnimations()
 {
@@ -1065,6 +1075,30 @@ void initSoldierAnimations()
 
    t = SFML_TextureManager::getSingleton().getTexture( "SoldierAnimAttackEndAxe.png" );
    soldier_anim_attack_end_axe.load( t, 128, 128, 8, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "SoldierAnimIdleSpear.png" );
+   soldier_anim_idle_spear.load( t, 128, 128, 10, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "SoldierAnimMoveSpear.png" );
+   soldier_anim_move_spear.load( t, 128, 128, 16, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "SoldierAnimAttackStartSpear.png" );
+   soldier_anim_attack_start_spear.load( t, 128, 128, 10, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "SoldierAnimAttackEndSpear.png" );
+   soldier_anim_attack_end_spear.load( t, 128, 128, 9, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "SoldierAnimIdleBow.png" );
+   soldier_anim_idle_bow.load( t, 128, 128, 10, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "SoldierAnimMoveBow.png" );
+   soldier_anim_move_bow.load( t, 128, 128, 16, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "SoldierAnimAttackStartBow.png" );
+   soldier_anim_attack_start_bow.load( t, 128, 128, 11, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "SoldierAnimAttackEndBow.png" );
+   soldier_anim_attack_end_bow.load( t, 128, 128, 11, 1000 );
 }
 
 // *tors
@@ -1137,6 +1171,25 @@ int Soldier::addOrder( Order o )
 int Soldier::doAttack( Order o )
 {
    Unit *target = NULL;
+   int selector = SELECT_CLOSEST;
+   switch(o.action) {
+      case ATTACK_CLOSEST:
+         selector = SELECT_CLOSEST;
+         break;
+      case ATTACK_FARTHEST:
+         selector = SELECT_FARTHEST;
+         break;
+      case ATTACK_SMALLEST:
+         selector = SELECT_SMALLEST;
+         break;
+      case ATTACK_BIGGEST:
+         selector = SELECT_BIGGEST;
+         break;
+      default:
+         log("ERROR: doAttack called on non-attack order");
+         return -1;
+   }
+
    if (stance == 0) {
       int t_x = x_grid, t_y = y_grid;
       if (addDirection( facing, t_x, t_y ) != -1)
@@ -1149,33 +1202,67 @@ int Soldier::doAttack( Order o )
       }
    }
    else if (stance == 1) {
-      // TODO: Selection of lance target
+      int min_x = x_grid - 2, max_x = x_grid + 2, min_y = y_grid - 2, max_y = y_grid + 2;
+      if (facing == NORTH) max_y = y_grid - 1;
+      else if (facing == SOUTH) min_y = y_grid + 1;
+      else if (facing == WEST) max_x = x_grid - 1;
+      else if (facing == EAST) min_x = x_grid + 1;
+
+      target = getEnemyBox( x_grid, y_grid, min_x, max_x, min_y, max_y, attack_range, this, selector );
+
+      if (target) {
+         log("Soldier spear attack");
+         // Get spear trajectory
+         int t_x = target->x_grid, t_y = target->y_grid;
+         if (t_x == x_grid + 1) {
+            if (t_y == y_grid + 1) {
+               t_x = x_grid + 2;
+               t_y = y_grid + 2;
+            } else if (t_y == y_grid - 1) {
+               t_x = x_grid + 2;
+               t_y = y_grid - 2;
+            } else if (t_y == y_grid)
+               t_x = x_grid + 2;
+         } else if (t_x == x_grid - 1) {
+            if (t_y == y_grid + 1) {
+               t_x = x_grid - 2;
+               t_y = y_grid + 2;
+            } else if (t_y == y_grid - 1) {
+               t_x = x_grid - 2;
+               t_y = y_grid - 2;
+            } else if (t_y == y_grid)
+               t_x = x_grid - 2;
+         } else if (t_x == x_grid) {
+            if (t_y == y_grid - 1) t_y = y_grid - 2;
+            else if (t_y == y_grid + 1) t_y = y_grid + 2;
+         }
+         // Get inner target
+         int t_x2 = t_x, t_y2 = t_y;
+         if (t_x2 == x_grid + 2) t_x2 = x_grid + 1;
+         if (t_x2 == x_grid - 2) t_x2 = x_grid - 1;
+         if (t_y2 == y_grid + 2) t_y2 = y_grid + 1;
+         if (t_y2 == y_grid - 2) t_y2 = y_grid - 1;
+
+         // Damage targets
+         Unit *t1 = GRID_AT(unit_grid,t_x,t_y);
+         Unit *t2 = GRID_AT(unit_grid,t_x2,t_y2);
+         if (NULL != t1)
+            t1->takeDamage( SOLDIER_SPEAR_DAMAGE );
+         if (NULL != t2)
+            t2->takeDamage( SOLDIER_SPEAR_DAMAGE );
+
+         // Animate
+         float rot = atan( (t_y - y_grid) / (t_x - x_grid + 0.0001) ) * 180 / 3.1415926;
+         addEffect( SE_SPEAR_ANIM, 0.1, x_real, y_real, rot );
+      }
 
    }
    else if (stance == 2) {
-      int selector = SELECT_CLOSEST;
-      switch(o.action) {
-         case ATTACK_CLOSEST:
-            selector = SELECT_CLOSEST;
-            break;
-         case ATTACK_FARTHEST:
-            selector = SELECT_FARTHEST;
-            break;
-         case ATTACK_SMALLEST:
-            selector = SELECT_SMALLEST;
-            break;
-         case ATTACK_BIGGEST:
-            selector = SELECT_BIGGEST;
-            break;
-         default:
-            log("ERROR: doAttack called on non-attack order");
-            return -1;
-      }
       target = getEnemy( x_grid, y_grid, attack_range, facing, this, selector );
 
       if (target) {
          log("Soldier bow attack");
-         addProjectile( PR_ARROW, team, x_real, y_real, 3.0, attack_range, target );
+         addProjectile( PR_ARROW, team, x_real, y_real, 3.0, attack_range, target, 0.1 );
       }
    }
 
@@ -1183,6 +1270,63 @@ int Soldier::doAttack( Order o )
    return 0;
 }
 
+int Soldier::prepareTurn()
+{
+   if (alive != 1) return 0;
+
+   if (active == 2) active = 1; // Start an active turn
+
+   this_turn_order = Order( WAIT );
+
+   if (aff_poison) {
+      aff_poison--;
+      takeDamage( MONSTER_CLAW_DAMAGE );
+   }
+   if (aff_confusion) {
+      aff_confusion--;
+      if (aff_confusion %= 2)
+         return 0;
+   }
+
+   set<int> visited_orders;
+   while (active == 1 && current_order != final_order 
+         && visited_orders.find( current_order ) == visited_orders.end()) {
+      this_turn_order = order_queue[current_order];
+      visited_orders.insert( current_order );
+      bool decision = evaluateConditional(this_turn_order);
+      // SOLDIER UNIQUE CODE
+      int r;
+      if (this_turn_order.action <= SKIP)
+         r = prepareBasicOrder(order_queue[current_order], decision);
+      else if (this_turn_order.action == SOLDIER_SWITCH_AXE) {
+         r = 0;
+         stance = 0;
+         attack_range = 1.3;
+      } else if (this_turn_order.action == SOLDIER_SWITCH_SPEAR) {
+         r = 0;
+         stance = 1;
+         attack_range = 3.0;
+      } else if (this_turn_order.action == SOLDIER_SWITCH_BOW) {
+         r = 0;
+         stance = 2;
+         attack_range = vision_range;
+      }
+      // END
+      // if prepareBasicOrder returns 0, it's a 0-length instruction (e.g. turn)
+      if (r == 0) {
+         current_order++;
+         continue;
+      }
+      else 
+         break;
+   }
+
+   if (current_order == final_order)
+      this_turn_order = Order( WAIT );
+
+   progress = 0;
+   return 0;
+}
 /*
 int Soldier::startTurn()
 {
@@ -1202,7 +1346,19 @@ int Soldier::completeTurn()
 
 int Soldier::update( float dtf )
 {
+   if (alive < 0) {
+      alive += (int) (1000.0 * dtf);
+      if (alive >= 0) alive = 0;
+   }
 
+   if (alive == 0)
+      return 1;
+
+   progress += dtf;
+   if (active == 1 && current_order != final_order) {
+      Order &o = this_turn_order;
+      return updateBasicOrder( dtf, o );
+   }
    return 0;
 }
 */
@@ -1216,33 +1372,51 @@ int Soldier::draw()
 {
    // Select sprite
    Sprite *sp_soldier = NULL;
+   int frame = progress;
+
+   int rotation;
+   if (facing == EAST) rotation = 0;
+   if (facing == SOUTH) rotation = 90;
+   if (facing == WEST) rotation = 180;
+   if (facing == NORTH) rotation = 270;
+
    /*if (alive < 0) {
       // Death animation
       int t = alive + DEATH_TIME + DEATH_FADE_TIME;
       if (t >= DEATH_TIME) t = DEATH_TIME - 1;
-      sp_soldier = soldier.getSprite( t );
+      sp_soldier = soldier_anim_death.getSprite( t );
 
       int alpha = 255;
       if (alive > -DEATH_FADE_TIME)
          alpha = 255 - ((DEATH_FADE_TIME + alive) * 256 / DEATH_FADE_TIME);
       sp_soldier->setColor( Color( 255, 255, 255, alpha ) );
-   } else*/ if (this_turn_order.action == MOVE_FORWARD) {
+   } else*/ 
+   if (this_turn_order.action == MOVE_FORWARD) {
       if (stance == 0) sp_soldier = soldier_anim_move_axe.getSprite( (int)(progress * 1000) );
+      if (stance == 1) sp_soldier = soldier_anim_move_spear.getSprite( (int)(progress * 1000) );
+      if (stance == 2) sp_soldier = soldier_anim_move_bow.getSprite( (int)(progress * 1000) );
    } else if (this_turn_order.action == MOVE_BACK) {
       if (stance == 0) sp_soldier = soldier_anim_move_axe.getSprite( 999 - (int)(progress * 1000) );
+      if (stance == 1) sp_soldier = soldier_anim_move_spear.getSprite( 999 - (int)(progress * 1000) );
+      if (stance == 2) sp_soldier = soldier_anim_move_bow.getSprite( 999 - (int)(progress * 1000) );
    } else if (this_turn_order.action >= ATTACK_CLOSEST && this_turn_order.action <= ATTACK_SMALLEST) {
       if (done_attack) {
          int d_anim = (int)( ((progress - speed) / (1-speed)) * 1000);
          if (d_anim >= 1000) d_anim = 999;
          if (stance == 0) sp_soldier = soldier_anim_attack_end_axe.getSprite( d_anim );
+         if (stance == 1) sp_soldier = soldier_anim_attack_end_spear.getSprite( d_anim );
+         if (stance == 2) sp_soldier = soldier_anim_attack_end_bow.getSprite( d_anim );
       } else {
          int d_anim = (int)( (progress / speed) * 1000);
          if (d_anim >= 1000) d_anim = 999;
          if (stance == 0) sp_soldier = soldier_anim_attack_start_axe.getSprite( d_anim );
+         if (stance == 1) sp_soldier = soldier_anim_attack_start_spear.getSprite( d_anim );
+         if (stance == 2) sp_soldier = soldier_anim_attack_start_bow.getSprite( d_anim );
       }
    } else {
       if (stance == 0) sp_soldier = soldier_anim_idle_axe.getSprite( (int)(progress * 1000) );
-      else sp_soldier = soldier_anim_idle.getSprite( (int)(progress * 1000) );
+      if (stance == 1) sp_soldier = soldier_anim_idle_spear.getSprite( (int)(progress * 1000) );
+      if (stance == 2) sp_soldier = soldier_anim_idle_bow.getSprite( (int)(progress * 1000) );
    }
    if (NULL == sp_soldier) return -1;
 
@@ -1252,11 +1426,6 @@ int Soldier::draw()
    sp_soldier->setOrigin( dim.x / 2.0, dim.y / 2.0 );
    sp_soldier->setScale( 0.8 / dim.x, 0.8 / dim.y );
 
-   int rotation;
-   if (facing == EAST) rotation = 0;
-   if (facing == SOUTH) rotation = 90;
-   if (facing == WEST) rotation = 180;
-   if (facing == NORTH) rotation = 270;
    sp_soldier->setRotation( rotation );
 
    SFML_GlobalRenderWindow::get()->draw( *sp_soldier );
@@ -2035,7 +2204,7 @@ TargetPractice::TargetPractice( int x, int y, Direction face )
    aff_poison = 0;
    aff_confusion = 0;
 
-   health = max_health = 200;
+   health = max_health = 100000;
 
    vision_range = 0;
    attack_range = 0;
