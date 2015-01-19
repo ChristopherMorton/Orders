@@ -21,6 +21,7 @@
 #include "IMImageButton.hpp"
 #include "IMTextButton.hpp"
 #include "IMEdgeButton.hpp"
+#include "IMEdgeTextButton.hpp"
 
 #include "stdio.h"
 #include "math.h"
@@ -1469,13 +1470,13 @@ void init()
 void clearGrids()
 {
    if (terrain_grid)
-      delete terrain_grid;
+      delete[] terrain_grid;
    if (unit_grid)
-      delete unit_grid;
+      delete[] unit_grid;
    if (vision_grid)
-      delete vision_grid;
+      delete[] vision_grid;
    if (ai_vision_grid)
-      delete ai_vision_grid;
+      delete[] ai_vision_grid;
 }
 
 void clearAll()
@@ -1511,6 +1512,47 @@ int initGrids(int x, int y)
    for (int i = 0; i < dim; ++i) ai_vision_grid[i] = VIS_NEVER_SEEN;
 
    log("initGrids succeeded");
+
+   return 0;
+}
+
+int changeLevelDimensions( int new_x_dim, int new_y_dim )
+{
+   if (new_x_dim < 1 || new_y_dim < 1) return -2;
+
+   // Copy old stuff
+   int old_x_dim = level_dim_x, old_y_dim = level_dim_y;
+
+   int i;
+   Terrain* old_terrain_grid = new Terrain[level_dim_x * level_dim_y];
+   for (i = 0; i < level_dim_x * level_dim_y; ++i)
+      old_terrain_grid[i] = terrain_grid[i];
+
+   Unit** old_unit_grid = new Unit*[level_dim_x * level_dim_y];
+   for (i = 0; i < level_dim_x * level_dim_y; ++i)
+      old_unit_grid[i] = unit_grid[i];
+
+   initGrids( new_x_dim, new_y_dim );
+
+   for (int x = 0; x < old_x_dim; ++x) {
+      for (int y = 0; y < old_y_dim; ++y) {
+         if (x >= level_dim_x || y >= level_dim_y) { // Outside new dimensions
+            // Delete any Unit there
+            Unit *u = old_unit_grid[ x + (y * old_y_dim)];
+            if (u) {
+               list<Unit*>::iterator it = find( unit_list.begin(), unit_list.end(), u );
+               if (it != unit_list.end()) removeUnit( it );
+            }
+         } else {
+            // Copy everything over
+            GRID_AT(terrain_grid,x,y) = old_terrain_grid[x + (y * old_x_dim)];
+            GRID_AT(unit_grid,x,y) = old_unit_grid[x + (y * old_x_dim)];
+         }
+      }
+   }
+
+   delete[] old_terrain_grid;
+   delete[] old_unit_grid;
 
    return 0;
 }
@@ -4112,7 +4154,7 @@ int levelEditorPreviousUnit()
    UnitType new_unit_type;
 
    if (cur_unit == NULL)
-      new_unit_type = M_HUMAN_SWORDSMAN_T;
+      new_unit_type = R_HUMAN_ARCHER_T;
    else
       new_unit_type = UnitType((int)cur_unit->type - 1);
 
@@ -4160,11 +4202,48 @@ int levelEditorWriteToFile()
 // Gui
 bool init_level_editor_gui = false;
 IMEdgeButton *b_editor_gui_area;
+IMButton *b_ed_dec_x_dim,
+         *b_ed_inc_x_dim,
+         *b_ed_dec_y_dim,
+         *b_ed_inc_y_dim;
+IMEdgeTextButton *b_ed_write_level;
+string s_ed_write_level = "Write to File";
+Text *txt_x_dim,
+     *txt_y_dim,
+     *txt_x_dim_value,
+     *txt_y_dim_value;
 
 void fitGui_LevelEditor()
 {
    b_editor_gui_area->setSize( 220, config::height() );
    b_editor_gui_area->setPosition( config::width() - 220, 0 );
+
+   txt_x_dim->setPosition( config::width() - 210, 10 );
+
+   b_ed_dec_x_dim->setSize( 30, 30 );
+   b_ed_dec_x_dim->setPosition( config::width() - 130, 10 );
+
+   txt_x_dim_value->setPosition( config::width() - 90, 10 );
+
+   b_ed_inc_x_dim->setSize( 30, 30 );
+   b_ed_inc_x_dim->setPosition( config::width() - 40, 10 );
+
+   txt_y_dim->setPosition( config::width() - 210, 50 );
+
+   b_ed_dec_y_dim->setSize( 30, 30 );
+   b_ed_dec_y_dim->setPosition( config::width() - 130, 50 );
+
+   txt_y_dim_value->setPosition( config::width() - 90, 50 );
+
+   b_ed_inc_y_dim->setSize( 30, 30 );
+   b_ed_inc_y_dim->setPosition( config::width() - 40, 50 );
+
+   b_ed_inc_y_dim->setSize( 30, 30 );
+   b_ed_inc_y_dim->setPosition( config::width() - 40, 50 );
+
+   b_ed_write_level->setPosition( config::width() - 210, config::height() - 110 );
+   b_ed_write_level->setSize( 200, 100 );
+   b_ed_write_level->centerText();
 }
 
 void initLevelEditorGui()
@@ -4178,6 +4257,55 @@ void initLevelEditorGui()
    b_editor_gui_area->setEdgeAllTextures( t_manager.getTexture( "UIEdgeBrown3px.png" ) );
    b_editor_gui_area->setEdgeWidth( 3 );
    gui_manager.registerWidget( "Level Editor Area", b_editor_gui_area);
+
+   b_ed_dec_x_dim = new IMButton();
+   b_ed_dec_x_dim->setAllTextures( t_manager.getTexture( "OrderTurnWest.png" ) );
+   gui_manager.registerWidget( "L.E. Dec X Dim", b_ed_dec_x_dim);
+
+   b_ed_inc_x_dim = new IMButton();
+   b_ed_inc_x_dim->setAllTextures( t_manager.getTexture( "OrderTurnEast.png" ) );
+   gui_manager.registerWidget( "L.E. Inc X Dim", b_ed_inc_x_dim);
+
+   b_ed_dec_y_dim = new IMButton();
+   b_ed_dec_y_dim->setAllTextures( t_manager.getTexture( "OrderTurnWest.png" ) );
+   gui_manager.registerWidget( "L.E. Dec Y Dim", b_ed_dec_y_dim);
+
+   b_ed_inc_y_dim = new IMButton();
+   b_ed_inc_y_dim->setAllTextures( t_manager.getTexture( "OrderTurnEast.png" ) );
+   gui_manager.registerWidget( "L.E. Inc Y Dim", b_ed_inc_y_dim);
+
+   txt_x_dim = new Text();
+   txt_x_dim->setFont( *menu_font );
+   txt_x_dim->setColor( Color::Black );
+   txt_x_dim->setCharacterSize( 24 );
+   txt_x_dim->setString( String( "X Dim:" ) );
+
+   txt_x_dim_value = new Text();
+   txt_x_dim_value->setFont( *menu_font );
+   txt_x_dim_value->setColor( Color::Black );
+   txt_x_dim_value->setCharacterSize( 24 );
+
+   txt_y_dim = new Text();
+   txt_y_dim->setFont( *menu_font );
+   txt_y_dim->setColor( Color::Black );
+   txt_y_dim->setCharacterSize( 24 );
+   txt_y_dim->setString( String( "Y Dim:" ) );
+
+   txt_y_dim_value = new Text();
+   txt_y_dim_value->setFont( *menu_font );
+   txt_y_dim_value->setColor( Color::Black );
+   txt_y_dim_value->setCharacterSize( 24 );
+
+   b_ed_write_level = new IMEdgeTextButton();
+   b_ed_write_level->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
+   b_ed_write_level->setCornerAllTextures( t_manager.getTexture( "UICornerBrown3px.png" ) );
+   b_ed_write_level->setEdgeAllTextures( t_manager.getTexture( "UIEdgeBrown3px.png" ) );
+   b_ed_write_level->setEdgeWidth( 3 );
+   b_ed_write_level->setText( &s_ed_write_level );
+   b_ed_write_level->setFont( menu_font );
+   b_ed_write_level->setTextSize( 24 );
+   b_ed_write_level->setTextColor( sf::Color::Black );
+   gui_manager.registerWidget( "Editor Write Level to File", b_ed_write_level);
 
    fitGui_LevelEditor();
 
@@ -4202,6 +4330,30 @@ void drawLevelEditorGui()
 
    if (init_level_editor_gui == false)
       initLevelEditorGui();
+
+   stringstream ss;
+   ss << level_dim_x;
+   txt_x_dim_value->setString( String( ss.str() ) );
+   stringstream ss2;
+   ss2 << level_dim_y;
+   txt_y_dim_value->setString( String( ss2.str() ) );
+
+   IMGuiManager::getSingleton().pushSprite( txt_x_dim );
+   IMGuiManager::getSingleton().pushSprite( txt_x_dim_value );
+   IMGuiManager::getSingleton().pushSprite( txt_y_dim );
+   IMGuiManager::getSingleton().pushSprite( txt_y_dim_value );
+
+   if (b_ed_dec_x_dim->doWidget())
+      changeLevelDimensions( level_dim_x - 1, level_dim_y );
+   if (b_ed_inc_x_dim->doWidget())
+      changeLevelDimensions( level_dim_x + 1, level_dim_y );
+   if (b_ed_dec_y_dim->doWidget())
+      changeLevelDimensions( level_dim_x, level_dim_y - 1 );
+   if (b_ed_inc_y_dim->doWidget())
+      changeLevelDimensions( level_dim_x, level_dim_y + 1 );
+
+   if (b_ed_write_level->doWidget())
+      levelEditorWriteToFile();
 
    b_editor_gui_area->doWidget();
 }
@@ -4253,7 +4405,8 @@ void drawUnits()
    for (list<Unit*>::iterator it=unit_list.begin(); it != unit_list.end(); ++it)
    {
       Unit* unit = (*it);
-      if (unit && GRID_AT(vision_grid,unit->x_grid,unit->y_grid) == VIS_VISIBLE) {
+      if (unit && 
+            (!vision_enabled || GRID_AT(vision_grid,unit->x_grid,unit->y_grid) == VIS_VISIBLE)) {
          unit->draw();
       }
    }
@@ -4538,6 +4691,8 @@ struct LevelEditorEventHandler : public My_SFML_MouseListener, public My_SFML_Ke
          levelEditorChangeTerrain( 1 );
       if (key_press.code == Keyboard::Up)
          levelEditorChangeTerrain( -1 );
+      if (key_press.code == Keyboard::BackSpace)
+         levelEditorChangeTerrain( -300 );
       if (key_press.code == Keyboard::Add)
          zoomView( 1 , level_view->getCenter());
       if (key_press.code == Keyboard::Subtract)
