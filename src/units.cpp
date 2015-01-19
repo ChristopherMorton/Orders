@@ -2406,6 +2406,8 @@ Unit *genBaseUnit( UnitType t, int grid_x, int grid_y, Direction face )
    if (t == R_HUMAN_ARCHER_T) return new RangedUnit( t, grid_x, grid_y, face, 1 );
    if (t == M_HUMAN_SWORDSMAN_T) return NULL;
    if (t == SUMMONMARKER_T) return NULL;
+
+   return NULL;
 }
 
 int initUnits()

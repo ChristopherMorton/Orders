@@ -36,6 +36,7 @@ int Projectile::update( float dtf )
       if (vel.x == 0) vel.x = 0.0001;
       vel.y = target->y_real - pos.y;
       rotation = atan( vel.y / vel.x ) * 180.0 / 3.1415926;
+      if (vel.x < 0) rotation += 180;
       // normalize
       float norm = sqrt( (vel.x * vel.x) + (vel.y * vel.y) ); // distance to target - divide by
       norm = speed / norm;
@@ -116,6 +117,7 @@ Projectile::Projectile( Effect_Type t, int tm, float x, float y, float sp, float
    if (vel.x == 0) vel.x = 0.0001;
    vel.y = tgt->y_real - y;
    rotation = atan( vel.y / vel.x ) * 180 / 3.1415926;
+   if (vel.x < 0) rotation += 180;
    // normalize
    float norm = sqrt( (vel.x * vel.x) + (vel.y * vel.y) ); // distance to target - divide by
    norm = speed / norm;

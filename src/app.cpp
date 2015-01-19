@@ -238,10 +238,10 @@ void splashMenu()
       SFML_GlobalRenderWindow::get()->draw(*splashScreen);
 
       if (b_splashToLevelEditor->doWidget())
-         loadLevelEditor(0);
+         loadLevelEditor(-1);
 
       if (b_splashToTestLevel->doWidget())
-         loadLevel(0);
+         loadLevel(-1);
 
       if (b_open_options->doWidget())
          openOptionsMenu();
