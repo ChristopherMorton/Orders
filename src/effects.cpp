@@ -21,13 +21,29 @@ Effect::~Effect()
 
 int Projectile::update( float dtf )
 {
-   // Homing recalibrate TODO
    range -= dtf;
    if (range <= 0)
       return 1;
 
    pos.x += (dtf * vel.x);
    pos.y += (dtf * vel.y);
+
+   // Homing recalibrate
+   if (target->alive != 1) homing = -1;
+
+   if (homing > 0.0) {
+      vel.x = target->x_real - pos.x;
+      if (vel.x == 0) vel.x = 0.0001;
+      vel.y = target->y_real - pos.y;
+      rotation = atan( vel.y / vel.x ) * 180.0 / 3.1415926;
+      // normalize
+      float norm = sqrt( (vel.x * vel.x) + (vel.y * vel.y) ); // distance to target - divide by
+      norm = speed / norm;
+      vel.x *= norm;
+      vel.y *= norm;
+
+      homing -= dtf;
+   }
 
    // Calculate collisions
    Unit *nearest = getEnemy( pos.x, pos.y, 1.0, ALL_DIR, NULL, SELECT_CLOSEST );
@@ -72,22 +88,20 @@ int Projectile::draw( )
    if (!isVisible( (int)pos.x, (int)pos.y ))
       return -1;
 
-   switch (type) {
-      case PR_ARROW:
-         sp_arrow->setPosition( pos );
-         sp_arrow->setRotation( rotation );
-         SFML_GlobalRenderWindow::get()->draw( *sp_arrow );
-         break;
-      default:
-         sp_magic_projectile->setPosition( pos );
-         SFML_GlobalRenderWindow::get()->draw( *sp_magic_projectile );
-         break;
-   }
+   Sprite *sp_pr = NULL;
+   if (type == PR_ARROW) sp_pr = sp_arrow;
+   else if (type == PR_HOMING_ORB) sp_pr = sp_magic_projectile;
+
+   if (NULL == sp_pr) return -2;
+
+   sp_pr->setPosition( pos );
+   sp_pr->setRotation( rotation );
+   SFML_GlobalRenderWindow::get()->draw( *sp_pr );
 
    return 0;
 }
 
-Projectile::Projectile( Effect_Type t, int tm, float x, float y, float speed, float r, Unit* tgt )
+Projectile::Projectile( Effect_Type t, int tm, float x, float y, float sp, float r, Unit* tgt, float home )
 {
    type = t;
    team = tm;
@@ -95,6 +109,7 @@ Projectile::Projectile( Effect_Type t, int tm, float x, float y, float speed, fl
 
    pos.x = x;
    pos.y = y;
+   speed = sp;
    range = r / speed;
 
    vel.x = tgt->x_real - x;
@@ -106,6 +121,8 @@ Projectile::Projectile( Effect_Type t, int tm, float x, float y, float speed, fl
    norm = speed / norm;
    vel.x *= norm;
    vel.y *= norm;
+
+   homing = home;
 
    switch (t) {
       case PR_ARROW:
@@ -192,12 +209,12 @@ int initEffects()
    return 0;
 }
 
-Projectile *genProjectile( Effect_Type t, int tm, float x, float y, float speed, float range, Unit* target, float fastforward )
+Projectile *genProjectile( Effect_Type t, int tm, float x, float y, float speed, float range, Unit* target, float homing, float fastforward )
 {
    Projectile *result = NULL;
    if (target && t <= PR_HOMING_ORB) {
       log("Generating projectile");
-      result = new Projectile( t, tm, x, y, speed, range, target );
+      result = new Projectile( t, tm, x, y, speed, range, target, homing );
    }
 
    if (fastforward > 0)

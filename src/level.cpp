@@ -90,6 +90,9 @@ Unit *player = NULL;
 
 Unit *selected_unit;
 
+// Debugging
+bool show_framerate;
+
 //////////////////////////////////////////////////////////////////////
 // UI Data ---
 
@@ -100,6 +103,37 @@ int right_mouse_down = 0;
 int right_mouse_down_time = 0;
 
 int key_shift_down = 0;
+
+// Framerate calculation
+#define MAXSAMPLES 100
+int tickindex = 0;
+int ticksum = 0;
+int ticklist[MAXSAMPLES];
+
+void clearFramerate()
+{
+   for (int i = 0; i < MAXSAMPLES; ++i)
+      ticklist[i] = 0;
+
+   ticksum = 0;
+}
+
+void calculateFramerate(int newtick)
+{
+   ticksum -= ticklist[tickindex];  /* subtract value falling off */
+   ticksum += newtick;              /* add new value */
+   ticklist[tickindex] = newtick;   /* save new value so it can be subtracted later */
+   if(++tickindex == MAXSAMPLES)    /* inc buffer index */
+      tickindex = 0;
+}
+
+float getFramerate()
+{
+   return 1000.0*(float)MAXSAMPLES/(float)ticksum;
+}
+
+int tickcount = 0;
+int tickfps = 0;
 
 //////////////////////////////////////////////////////////////////////
 // Utility ---
@@ -295,9 +329,9 @@ int removeEffect( Effect *p )
    return -1;
 }
 
-int addProjectile( Effect_Type t, int team, float x, float y, float speed, float range, Unit* target, float fastforward )
+int addProjectile( Effect_Type t, int team, float x, float y, float speed, float range, Unit* target, float homing, float fastforward )
 {
-   Effect *p = genProjectile( t, team, x, y, speed, range, target, fastforward );
+   Effect *p = genProjectile( t, team, x, y, speed, range, target, homing, fastforward );
 
    if (p) {
       effect_list.push_back(p);
@@ -558,19 +592,6 @@ int calculateUnitVision( Unit *unit, bool ai=false )
 
 int calculateVision()
 {
-   /*
-   if (false == vision_enabled) {
-      int x, y;
-      for (x = 0; x < level_dim_x; ++x) {
-         for (y = 0; y < level_dim_y; ++y) {
-            GRID_AT(vision_grid,x,y) = VIS_VISIBLE;
-         }
-      }
-
-      return -1;
-   }
-   */
-
    int x, y;
    for (x = 0; x < level_dim_x; ++x) {
       for (y = 0; y < level_dim_y; ++y) {
@@ -1065,15 +1086,15 @@ int completeSummon( Order o )
    Unit *u;
 
    if (o.action == SUMMON_MONSTER)
-      u = new Monster( x, y, SOUTH );
+      u = new Monster( x, y, player->facing );
    if (o.action == SUMMON_SOLDIER)
-      u = new Soldier( x, y, SOUTH );
+      u = new Soldier( x, y, player->facing );
    if (o.action == SUMMON_WORM)
-      u = new Worm( x, y, SOUTH );
+      u = new Worm( x, y, player->facing );
    if (o.action == SUMMON_BIRD)
-      u = new Bird( x, y, SOUTH );
+      u = new Bird( x, y, player->facing );
    if (o.action == SUMMON_BUG)
-      u = new Bug( x, y, SOUTH );
+      u = new Bug( x, y, player->facing );
 
    if (NULL != u)
    {
@@ -1725,6 +1746,8 @@ int loadLevel( int level_id )
    setLevelListener(true);
 
    vision_enabled = true;
+   show_framerate = false;
+   clearFramerate();
    calculateVision();
 
    turn = 0;
@@ -1885,6 +1908,9 @@ int completeTurnAll( )
 
 int updateLevel( int dt )
 {
+   calculateFramerate( dt );
+   tickcount++;
+
    if (updatePause( dt ) == 2)
       return 2;
 
@@ -1900,6 +1926,8 @@ int updateLevel( int dt )
       completeTurnAll();
 
       turn++;
+      tickfps = tickcount;
+      tickcount = 0;
       calculateVision();
 
       prepareTurnAll();
@@ -2846,8 +2874,6 @@ int initLevelGui()
 {
    SFML_TextureManager &t_manager = SFML_TextureManager::getSingleton();
    IMGuiManager &gui_manager = IMGuiManager::getSingleton();
-
-   // These should be ImageButtons with the border changing around the central image
 
    b_con_enemy_adjacent = new IMImageButton();
    b_con_enemy_adjacent->setNormalTexture( t_manager.getTexture( "ConditionalButtonBase.png" ) );
@@ -3968,6 +3994,36 @@ int drawSelectedUnit()
    return 0;
 }
 
+void drawDebugInfo()
+{
+   if (show_framerate) {
+      int x = 2,
+          y = b_pl_cmd_area->_y_position - 24;
+      Text t;
+      t.setPosition( x, y );
+      t.setFont( *menu_font );
+      t.setColor( Color::White );
+      t.setCharacterSize( 16 );
+      stringstream ss;
+      ss << "FPS fast: " << getFramerate();
+      t.setString( String(ss.str()) );
+
+      SFML_GlobalRenderWindow::get()->draw( t );
+
+      Text t2;
+      t2.setPosition( x, y - 20 );
+      t2.setFont( *menu_font );
+      t2.setColor( Color::White );
+      t2.setCharacterSize( 16 );
+      stringstream ss2;
+      ss2 << "FPS slow: " << tickfps;
+      t2.setString( String(ss2.str()) );
+
+      SFML_GlobalRenderWindow::get()->draw( t2 );
+
+   }
+}
+
 int drawGui()
 {
    RenderWindow *gui_window = SFML_GlobalRenderWindow::get();
@@ -3981,6 +4037,8 @@ int drawGui()
    drawOrderButtons();
 
    drawRightClickMenu();
+
+   drawDebugInfo();
 
    return 0;
 }
@@ -4027,6 +4085,57 @@ int levelEditorChangeTerrain( int change )
    return 0;
 }
 
+// Unit modification
+int levelEditorNextUnit()
+{
+   if (l_e_selected == false) return -1;
+
+   Unit *cur_unit = GRID_AT(unit_grid,l_e_selection.x,l_e_selection.y);
+   UnitType new_unit_type;
+
+   if (cur_unit == NULL)
+      new_unit_type = MONSTER_T;
+   else
+      new_unit_type = UnitType((int)cur_unit->type + 1);
+
+   list<Unit*>::iterator it = find( unit_list.begin(), unit_list.end(), cur_unit );
+   if (it != unit_list.end()) removeUnit( it );
+   addUnit( genBaseUnit( new_unit_type, l_e_selection.x, l_e_selection.y, SOUTH ) );
+   return 0;
+}
+
+int levelEditorPreviousUnit()
+{
+   if (l_e_selected == false) return -1;
+
+   Unit *cur_unit = GRID_AT(unit_grid,l_e_selection.x,l_e_selection.y);
+   UnitType new_unit_type;
+
+   if (cur_unit == NULL)
+      new_unit_type = M_HUMAN_SWORDSMAN_T;
+   else
+      new_unit_type = UnitType((int)cur_unit->type - 1);
+
+   list<Unit*>::iterator it = find( unit_list.begin(), unit_list.end(), cur_unit );
+   if (it != unit_list.end()) removeUnit( it );
+   addUnit( genBaseUnit( new_unit_type, l_e_selection.x, l_e_selection.y, SOUTH ) );
+   return 0;
+
+   return 0;
+}
+
+int levelEditorDeleteUnit()
+{
+   if (l_e_selected == false) return -1;
+
+   Unit *cur_unit = GRID_AT(unit_grid,l_e_selection.x,l_e_selection.y);
+
+   list<Unit*>::iterator it = find( unit_list.begin(), unit_list.end(), cur_unit );
+   if (it != unit_list.end()) removeUnit( it );
+
+   return 0;
+}
+
 int loadLevelEditor( int level )
 {
    loadLevel( level );
@@ -4046,6 +4155,55 @@ int levelEditorWriteToFile()
    string level_name_out = "level_editor_output.lvl";
 
    return writeLevelToFile( level_name_out );
+}
+
+// Gui
+bool init_level_editor_gui = false;
+IMEdgeButton *b_editor_gui_area;
+
+void fitGui_LevelEditor()
+{
+   b_editor_gui_area->setSize( 220, config::height() );
+   b_editor_gui_area->setPosition( config::width() - 220, 0 );
+}
+
+void initLevelEditorGui()
+{
+   SFML_TextureManager &t_manager = SFML_TextureManager::getSingleton();
+   IMGuiManager &gui_manager = IMGuiManager::getSingleton();
+
+   b_editor_gui_area = new IMEdgeButton();
+   b_editor_gui_area->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
+   b_editor_gui_area->setCornerAllTextures( t_manager.getTexture( "UICornerBrown3px.png" ) );
+   b_editor_gui_area->setEdgeAllTextures( t_manager.getTexture( "UIEdgeBrown3px.png" ) );
+   b_editor_gui_area->setEdgeWidth( 3 );
+   gui_manager.registerWidget( "Level Editor Area", b_editor_gui_area);
+
+   fitGui_LevelEditor();
+
+   init_level_editor_gui = true;
+}
+
+void drawLevelEditorGui()
+{
+   RenderWindow *gui_window = SFML_GlobalRenderWindow::get();
+
+   if (l_e_selected) {
+      RectangleShape rect;
+      rect.setSize( Vector2f( 1, 1 ) );
+      rect.setPosition( l_e_selection.x, l_e_selection.y );
+      rect.setFillColor( Color::Transparent );
+      rect.setOutlineColor( Color::Yellow );
+      rect.setOutlineThickness( 0.05 );
+      SFML_GlobalRenderWindow::get()->draw( rect );
+   }
+
+   gui_window->setView(gui_window->getDefaultView());
+
+   if (init_level_editor_gui == false)
+      initLevelEditorGui();
+
+   b_editor_gui_area->doWidget();
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -4200,7 +4358,11 @@ int drawLevel()
    drawFog();
 
    // Gui
-   drawGui();
+
+   if (menu_state & MENU_PRI_LEVEL_EDITOR)
+      drawLevelEditorGui();
+   else
+      drawGui();
 
    return 0;
 } 
@@ -4262,7 +4424,8 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
       // Debugging
       if (key_press.code == Keyboard::V)
          vision_enabled = !vision_enabled;
-
+      if (key_press.code == Keyboard::F)
+         show_framerate = !show_framerate;
 
       // TODO: Make key-bindings something you can change/save
 
@@ -4385,6 +4548,13 @@ struct LevelEditorEventHandler : public My_SFML_MouseListener, public My_SFML_Ke
          log("Writing new level data from level editor");
          levelEditorWriteToFile();
       }
+
+      if (key_press.code == Keyboard::N)
+         levelEditorNextUnit();
+      if (key_press.code == Keyboard::P)
+         levelEditorPreviousUnit();
+      if (key_press.code == Keyboard::D)
+         levelEditorDeleteUnit();
 
       return true;
    }

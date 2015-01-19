@@ -27,6 +27,12 @@ void setRecord( int level, LevelRecord record )
       level_scores[level] = record;
 }
 
+void addRecord( int level, LevelRecord record )
+{
+   if (init_level_record && level >= 0 && level < NUM_LEVELS)
+      level_scores[level] |= record;
+}
+
 void initRecords()
 {
    if (level_scores == NULL)

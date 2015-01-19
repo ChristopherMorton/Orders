@@ -32,7 +32,7 @@ namespace sum
    bool canMoveUnit( int x, int y, int from_x, int from_y, Unit* u );
 
    int moveUnit( Unit *u, int new_x, int new_y );
-   int addProjectile( Effect_Type t, int team, float x, float y, float speed, float range, Unit* target, float fastforward = 0 );
+   int addProjectile( Effect_Type t, int team, float x, float y, float speed, float range, Unit* target, float homing = 0, float fastforward = 0 );
    int addEffect( Effect_Type t, float dur, float x, float y, float rot );
 
    int broadcastOrder( Order o );
@@ -40,6 +40,7 @@ namespace sum
    int completePlayerCommand( Order o );
 
    void fitGui_Level();
+   void fitGui_LevelEditor();
 
    // Gui related
    extern Unit *selected_unit;

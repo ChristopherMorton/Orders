@@ -33,7 +33,7 @@ int flags()
    return w_flags;
 }
 
-int validateWindow( int w, int h, int f)
+int validateWindow( int w, int h, int f )
 {
    if (w == 0 || h == 0)
       return 0;

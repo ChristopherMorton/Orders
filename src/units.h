@@ -20,11 +20,12 @@ enum UnitType {
    BIRD_T,
    BUG_T,
    TARGETPRACTICE_T,
-   SUMMONMARKER_T,
    // Ranged Units
    R_HUMAN_ARCHER_T,
    // Melee Units
-   M_HUMAN_SWORDSMAN_T
+   M_HUMAN_SWORDSMAN_T,
+   // Special
+   SUMMONMARKER_T
 };
 
 enum AI_Type {
@@ -41,6 +42,7 @@ public:
    Direction facing;
 
    int team; // 0 = player
+   int group; // 0 = ungrouped
    UnitType type;
 
    int alive;
@@ -57,6 +59,8 @@ public:
 
    float progress;
    int done_attack; // One attack per turn!
+
+   int anim_data;
 
    Order *order_queue;
    Order this_turn_order;
@@ -256,9 +260,9 @@ public:
 
    virtual std::string descriptor();
 
-   //virtual int startTurn();
+   virtual int startTurn();
    //virtual int completeTurn();
-   //virtual int update( float dtf );
+   virtual int update( float dtf );
    virtual sf::Texture* getTexture();
    virtual int draw();
 
@@ -306,6 +310,8 @@ public:
    virtual int draw();
    virtual ~TargetPractice();
 };
+
+Unit *genBaseUnit( UnitType t, int grid_x, int grid_y, Direction face );
 
 // OTHER
 

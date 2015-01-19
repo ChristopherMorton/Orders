@@ -35,15 +35,15 @@ struct Projectile : public Effect
 {
    float radius, damage;
    sf::Vector2f pos, vel;
-   float range, rotation;
+   float range, rotation, speed;
    int team;
    Unit *target;
+   float homing; // distance during which the attack will home in
 
    virtual int update( float dtf );
    virtual int draw();
 
-   // Speed means units travelled per turn
-   Projectile( Effect_Type t, int team, float x, float y, float speed, float range, Unit* target );
+   Projectile( Effect_Type t, int team, float x, float y, float speed, float range, Unit* target, float homing = 0 );
 
    virtual ~Projectile();
 };
@@ -62,8 +62,7 @@ struct StaticEffect : public Effect
    virtual ~StaticEffect();
 };
 
-// Speed means units travelled per turn
-Projectile *genProjectile( Effect_Type t, int team, float x, float y, float speed, float range, Unit* target, float fastforward = 0 );
+Projectile *genProjectile( Effect_Type t, int team, float x, float y, float speed, float range, Unit* target, float homing = 0, float fastforward = 0 );
 StaticEffect *genEffect( Effect_Type t, float dur, float x, float y, float rotation );
 
 int initEffects();

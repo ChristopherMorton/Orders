@@ -31,7 +31,7 @@
 
 #define MONSTER_CLAW_DAMAGE 10
 
-#define SOLDIER_BASE_HEALTH 300
+#define SOLDIER_BASE_HEALTH 40
 #define SOLDIER_BASE_MEMORY 16
 #define SOLDIER_BASE_VISION 6.5
 #define SOLDIER_BASE_SPEED 0.4
@@ -60,6 +60,8 @@ using namespace std;
 
 namespace sum
 {
+
+int rand_int = 12345;
 
 #define GRID_AT(GRID,X,Y) (GRID[((X) + ((Y) * level_dim_x))])
 
@@ -578,7 +580,7 @@ int RangedUnit::doAttack( Order o )
    target = getEnemy( x_grid, y_grid, attack_range, facing, this, selector );
 
    if (target) {
-      addProjectile( PR_ARROW, team, x_real, y_real, 3.0, attack_range, target, 0.1 );
+      addProjectile( PR_ARROW, team, x_real, y_real, 3.0, attack_range, target, 0.0, 0.1 );
    }
 
    done_attack = 1;
@@ -899,7 +901,7 @@ Monster::Monster( int x, int y, Direction face )
 
    health = max_health = MONSTER_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
 
-   vision_range = MONSTER_BASE_VISION * (1.0 + ((float)focus_vision / 25.0));
+   vision_range = MONSTER_BASE_VISION * (1.0 + ((float)focus_perception / 25.0));
    attack_range = 1.3;
 
    speed = MONSTER_BASE_SPEED * ( 1.0 - ( focus_speed * 0.02 ) );
@@ -989,6 +991,13 @@ int Monster::draw()
 {
    // Select sprite
    Sprite *sp_monster = NULL;
+
+   int rotation;
+   if (facing == EAST) rotation = 0;
+   if (facing == SOUTH) rotation = 90;
+   if (facing == WEST) rotation = 180;
+   if (facing == NORTH) rotation = 270;
+
    if (alive < 0) {
       // Death animation
       int t = alive + DEATH_TIME + DEATH_FADE_TIME;
@@ -1025,11 +1034,6 @@ int Monster::draw()
    sp_monster->setOrigin( dim.x / 2.0, dim.y / 2.0 );
    sp_monster->setScale( 1.0 / dim.x, 1.0 / dim.y );
 
-   int rotation;
-   if (facing == EAST) rotation = 0;
-   if (facing == SOUTH) rotation = 90;
-   if (facing == WEST) rotation = 180;
-   if (facing == NORTH) rotation = 270;
    sp_monster->setRotation( rotation );
 
    SFML_GlobalRenderWindow::get()->draw( *sp_monster );
@@ -1058,6 +1062,7 @@ Animation soldier_anim_idle_bow;
 Animation soldier_anim_move_bow;
 Animation soldier_anim_attack_start_bow;
 Animation soldier_anim_attack_end_bow;
+Animation soldier_anim_death;
 
 void initSoldierAnimations()
 {
@@ -1074,7 +1079,7 @@ void initSoldierAnimations()
    soldier_anim_attack_start_axe.load( t, 128, 128, 10, 1000 );
 
    t = SFML_TextureManager::getSingleton().getTexture( "SoldierAnimAttackEndAxe.png" );
-   soldier_anim_attack_end_axe.load( t, 128, 128, 8, 1000 );
+   soldier_anim_attack_end_axe.load( t, 128, 128, 9, 1000 );
 
    t = SFML_TextureManager::getSingleton().getTexture( "SoldierAnimIdleSpear.png" );
    soldier_anim_idle_spear.load( t, 128, 128, 10, 1000 );
@@ -1099,6 +1104,9 @@ void initSoldierAnimations()
 
    t = SFML_TextureManager::getSingleton().getTexture( "SoldierAnimAttackEndBow.png" );
    soldier_anim_attack_end_bow.load( t, 128, 128, 11, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "SoldierAnimDeath.png" );
+   soldier_anim_death.load( t, 128, 128, 9, DEATH_TIME );
 }
 
 // *tors
@@ -1130,7 +1138,7 @@ Soldier::Soldier( int x, int y, Direction face )
 
    stance = 0;
 
-   vision_range = SOLDIER_BASE_VISION * (1.0 + ((float)focus_vision / 25.0));
+   vision_range = SOLDIER_BASE_VISION * (1.0 + ((float)focus_perception / 25.0));
    attack_range = 1.3;
 
    speed = SOLDIER_BASE_SPEED * ( 1.0 - ( focus_speed * 0.02 ) );
@@ -1262,7 +1270,7 @@ int Soldier::doAttack( Order o )
 
       if (target) {
          log("Soldier bow attack");
-         addProjectile( PR_ARROW, team, x_real, y_real, 3.0, attack_range, target, 0.1 );
+         addProjectile( PR_ARROW, team, x_real, y_real, 3.0, attack_range, target, 0.0, 0.1 );
       }
    }
 
@@ -1372,7 +1380,6 @@ int Soldier::draw()
 {
    // Select sprite
    Sprite *sp_soldier = NULL;
-   int frame = progress;
 
    int rotation;
    if (facing == EAST) rotation = 0;
@@ -1380,7 +1387,7 @@ int Soldier::draw()
    if (facing == WEST) rotation = 180;
    if (facing == NORTH) rotation = 270;
 
-   /*if (alive < 0) {
+   if (alive < 0) {
       // Death animation
       int t = alive + DEATH_TIME + DEATH_FADE_TIME;
       if (t >= DEATH_TIME) t = DEATH_TIME - 1;
@@ -1390,8 +1397,7 @@ int Soldier::draw()
       if (alive > -DEATH_FADE_TIME)
          alpha = 255 - ((DEATH_FADE_TIME + alive) * 256 / DEATH_FADE_TIME);
       sp_soldier->setColor( Color( 255, 255, 255, alpha ) );
-   } else*/ 
-   if (this_turn_order.action == MOVE_FORWARD) {
+   } else if (this_turn_order.action == MOVE_FORWARD) {
       if (stance == 0) sp_soldier = soldier_anim_move_axe.getSprite( (int)(progress * 1000) );
       if (stance == 1) sp_soldier = soldier_anim_move_spear.getSprite( (int)(progress * 1000) );
       if (stance == 2) sp_soldier = soldier_anim_move_bow.getSprite( (int)(progress * 1000) );
@@ -1493,7 +1499,7 @@ Worm::Worm( int x, int y, Direction face )
 
    health = max_health = WORM_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
 
-   vision_range = WORM_BASE_VISION * (1.0 + ((float)focus_vision / 25.0));
+   vision_range = WORM_BASE_VISION * (1.0 + ((float)focus_perception / 25.0));
    attack_range = 1.3;
 
    speed = WORM_BASE_SPEED * ( 1.0 - ( focus_speed * 0.02 ) );
@@ -1691,12 +1697,36 @@ string Worm::descriptor()
 //////////////////////////////////////////////////////////////////////
 // Bird ---
 
-Animation bird_anim_idle;
+Animation bird_anim_idle1;
+Animation bird_anim_idle2;
+Animation bird_anim_idle3;
+Animation bird_anim_move;
+Animation bird_anim_attack_start;
+Animation bird_anim_attack_end;
+Animation bird_anim_death;
 
 void initBirdAnimations()
 {
-   Texture *t = SFML_TextureManager::getSingleton().getTexture( "BirdScratch.png" );
-   bird_anim_idle.load( t, 128, 128, 1, 1000 );
+   Texture *t = SFML_TextureManager::getSingleton().getTexture( "BirdStatic.png" );
+   bird_anim_idle1.load( t, 128, 128, 1, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "BirdStatic.png" );
+   bird_anim_idle2.load( t, 128, 128, 1, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "BirdStatic.png" );
+   bird_anim_idle3.load( t, 128, 128, 1, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "BirdAnimMove.png" );
+   bird_anim_move.load( t, 128, 128, 10, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "BirdStatic.png" );
+   bird_anim_attack_start.load( t, 128, 128, 1, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "BirdStatic.png" );
+   bird_anim_attack_end.load( t, 128, 128, 1, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "BirdStatic.png" );
+   bird_anim_death.load( t, 128, 128, 1, DEATH_TIME );
 }
 
 // *tors
@@ -1726,7 +1756,7 @@ Bird::Bird( int x, int y, Direction face )
 
    health = max_health = BIRD_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
 
-   vision_range = BIRD_BASE_VISION * (1.0 + ((float)focus_vision / 25.0));
+   vision_range = BIRD_BASE_VISION * (1.0 + ((float)focus_perception / 25.0));
    attack_range = 1.3;
 
    speed = BIRD_BASE_SPEED * ( 1.0 - ( focus_speed * 0.02 ) );
@@ -1740,6 +1770,7 @@ Bird::Bird( int x, int y, Direction face )
    active = 0;
    team = 0;
    progress = 0;
+   anim_data = 0;
 }
 
 Bird::~Bird()
@@ -1797,33 +1828,92 @@ int Bird::doAttack( Order o )
    return 0;
 }
 
-/*
 int Bird::startTurn()
 {
-   if (current_order < order_count) {
-      Order o = order_queue[current_order];
-      startBasicOrder(o);
+   if (alive != 1) return 0;
+
+   startBasicOrder();
+
+   if (this_turn_order.action == WAIT) {
+      anim_data = (anim_data + 1) % 4;
+      if (rand_int % 7 == 0)
+         anim_data = -1;
    }
 
    return 0;
 }
 
+/*
 int Bird::completeTurn()
-{
-
-   return 0;
-}
-
-int Bird::update( float dtf )
 {
 
    return 0;
 }
 */
 
+int Bird::update( float dtf )
+{
+   if (alive < 0) {
+      alive += (int) (1000.0 * dtf);
+      if (alive >= 0) alive = 0;
+   }
+
+   if (alive == 0)
+      return 1;
+
+   progress += dtf;
+   if (active == 1 && current_order != final_order) {
+      Order &o = this_turn_order;
+      // Bird Specific
+      if (o.action == MOVE_FORWARD || o.action == MOVE_BACK) {
+         float d_real = 0.0, d_offset = 0.0;
+         if (progress < .1) return 0;
+         if (progress >= .1 && progress < .3) {
+            d_real = (progress - .1) * 1.5; // 0->0.3
+            d_offset = (progress - .1) * -0.5; // 0->-0.1
+         } else if (progress > .3 && progress <= .4) {
+            d_real = 0.3;
+            d_offset = -0.1;
+         } else if (progress >= .4 && progress < .6) {
+            d_real = (progress - .25) * 2; // 0.3->0.7
+            d_offset = (progress - .5); // -0.1->0.1
+         } else if (progress > .6 && progress <= .7) {
+            d_real = 0.7;
+            d_offset = 0.1;
+         } else if (progress >= .7 && progress < .9) {
+            d_real = (progress - .2333) * 1.5; // 0.7->1.0
+            d_offset = (progress - .9) * -0.5; // 0.1->0
+         } else if (progress >= .9) {
+            d_real = 1.0;
+            d_offset = 0.0;
+         }
+
+         if (o.action == MOVE_BACK) d_real = -d_real;
+         if (facing == NORTH) {
+            y_real = y_grid + 0.5 - d_real;
+            x_real = x_grid + 0.5 - d_offset;
+         } else if (facing == SOUTH) {
+            y_real = y_grid + 0.5 + d_real;
+            x_real = x_grid + 0.5 + d_offset;
+         } else if (facing == WEST) {
+            x_real = x_grid + 0.5 - d_real;
+            y_real = y_grid + 0.5 - d_offset;
+         } else if (facing == EAST) {
+            x_real = x_grid + 0.5 + d_real;
+            y_real = y_grid + 0.5 + d_offset;
+         }
+
+         return 0;
+      }
+      // End
+      return updateBasicOrder( dtf, o );
+   }
+   return 0;
+}
+
 sf::Texture* Bird::getTexture()
 {
-   return SFML_TextureManager::getSingleton().getTexture( "BirdScratch.png" );
+   return SFML_TextureManager::getSingleton().getTexture( "BirdStatic.png" );
 }
 
 Sprite *sp_bird = NULL;
@@ -1831,20 +1921,52 @@ Sprite *sp_bird = NULL;
 int Bird::draw()
 {
    // Select sprite
-   Sprite *sp_bird = bird_anim_idle.getSprite( (int)(progress * 1000) );
-   if (NULL == sp_bird) return -1;
-
-   // Move/scale sprite
-   sp_bird->setPosition( x_real, y_real );
-   Vector2u dim (bird_anim_idle.image_size_x, bird_anim_idle.image_size_y);
-   sp_bird->setOrigin( dim.x / 2.0, dim.y / 2.0 );
-   sp_bird->setScale( 0.5 / dim.x, 0.5 / dim.y );
+   Sprite *sp_bird = NULL;
 
    int rotation;
    if (facing == EAST) rotation = 0;
    if (facing == SOUTH) rotation = 90;
    if (facing == WEST) rotation = 180;
    if (facing == NORTH) rotation = 270;
+
+   if (alive < 0) {
+      // Death animation
+      int t = alive + DEATH_TIME + DEATH_FADE_TIME;
+      if (t >= DEATH_TIME) t = DEATH_TIME - 1;
+      sp_bird = bird_anim_death.getSprite( t );
+
+      int alpha = 255;
+      if (alive > -DEATH_FADE_TIME)
+         alpha = 255 - ((DEATH_FADE_TIME + alive) * 256 / DEATH_FADE_TIME);
+      sp_bird->setColor( Color( 255, 255, 255, alpha ) );
+   } else if (this_turn_order.action == MOVE_FORWARD) {
+      sp_bird = bird_anim_move.getSprite( (int)(progress * 1000) );
+   } else if (this_turn_order.action == MOVE_BACK) {
+      // TODO: Worm should have different retreat animation
+      sp_bird = bird_anim_move.getSprite( 999 - (int)(progress * 1000) );
+   } else if (this_turn_order.action >= ATTACK_CLOSEST && this_turn_order.action <= ATTACK_SMALLEST) {
+      if (done_attack) {
+         int d_anim = (int)( ((progress - speed) / (1-speed)) * 1000);
+         if (d_anim >= 1000) d_anim = 999;
+         sp_bird = bird_anim_attack_end.getSprite( d_anim );
+      } else {
+         int d_anim = (int)( (progress / speed) * 1000);
+         if (d_anim >= 1000) d_anim = 999;
+         sp_bird = bird_anim_attack_start.getSprite( d_anim );
+      }
+   } else {
+      if (anim_data == 4) sp_bird = bird_anim_idle3.getSprite( (int)(progress * 1000) );
+      else if (anim_data == 2) sp_bird = bird_anim_idle2.getSprite( (int)(progress * 1000) );
+      else sp_bird = bird_anim_idle1.getSprite( (int)(progress * 1000) );
+   }
+   if (NULL == sp_bird) return -1;
+
+   // Move/scale sprite
+   sp_bird->setPosition( x_real, y_real );
+   Vector2u dim (bird_anim_idle1.image_size_x, bird_anim_idle1.image_size_y);
+   sp_bird->setOrigin( dim.x / 2.0, dim.y / 2.0 );
+   sp_bird->setScale( 0.6 / dim.x, 0.6 / dim.y );
+
    sp_bird->setRotation( rotation );
 
    SFML_GlobalRenderWindow::get()->draw( *sp_bird );
@@ -1895,7 +2017,7 @@ Bug::Bug( int x, int y, Direction face )
 
    health = max_health = BUG_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
 
-   vision_range = BUG_BASE_VISION * (1.0 + ((float)focus_vision / 25.0));
+   vision_range = BUG_BASE_VISION * (1.0 + ((float)focus_perception / 25.0));
 
    attack_range = BUG_BASE_VISION;
    orb_speed = BUG_ORB_SPEED * ( 1.0 + ( focus_speed * 0.01) );
@@ -1962,7 +2084,7 @@ int Bug::doAttack( Order o )
 
    if (target) {
       log("Bug pre-generate");
-      addProjectile( PR_HOMING_ORB, team, x_real, y_real, orb_speed, attack_range, target );
+      addProjectile( PR_HOMING_ORB, team, x_real, y_real, orb_speed, attack_range, target, 100 );
    }
 
    log("Bug finishing attack");
@@ -2267,6 +2389,23 @@ TargetPractice::~TargetPractice()
 string TargetPractice::descriptor()
 {
    return "Target";
+}
+
+//////////////////////////////////////////////////////////////////////
+// The rest
+
+Unit *genBaseUnit( UnitType t, int grid_x, int grid_y, Direction face )
+{
+   if (t == PLAYER_T) return NULL;
+   if (t == MONSTER_T) return new Monster( grid_x, grid_y, face );
+   if (t == SOLDIER_T) return new Soldier( grid_x, grid_y, face );
+   if (t == WORM_T) return new Worm( grid_x, grid_y, face );
+   if (t == BIRD_T) return new Bird( grid_x, grid_y, face );
+   if (t == BUG_T) return new Bug( grid_x, grid_y, face );
+   if (t == TARGETPRACTICE_T) return new TargetPractice( grid_x, grid_y, face );
+   if (t == R_HUMAN_ARCHER_T) return new RangedUnit( t, grid_x, grid_y, face, 1 );
+   if (t == M_HUMAN_SWORDSMAN_T) return NULL;
+   if (t == SUMMONMARKER_T) return NULL;
 }
 
 int initUnits()

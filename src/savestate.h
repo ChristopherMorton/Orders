@@ -16,6 +16,7 @@ namespace sum
    typedef int LevelRecord;
 
    void setRecord( int level, LevelRecord record );
+   void addRecord( int level, LevelRecord record );
    LevelRecord getRecord( int level );
 
    int loadSaveGame();
