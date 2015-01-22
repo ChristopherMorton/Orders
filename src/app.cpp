@@ -242,7 +242,7 @@ void splashMenu()
          loadLevelEditor(-1);
 
       if (b_splashToTestLevel->doWidget())
-         loadLevel(-2);
+         loadLevel(-1);
 
       if (b_open_options->doWidget())
          openOptionsMenu();

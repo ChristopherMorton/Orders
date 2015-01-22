@@ -600,7 +600,7 @@ int AIUnit::doAttack( Order o )
       target = getEnemy( x_grid, y_grid, attack_range, facing, this, selector );
 
       if (target) {
-         addProjectile( PR_ARROW, team, x_real, y_real, 3.0, attack_range, target, 0.0, 0.1 );
+         addProjectile( PR_ARROW, team, x_real, y_real, 4.0, attack_range, target, 0.0, 0.1 );
       }
    }
 
@@ -671,10 +671,15 @@ void AIUnit::clearWaypoints()
 
 int costEstimateH( int from_x, int from_y, int goal_x, int goal_y )
 {
+   int dx = from_x - goal_x,
+       dy = from_y - goal_y;
+   /* Orthoganal score
    int dx = abs(from_x - goal_x),
        dy = abs(from_y - goal_y);
 
    return dx + dy;
+       */
+   return (dx * dx) + (dy * dy);
 }
 
 int AIUnit::reconstructPath( Direction *came_from_grid, int x, int y )
@@ -736,6 +741,21 @@ int AIUnit::aStar( int start_x, int start_y, int goal_x, int goal_y )
             it_f_score = (*it_next).f_score;
          }
       }
+      /* Alternate scoring, when f_score is orthoganal distance, split ties on g_score
+      int it_f_score = 1000, it_g_score = -1;
+      for (it_next = open_set.begin(); it_next != open_set.end(); ++it_next) {
+         if ((*it_next).f_score < it_f_score) {
+            it_best = it_next;
+            it_f_score = (*it_next).f_score;
+            it_g_score = (*it_next).g_score;
+         } else if ((*it_next).f_score == it_f_score && (*it_next).g_score > it_g_score) {
+            it_best = it_next;
+            it_f_score = (*it_next).f_score;
+            it_g_score = (*it_next).g_score;
+         }
+      }
+      */
+
 
       aStarVector asv = (*it_best);
 
@@ -751,6 +771,8 @@ int AIUnit::aStar( int start_x, int start_y, int goal_x, int goal_y )
              neighbor_y = asv.y;
          addDirection( d, neighbor_x, neighbor_y );
          aStarVector neighbor( neighbor_x, neighbor_y, 0, 0 );
+         if (!canMove( neighbor.x, neighbor.y, asv.x, asv.y ))
+            continue;
          if (find( closed_set.begin(), closed_set.end(), neighbor) != closed_set.end())
             continue; // Already closed this node
 
@@ -892,8 +914,12 @@ int AIUnit::ai()
       {
          Direction d = getDirection( x_grid, y_grid, enemy->x_grid, enemy->y_grid );
          turnTo(d);
-         if (canMove( x_next, y_next, x_grid, y_grid ))
+         if (canMove( x_next, y_next, x_grid, y_grid )) {
             this_turn_order = Order( MOVE_FORWARD );
+         } else {
+            this_turn_order = Order( ATTACK_CLOSEST );
+            done_attack = 0;
+         }
          aggroed = 1;
          return 0;
       }
@@ -2801,7 +2827,12 @@ Unit *genBaseUnit( UnitType t, int grid_x, int grid_y, Direction face )
    if (t == BIRD_T) return new Bird( grid_x, grid_y, face );
    if (t == BUG_T) return new Bug( grid_x, grid_y, face );
    if (t == TARGETPRACTICE_T) return new TargetPractice( grid_x, grid_y, face );
-   if (t == R_HUMAN_ARCHER_T) return new AIUnit( t, grid_x, grid_y, face, 1 );
+   if (t == R_HUMAN_ARCHER_T) {
+      AIUnit *u = new AIUnit( t, grid_x, grid_y, face, 1 );
+      u->setAI( MV_HOLD_POSITION, AGR_PURSUE_VISIBLE, 10, 4, NULL );
+      u->addWaypoint( grid_x, grid_y );
+      return u;
+   }
    if (t == M_HUMAN_SWORDSMAN_T) return NULL;
    if (t == SUMMONMARKER_T) return NULL;
 

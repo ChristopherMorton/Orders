@@ -419,7 +419,7 @@ int addEffect( Effect_Type t, float dur, float x, float y, float rot, float fade
 
 bool isVisible( int x, int y )
 {
-   return (GRID_AT(vision_grid,x,y) == VIS_VISIBLE);
+   return !vision_enabled || (GRID_AT(vision_grid,x,y) == VIS_VISIBLE);
 }
 
 bool blocksVision( int x, int y, int from_x, int from_y, Direction ew, Direction ns, int flags )
