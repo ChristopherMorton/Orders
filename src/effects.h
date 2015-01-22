@@ -13,8 +13,10 @@ enum Effect_Type
    // Projectiles
    PR_ARROW,
    PR_HOMING_ORB,
-   // Sparkly Effects
+   // General Effects
    SE_SUMMON_CLOUD,
+   SE_ALERT_MARKER,
+   SE_GO_MARKER,
    // Combat Effects
    SE_SPEAR_ANIM,
 
@@ -52,18 +54,18 @@ struct StaticEffect : public Effect
 {
    sf::Vector2f pos;
    float rotation;
-   float duration;
+   float duration, fade_dur;
 
    virtual int update( float dtf );
    virtual int draw();
 
-   StaticEffect( Effect_Type t, float duration, float x, float y, float rotation );
+   StaticEffect( Effect_Type t, float duration, float x, float y, float rotation, float fade = 0.0 );
 
    virtual ~StaticEffect();
 };
 
 Projectile *genProjectile( Effect_Type t, int team, float x, float y, float speed, float range, Unit* target, float homing = 0, float fastforward = 0 );
-StaticEffect *genEffect( Effect_Type t, float dur, float x, float y, float rotation );
+StaticEffect *genEffect( Effect_Type t, float dur, float x, float y, float rotation, float fade = 0.0 );
 
 int initEffects();
 

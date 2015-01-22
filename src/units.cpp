@@ -80,16 +80,16 @@ int Unit::prepareBasicOrder( Order &o, bool cond_result )
          case MOVE_BACK:
             if (cond_result == true) {
                // Set new next location
-               if (facing == NORTH) { TurnTo(SOUTH); facing = NORTH; }
-               else if (facing == SOUTH) { TurnTo(NORTH); facing = SOUTH; }
-               else if (facing == EAST) { TurnTo(WEST); facing = EAST; }
-               else if (facing == WEST) { TurnTo(EAST); facing = WEST; }
+               if (facing == NORTH) { turnTo(SOUTH); facing = NORTH; }
+               else if (facing == SOUTH) { turnTo(NORTH); facing = SOUTH; }
+               else if (facing == EAST) { turnTo(WEST); facing = EAST; }
+               else if (facing == WEST) { turnTo(EAST); facing = WEST; }
             }
          case MOVE_FORWARD:
             if (cond_result == true) {
                // Can we move there? If not, reset *_next values and quit
                if (!canMove( x_next, y_next, x_grid, y_grid )) {
-                  TurnTo(facing);
+                  turnTo(facing);
                   return 0;
                }
 
@@ -99,26 +99,26 @@ int Unit::prepareBasicOrder( Order &o, bool cond_result )
             }
          case TURN_NORTH:
             if (cond_result == true)
-               TurnTo(NORTH);
+               turnTo(NORTH);
             return 0;
          case TURN_EAST:
             if (cond_result == true)
-               TurnTo(EAST);
+               turnTo(EAST);
             return 0;
          case TURN_SOUTH:
             if (cond_result == true)
-               TurnTo(SOUTH);
+               turnTo(SOUTH);
             return 0;
          case TURN_WEST:
             if (cond_result == true)
-               TurnTo(WEST);
+               turnTo(WEST);
             return 0;
          case TURN_NEAREST_ENEMY:
             if (cond_result == true) {
                Unit *u = getEnemy( x_grid, y_grid, attack_range, ALL_DIR, this, SELECT_CLOSEST );
                if (u) {
                   Direction d = getDirection( x_grid, y_grid, u->x_grid, u->y_grid );
-                  TurnTo(d);
+                  turnTo(d);
                }
             }
             return 0;
@@ -285,7 +285,7 @@ int Unit::completeBasicOrder( Order &o )
             moveUnit( this, x_next, y_next );
             x_grid = x_next;
             y_grid = y_next;
-            TurnTo(facing); 
+            turnTo(facing); 
          default: 
             return 0;
       }
@@ -293,10 +293,10 @@ int Unit::completeBasicOrder( Order &o )
    else return -1;
 }
 
-bool Unit::evaluateConditional( Order o )
+bool Unit::evaluateConditional( Order_Conditional oc )
 {
    bool s = true;
-   switch (o.condition) {
+   switch (oc) {
       case TRUE:
          return true;
       case ENEMY_NOT_ADJACENT:
@@ -306,11 +306,11 @@ bool Unit::evaluateConditional( Order o )
       case ENEMY_NOT_AHEAD:
          s = false;
       case ENEMY_AHEAD:
-         return s != !(getEnemyLine( x_grid, y_grid, attack_range, facing, this, SELECT_CLOSEST, false ) != NULL);
+         return s != !(getEnemyLine( x_grid, y_grid, vision_range, facing, this, SELECT_CLOSEST, false ) != NULL);
       case ENEMY_NOT_IN_RANGE:
          s = false;
       case ENEMY_IN_RANGE:
-         return s != !(getEnemy( x_grid, y_grid, attack_range, facing, this, SELECT_CLOSEST, false ) != NULL);
+         return s != !(getEnemy( x_grid, y_grid, vision_range, facing, this, SELECT_CLOSEST, false ) != NULL);
       case ALLY_NOT_ADJACENT:
          s = false;
       case ALLY_ADJACENT:
@@ -318,11 +318,11 @@ bool Unit::evaluateConditional( Order o )
       case ALLY_NOT_AHEAD:
          s = false;
       case ALLY_AHEAD:
-         return s != !(getEnemyLine( x_grid, y_grid, attack_range, facing, this, SELECT_CLOSEST, true ) != NULL);
+         return s != !(getEnemyLine( x_grid, y_grid, vision_range, facing, this, SELECT_CLOSEST, true ) != NULL);
       case ALLY_NOT_IN_RANGE:
          s = false;
       case ALLY_IN_RANGE:
-         return s != !(getEnemy( x_grid, y_grid, attack_range, facing, this, SELECT_CLOSEST, true ) != NULL);
+         return s != !(getEnemy( x_grid, y_grid, vision_range, facing, this, SELECT_CLOSEST, true ) != NULL);
       default:
          return true;
    }
@@ -332,6 +332,9 @@ void Unit::activate()
 {
    current_order = 0;
    active = 2;
+
+   if (team == 0)
+      addEffect( SE_GO_MARKER, 0.3, x_real, y_real, 0, 0.1 );
 }
 
 void Unit::clearOrders()
@@ -342,7 +345,7 @@ void Unit::clearOrders()
    log("Cleared orders");
 }
 
-int Unit::TurnTo( Direction face )
+int Unit::turnTo( Direction face )
 {
    facing = face;
 
@@ -423,7 +426,7 @@ int Unit::prepareTurn()
          && visited_orders.find( current_order ) == visited_orders.end()) {
       this_turn_order = order_queue[current_order];
       visited_orders.insert( current_order );
-      bool decision = evaluateConditional(this_turn_order);
+      bool decision = evaluateConditional(this_turn_order.condition);
       int r = prepareBasicOrder(order_queue[current_order], decision);
       // if prepareBasicOrder returns 0, it's a 0-length instruction (e.g. turn)
       if (r == 0) {
@@ -504,15 +507,15 @@ string Unit::descriptor()
 }
 
 //////////////////////////////////////////////////////////////////////
-// RangedUnit ---
+// AIUnit ---
 
 // Private
-RangedUnit::RangedUnit()
+AIUnit::AIUnit()
 { }
 
-RangedUnit::RangedUnit( UnitType t, int x, int y, Direction face, int my_team )
+AIUnit::AIUnit( UnitType t, int x, int y, Direction face, int my_team )
 {
-   if ( t < R_HUMAN_ARCHER_T || t > R_HUMAN_ARCHER_T ) {
+   if ( t < R_HUMAN_ARCHER_T || t >= SUMMONMARKER_T ) {
       alive = 0;
       return;
    }
@@ -528,7 +531,7 @@ RangedUnit::RangedUnit( UnitType t, int x, int y, Direction face, int my_team )
    x_real = x + 0.5;
    y_real = y + 0.5;
 
-   TurnTo(face);
+   turnTo(face);
 
    max_orders = 0;
    order_queue = NULL;
@@ -538,6 +541,7 @@ RangedUnit::RangedUnit( UnitType t, int x, int y, Direction face, int my_team )
 
    active = 1;
    team = my_team;
+   group = 1;
 
    switch (t) {
       case R_HUMAN_ARCHER_T:
@@ -546,16 +550,30 @@ RangedUnit::RangedUnit( UnitType t, int x, int y, Direction face, int my_team )
          vision_range = 8.5;
          attack_range = 8.5;
          speed = 0.6;
-         ai_type = STAND_AND_FIRE;
+         ai_move_style = MV_HOLD_POSITION;
+         ai_aggro = AGR_ATTACK_IN_RANGE;
+         ai_leader = NULL;
+         break;
+      case M_HUMAN_SWORDSMAN_T:
+         radius = 0.3;
+         health = max_health = 100;
+         vision_range = 5.5;
+         attack_range = 1.3;
+         speed = 0.5;
+         ai_move_style = MV_HOLD_POSITION;
+         ai_aggro = AGR_ATTACK_IN_RANGE;
+         ai_leader = NULL;
          break;
       default:
          break;
    }
 
    progress = 0;
+   
+   win_condition = false;
 }
 
-int RangedUnit::doAttack( Order o )
+int AIUnit::doAttack( Order o )
 {
    int selector = SELECT_CLOSEST;
    Unit *target = NULL;
@@ -577,26 +595,360 @@ int RangedUnit::doAttack( Order o )
          return -1;
    }
 
-   target = getEnemy( x_grid, y_grid, attack_range, facing, this, selector );
+   if (type >= R_HUMAN_ARCHER_T && type <= R_HUMAN_ARCHER_T) {
+      // Ranged attacker
+      target = getEnemy( x_grid, y_grid, attack_range, facing, this, selector );
 
-   if (target) {
-      addProjectile( PR_ARROW, team, x_real, y_real, 3.0, attack_range, target, 0.0, 0.1 );
+      if (target) {
+         addProjectile( PR_ARROW, team, x_real, y_real, 3.0, attack_range, target, 0.0, 0.1 );
+      }
+   }
+
+   if (type >= M_HUMAN_SWORDSMAN_T && type <= M_HUMAN_SWORDSMAN_T) {
+      // 1-range Melee attacker
+
+      int t_x = x_grid, t_y = y_grid;
+      if (addDirection( facing, t_x, t_y ) != -1)
+         target = GRID_AT(unit_grid,t_x,t_y);
+
+      if (target) {
+         if (type == M_HUMAN_SWORDSMAN_T)
+            target->takeDamage( 35 );
+      }
    }
 
    done_attack = 1;
    return 0;
 }
 
-std::string RangedUnit::descriptor()
+int AIUnit::takeDamage( int damage, int flags )
+{
+   health -= damage;
+   if (health <= 0) {
+      // Dead!
+      alive = -( DEATH_TIME + DEATH_FADE_TIME );
+      return -1;
+   }
+
+   if (ai_aggro == AGR_DEFEND_SELF)
+      aggroed = 1;
+
+   return 0;
+}
+
+// AI calculations
+void AIUnit::setAI( AI_Movement move, AI_Aggression aggro, float chase_dis, float attack_dis, Unit* follow )
+{
+   ai_move_style = move;
+   ai_aggro = aggro;
+
+   ai_chase_distance = chase_dis;
+   if (ai_chase_distance > vision_range)
+      ai_chase_distance = vision_range;
+
+   ai_attack_distance = attack_dis;
+   if (ai_attack_distance > vision_range)
+      ai_attack_distance = vision_range;
+
+   ai_leader = follow;
+}
+
+int AIUnit::addWaypoint( int x, int y )
+{
+   ai_waypoints.push_back( Vector2i( x, y ) );
+
+   if (ai_waypoint_next == -1)
+      ai_waypoint_next = 0;
+
+   return ai_waypoints.size();
+}
+
+void AIUnit::clearWaypoints()
+{
+   ai_waypoints.clear();
+   ai_waypoint_next = -1;
+}
+
+int costEstimateH( int from_x, int from_y, int goal_x, int goal_y )
+{
+   int dx = abs(from_x - goal_x),
+       dy = abs(from_y - goal_y);
+
+   return dx + dy;
+}
+
+int AIUnit::reconstructPath( Direction *came_from_grid, int x, int y )
+{
+   ai_path.clear();
+
+   Direction d;
+   while ((d = came_from_grid[ x + (y * level_dim_x) ]) != ALL_DIR) {
+      ai_path.push_front( reverseDirection( d ) );
+      addDirection( d, x, y );
+   }
+
+   return 0;
+}
+
+struct aStarVector {
+   int x;
+   int y;
+   int g_score;
+   int f_score;
+
+   aStarVector( int _x, int _y, int _g_score, int _f_score ) :
+      x(_x), y(_y),
+      g_score(_g_score),
+      f_score(_f_score) {}
+};
+inline bool operator== (const aStarVector& lhs, const aStarVector& rhs)
+{
+   return (lhs.x == rhs.x && lhs.y == rhs.y);
+}
+bool asvLess (const aStarVector& lhs, const aStarVector& rhs)
+{
+   return ((lhs.x + (lhs.y * 1000)) < (rhs.x + (rhs.y * 1000)));
+}
+inline bool operator< (const aStarVector& lhs, const aStarVector& rhs)
+{
+   return asvLess( lhs, rhs );
+}
+
+int AIUnit::aStar( int start_x, int start_y, int goal_x, int goal_y )
+{
+   set<aStarVector> closed_set;
+   set<aStarVector> open_set;
+
+   Direction *came_from_grid = new Direction[level_dim_x * level_dim_y];
+   for (int i = 0; i < level_dim_x * level_dim_y; ++i) came_from_grid[i] = ALL_DIR;
+
+   closed_set.clear();
+   open_set.clear();
+   open_set.insert( aStarVector( start_x, start_y, 0, costEstimateH( start_x, start_y, goal_x, goal_y )));
+
+   while( !open_set.empty() ) {
+      // Manually search here for a lowest f_score
+      set<aStarVector>::iterator it_next, it_best;
+      int it_f_score = 1000;
+      for (it_next = open_set.begin(); it_next != open_set.end(); ++it_next) {
+         if ((*it_next).f_score < it_f_score) {
+            it_best = it_next;
+            it_f_score = (*it_next).f_score;
+         }
+      }
+
+      aStarVector asv = (*it_best);
+
+      // Goal reached
+      if (asv.x == goal_x && asv.y == goal_y)
+         return reconstructPath(came_from_grid, goal_x, goal_y);
+
+      open_set.erase( it_best );
+      closed_set.insert( asv );
+      // Find neighbors in each Direction
+      for (Direction d = NORTH; d != ALL_DIR; d = (Direction)((int)d + 1)) {
+         int neighbor_x = asv.x,
+             neighbor_y = asv.y;
+         addDirection( d, neighbor_x, neighbor_y );
+         aStarVector neighbor( neighbor_x, neighbor_y, 0, 0 );
+         if (find( closed_set.begin(), closed_set.end(), neighbor) != closed_set.end())
+            continue; // Already closed this node
+
+         // Node has not been closed yet
+         int tentative_g_score = asv.g_score + 1;
+
+         set<aStarVector>::iterator it_open = find( open_set.begin(), open_set.end(), neighbor);
+         if (it_open == open_set.end() || (*it_open).g_score > tentative_g_score) {
+            came_from_grid[ neighbor.x + (neighbor.y * level_dim_x) ] = reverseDirection( d );
+            neighbor.g_score = tentative_g_score;
+            neighbor.f_score = neighbor.g_score + costEstimateH( neighbor.x, neighbor.y, goal_x, goal_y );
+            if (it_open != open_set.end())
+               open_set.erase( it_open );
+            open_set.insert( neighbor );
+         }
+      }
+   }
+
+   return -1;
+}
+/*
+    closedset := the empty set    // The set of nodes already evaluated.
+    openset := {start}    // The set of tentative nodes to be evaluated, initially containing the start node
+    came_from := the empty map    // The map of navigated nodes.
+ 
+    g_score[start] := 0    // Cost from start along best known path.
+    // Estimated total cost from start to goal through y.
+    f_score[start] := g_score[start] + heuristic_cost_estimate(start, goal)
+ 
+    while openset is not empty
+        current := the node in openset having the lowest f_score[] value
+        if current = goal
+            return reconstruct_path(came_from, goal)
+ 
+        remove current from openset
+        add current to closedset
+        for each neighbor in neighbor_nodes(current)
+            if neighbor in closedset
+                continue
+            tentative_g_score := g_score[current] + dist_between(current,neighbor)
+ 
+            if neighbor not in openset or tentative_g_score < g_score[neighbor] 
+                came_from[neighbor] := current
+                g_score[neighbor] := tentative_g_score
+                f_score[neighbor] := g_score[neighbor] + heuristic_cost_estimate(neighbor, goal)
+                if neighbor not in openset
+                    add neighbor to openset
+ 
+    return failure
+    */
+ 
+int AIUnit::aiCalculatePath()
+{
+   if (ai_waypoints.size() == 0) return -1;
+
+   // TODO: select destination based on ai_waypoint_next
+   Vector2i destination = ai_waypoints.front();
+
+   aStar( x_grid, y_grid, destination.x, destination.y );
+
+   return 0;
+}
+
+int AIUnit::aiFollowPath()
+{
+   if (ai_path.size() == 0) return -1;
+
+   Direction d = ai_path.front();
+   turnTo(d);
+
+   if (canMove( x_next, y_next, x_grid, y_grid )) {
+      this_turn_order = Order( MOVE_FORWARD );
+      ai_path.pop_front();
+   }
+   else
+      this_turn_order = Order( BUMP );
+
+
+   return 0;
+}
+
+std::string AIUnit::descriptor()
 {
    return "Human Archer";
 }
 
-int RangedUnit::prepareTurn()
+int AIUnit::ai()
+{
+   // First see if their aggro is procced
+   if (ai_aggro == AGR_FLEE) {
+      Unit* enemy = getEnemy( x_grid, y_grid, vision_range, facing, this, SELECT_CLOSEST, false );
+      if (enemy != NULL) {
+         Direction d = getDirection( enemy->x_grid, enemy->y_grid, x_grid, y_grid );
+         turnTo(d);
+         if (canMove( x_next, y_next, x_grid, y_grid ))
+            this_turn_order = Order( MOVE_FORWARD );
+         aggroed = 1;
+         return 0;
+      }
+
+      if (aggroed == 1) {
+         aiCalculatePath();
+      }
+      aggroed = 0;
+   }
+
+   if (ai_aggro == AGR_PASSIVE)
+      aggroed = 0;
+
+   if (ai_aggro == AGR_ATTACK_IN_RANGE || (ai_aggro == AGR_DEFEND_SELF && aggroed == 1)) {
+      // Try to attack
+      Unit* enemy = getEnemy( x_grid, y_grid, ai_attack_distance, facing, this, SELECT_CLOSEST, false );
+      if (enemy != NULL) {
+         this_turn_order = Order( ATTACK_CLOSEST );
+         done_attack = 0;
+         aggroed = 1;
+         return 0;
+      }
+
+      if (aggroed == 1) {
+         aiCalculatePath();
+      }
+      aggroed = 0;
+   }
+
+   if (ai_aggro == AGR_PURSUE_VISIBLE) {
+      // Try to attack
+      Unit* enemy = getEnemy( x_grid, y_grid, ai_attack_distance, facing, this, SELECT_CLOSEST, false );
+      if (enemy != NULL) {
+         this_turn_order = Order( ATTACK_CLOSEST );
+         done_attack = 0;
+         aggroed = 1;
+         return 0;
+      }
+
+      // Try to chase
+      enemy = getEnemy( x_grid, y_grid, ai_chase_distance, facing, this, SELECT_CLOSEST, false );
+      if (enemy != NULL)
+      {
+         Direction d = getDirection( x_grid, y_grid, enemy->x_grid, enemy->y_grid );
+         turnTo(d);
+         if (canMove( x_next, y_next, x_grid, y_grid ))
+            this_turn_order = Order( MOVE_FORWARD );
+         aggroed = 1;
+         return 0;
+      }
+
+      if (aggroed == 1) {
+         aiCalculatePath();
+      }
+      aggroed = 0;
+   }
+
+
+   // Second, if not aggroed, move in the customary way
+   if (aggroed == 0) {
+
+      if (ai_move_style == MV_HOLD_POSITION) {
+         if (ai_waypoints.size() == 0) return -1;
+
+         Vector2i h_pos = ai_waypoints.front();
+         if (h_pos.x == x_grid && h_pos.y == y_grid) {// at position
+            this_turn_order = Order( WAIT );
+            return 0;
+         }
+         else
+            return aiFollowPath();
+      }
+
+
+      /*
+      if (ai_move_style == MV_PATROL_PATH) {
+         // TODO: move waypoint in completeTurn
+         if (ai_waypoints.size() == 0) return -1;
+
+         Vector2i h_pos = ai_waypoints.front();
+         if (h_pos.x == x_grid && h_pos.y == y_grid) {// at position
+            this_turn_order = Order( FOLLOW_PATH );
+            return 0;
+         }
+         else
+            return aiFollowPath();
+      }
+      */
+
+
+      if (ai_move_style == MV_FREE_ROAM) {
+         this_turn_order = Order( WAIT );
+         return 0;
+      }
+   }
+
+   return 0;
+}
+
+int AIUnit::prepareTurn()
 {
    if (alive != 1) return 0;
-
-   this_turn_order = Order( WAIT );
 
    if (aff_poison) {
       aff_poison--;
@@ -608,15 +960,17 @@ int RangedUnit::prepareTurn()
          return 0;
    }
 
-   if (ai_type == STAND_AND_FIRE) {
-      this_turn_order = Order( ATTACK_CLOSEST );
-      done_attack = 0;
-   }
+   if (ai_overridden == true)
+      return 0; // Received orders from elsewhere
+
+   this_turn_order = Order( WAIT );
+   
+   ai();
 
    return 0;
 }
 
-int RangedUnit::update( float dtf )
+int AIUnit::update( float dtf )
 {
    if (alive < 0) {
       alive += (int) (1000.0 * dtf);
@@ -631,14 +985,25 @@ int RangedUnit::update( float dtf )
    return updateBasicOrder( dtf, o );
 }
 
-sf::Texture* RangedUnit::getTexture()
+int AIUnit::completeTurn()
+{
+   if (alive != 1) return 0;
+
+   ai_overridden = false; // reset override
+
+   completeBasicOrder(this_turn_order);
+
+   return 0;
+}
+
+sf::Texture* AIUnit::getTexture()
 {
    return SFML_TextureManager::getSingleton().getTexture( "HumanArcher.png" );
 }
 
 Sprite *sp_human_archer = NULL;
 
-int RangedUnit::draw()
+int AIUnit::draw()
 {
    if (NULL == sp_human_archer) {
       sp_human_archer = new Sprite(*getTexture());
@@ -663,7 +1028,7 @@ int RangedUnit::draw()
 
 }
 
-RangedUnit::~RangedUnit()
+AIUnit::~AIUnit()
 { }
 
 //////////////////////////////////////////////////////////////////////
@@ -712,7 +1077,7 @@ int Player::init( int x, int y, Direction face )
    y_grid = y;
    x_real = x + 0.5;
    y_real = y + 0.5;
-   TurnTo(face);
+   turnTo(face);
 
    health = max_health = PLAYER_MAX_HEALTH;
 
@@ -731,7 +1096,10 @@ int Player::init( int x, int y, Direction face )
 
    active = 0;
    team = 0; 
+   group = 1;
    progress = 0;
+   
+   win_condition = false;
 
    return 0;
 }
@@ -767,6 +1135,9 @@ int Player::prepareTurn()
 
    // Here is where we shout a new command
    Order o = order_queue[current_order];
+   if (o.action == PL_DELAY)
+      return 0;
+
    if (o.action < PL_ALERT_ALL)
       broadcastOrder( o );
    else {
@@ -790,7 +1161,13 @@ int Player::completeTurn()
       return -1;
 
    if (active) { // started the turn doing something
-      Order o = order_queue[current_order];
+      Order &o = order_queue[current_order];
+      if (o.action == PL_DELAY) {
+         o.count--;
+         if (o.count > 0)
+            return 0;
+      }
+
       if (o.action >= PL_ALERT_ALL)
          completePlayerCommand(o);
 
@@ -897,7 +1274,7 @@ Monster::Monster( int x, int y, Direction face )
    y_grid = y;
    x_real = x + 0.5;
    y_real = y + 0.5;
-   TurnTo(face);
+   turnTo(face);
 
    health = max_health = MONSTER_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
 
@@ -914,7 +1291,10 @@ Monster::Monster( int x, int y, Direction face )
 
    active = 0;
    team = 0;
+   group = 1;
    progress = 0;
+
+   win_condition = false;
 }
 
 Monster::~Monster()
@@ -1132,7 +1512,7 @@ Soldier::Soldier( int x, int y, Direction face )
    y_grid = y;
    x_real = x + 0.5;
    y_real = y + 0.5;
-   TurnTo(face);
+   turnTo(face);
 
    health = max_health = SOLDIER_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
 
@@ -1151,7 +1531,10 @@ Soldier::Soldier( int x, int y, Direction face )
 
    active = 0;
    team = 0;
+   group = 1;
    progress = 0;
+
+   win_condition = false;
 }
 
 Soldier::~Soldier()
@@ -1261,7 +1644,7 @@ int Soldier::doAttack( Order o )
 
          // Animate
          float rot = atan( (t_y - y_grid) / (t_x - x_grid + 0.0001) ) * 180 / 3.1415926;
-         addEffect( SE_SPEAR_ANIM, 0.1, x_real, y_real, rot );
+         addEffect( SE_SPEAR_ANIM, 0.15, x_real, y_real, rot, 0.15 );
       }
 
    }
@@ -1301,7 +1684,7 @@ int Soldier::prepareTurn()
          && visited_orders.find( current_order ) == visited_orders.end()) {
       this_turn_order = order_queue[current_order];
       visited_orders.insert( current_order );
-      bool decision = evaluateConditional(this_turn_order);
+      bool decision = evaluateConditional(this_turn_order.condition);
       // SOLDIER UNIQUE CODE
       int r;
       if (this_turn_order.action <= SKIP)
@@ -1495,7 +1878,7 @@ Worm::Worm( int x, int y, Direction face )
    y_grid = y;
    x_real = x + 0.5;
    y_real = y + 0.5;
-   TurnTo(face);
+   turnTo(face);
 
    health = max_health = WORM_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
 
@@ -1512,7 +1895,10 @@ Worm::Worm( int x, int y, Direction face )
 
    active = 0;
    team = 0;
+   group = 1;
    progress = 0;
+   
+   win_condition = false;
 }
 
 Worm::~Worm()
@@ -1569,7 +1955,7 @@ int Worm::prepareTurn()
    while (active == 1 && 
           current_order != final_order) {
       this_turn_order = order_queue[current_order];
-      bool decision = evaluateConditional(this_turn_order);
+      bool decision = evaluateConditional(this_turn_order.condition);
       int r = prepareBasicOrder(this_turn_order, decision);
       // if prepareBasicOrder returns 0, it's a 0-length instruction (e.g. turn)
       if (r == 0) {
@@ -1752,7 +2138,7 @@ Bird::Bird( int x, int y, Direction face )
    y_grid = y;
    x_real = x + 0.5;
    y_real = y + 0.5;
-   TurnTo(face);
+   turnTo(face);
 
    health = max_health = BIRD_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
 
@@ -1769,8 +2155,11 @@ Bird::Bird( int x, int y, Direction face )
 
    active = 0;
    team = 0;
+   group = 1;
    progress = 0;
    anim_data = 0;
+   
+   win_condition = false;
 }
 
 Bird::~Bird()
@@ -2013,7 +2402,7 @@ Bug::Bug( int x, int y, Direction face )
    y_grid = y;
    x_real = x + 0.5;
    y_real = y + 0.5;
-   TurnTo(face);
+   turnTo(face);
 
    health = max_health = BUG_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
 
@@ -2032,7 +2421,10 @@ Bug::Bug( int x, int y, Direction face )
 
    active = 0;
    team = 0;
+   group = 1;
    progress = 0;
+   
+   win_condition = false;
 }
 
 Bug::~Bug()
@@ -2162,7 +2554,7 @@ SummonMarker::SummonMarker( )
    y_grid = 0;
    x_real = x_grid + 0.5;
    y_real = y_grid + 0.5;
-   TurnTo( SOUTH );
+   turnTo( SOUTH );
 
    alive = 0;
 
@@ -2186,7 +2578,10 @@ SummonMarker::SummonMarker( )
 
    active = 0;
    team = 0;
+   group = 1;
    progress = 0;
+   
+   win_condition = false;
 }
 
 SummonMarker *theSummonMarker = NULL;
@@ -2319,7 +2714,7 @@ TargetPractice::TargetPractice( int x, int y, Direction face )
    y_grid = y;
    x_real = x_grid + 0.5;
    y_real = y_grid + 0.5;
-   TurnTo( face );
+   turnTo( face );
 
    alive = 1;
 
@@ -2343,7 +2738,10 @@ TargetPractice::TargetPractice( int x, int y, Direction face )
 
    active = 0;
    team = 99;
+   group = 1;
    progress = 0;
+   
+   win_condition = false;
 }
 
 int TargetPractice::addOrder( Order o )
@@ -2403,7 +2801,7 @@ Unit *genBaseUnit( UnitType t, int grid_x, int grid_y, Direction face )
    if (t == BIRD_T) return new Bird( grid_x, grid_y, face );
    if (t == BUG_T) return new Bug( grid_x, grid_y, face );
    if (t == TARGETPRACTICE_T) return new TargetPractice( grid_x, grid_y, face );
-   if (t == R_HUMAN_ARCHER_T) return new RangedUnit( t, grid_x, grid_y, face, 1 );
+   if (t == R_HUMAN_ARCHER_T) return new AIUnit( t, grid_x, grid_y, face, 1 );
    if (t == M_HUMAN_SWORDSMAN_T) return NULL;
    if (t == SUMMONMARKER_T) return NULL;
 

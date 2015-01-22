@@ -33,7 +33,7 @@ namespace sum
 
    int moveUnit( Unit *u, int new_x, int new_y );
    int addProjectile( Effect_Type t, int team, float x, float y, float speed, float range, Unit* target, float homing = 0, float fastforward = 0 );
-   int addEffect( Effect_Type t, float dur, float x, float y, float rot );
+   int addEffect( Effect_Type t, float dur, float x, float y, float rot, float fade = 0.0 );
 
    int broadcastOrder( Order o );
    int startPlayerCommand( Order o );
@@ -46,9 +46,11 @@ namespace sum
    extern Unit *selected_unit;
 
    int initLevelGui();
+   int initLevelEditorGui();
 
    extern int level_dim_x, level_dim_y;
    extern Unit **unit_grid;
+   extern Terrain *terrain_grid;
 };
 
 #endif

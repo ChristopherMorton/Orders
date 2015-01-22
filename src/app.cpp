@@ -8,6 +8,7 @@
 #include "menustate.h"
 #include "util.h"
 #include "map.h"
+#include "focus.h"
 #include "log.h"
 
 // SFML includes
@@ -241,7 +242,7 @@ void splashMenu()
          loadLevelEditor(-1);
 
       if (b_splashToTestLevel->doWidget())
-         loadLevel(-1);
+         loadLevel(-2);
 
       if (b_open_options->doWidget())
          openOptionsMenu();
@@ -577,6 +578,14 @@ int progressiveInit()
          if (initMap() == 0)
             progress = 5;
          break;
+      case 5:
+         if (initLevelEditorGui() == 0)
+            progress = 6;
+         break;
+      case 6:
+         if (initFocusMenuGui() == 0)
+            progress = 7;
+         break;
 
       default:
          return 0;
@@ -657,6 +666,7 @@ void refitGuis()
    //fitGui_InputOptions();
 
    fitGui_Map();
+   fitGui_FocusMenu();
 
    fitGui_Level();
    fitGui_LevelEditor();
@@ -777,6 +787,8 @@ int mainLoop( int dt )
    } else if (menu_state & MENU_PRI_SPLASH) {
       splashMenu();
 
+   } else if (menu_state & MENU_MAP_FOCUS) {
+      focusMenu();
    } else if (menu_state & MENU_PRI_MAP) {
       int map_result = drawMap(dt);
       if (map_result == -2) {

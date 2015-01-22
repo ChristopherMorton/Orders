@@ -175,6 +175,44 @@ void initMapLevels()
    sp_star_empty_left->scale( 0.5, 0.5 );
 }
 
+void fitGui_Map()
+{
+   int width = config::width(),
+       height = config::height();
+
+   int bar_height = height / 15;
+   int bar_but_width = width / 4.5;
+
+   // Bar
+   int bar_fill = 0;
+
+   b_map_to_splash->setPosition( bar_fill, 0 );
+   b_map_to_splash->setSize( bar_height, bar_height );
+   bar_fill += bar_height + 10; 
+
+   b_map_to_options->setPosition( bar_fill, 0 );
+   b_map_to_options->setSize( bar_but_width, bar_height );
+   b_map_to_options->setTextSize( 24 );
+   b_map_to_options->centerText();
+   bar_fill += bar_but_width + 10; 
+
+   b_map_to_focus->setPosition( bar_fill, 0 );
+   b_map_to_focus->setSize( bar_but_width, bar_height );
+   b_map_to_focus->setTextSize( 24 );
+   b_map_to_focus->centerText();
+   bar_fill += bar_but_width + 10; 
+
+   b_map_to_presets->setPosition( bar_fill, 0 );
+   b_map_to_presets->setSize( bar_but_width, bar_height );
+   b_map_to_presets->setTextSize( 24 );
+   b_map_to_presets->centerText();
+
+   b_map_start_level->setPosition( (width / 2) - 150, height - 60);
+   b_map_start_level->setSize( 300, 60 );
+   b_map_start_level->setTextSize( 24 );
+   b_map_start_level->centerText();
+}
+
 void initMapGui()
 {
    SFML_TextureManager *texture_manager = &SFML_TextureManager::getSingleton();
@@ -224,48 +262,8 @@ void initMapGui()
    b_map_start_level->setTextColor( sf::Color::Black );
    gui_manager->registerWidget( "Map Start Level", b_map_start_level);
 
+   fitGui_Map();
    init_map_gui = true;
-}
-
-void fitGui_Map()
-{
-   if (!init_map_gui)
-      initMapGui();
-
-   int width = config::width(),
-       height = config::height();
-
-   int bar_height = height / 15;
-   int bar_but_width = width / 4.5;
-
-   // Bar
-   int bar_fill = 0;
-
-   b_map_to_splash->setPosition( bar_fill, 0 );
-   b_map_to_splash->setSize( bar_height, bar_height );
-   bar_fill += bar_height + 10; 
-
-   b_map_to_options->setPosition( bar_fill, 0 );
-   b_map_to_options->setSize( bar_but_width, bar_height );
-   b_map_to_options->setTextSize( 24 );
-   b_map_to_options->centerText();
-   bar_fill += bar_but_width + 10; 
-
-   b_map_to_focus->setPosition( bar_fill, 0 );
-   b_map_to_focus->setSize( bar_but_width, bar_height );
-   b_map_to_focus->setTextSize( 24 );
-   b_map_to_focus->centerText();
-   bar_fill += bar_but_width + 10; 
-
-   b_map_to_presets->setPosition( bar_fill, 0 );
-   b_map_to_presets->setSize( bar_but_width, bar_height );
-   b_map_to_presets->setTextSize( 24 );
-   b_map_to_presets->centerText();
-
-   b_map_start_level->setPosition( (width / 2) - 150, height - 60);
-   b_map_start_level->setSize( 300, 60 );
-   b_map_start_level->setTextSize( 24 );
-   b_map_start_level->centerText();
 }
 
 int initMap()
@@ -277,7 +275,6 @@ int initMap()
       return -1;
    } else if (progress == 1) {
       initMapGui();
-      fitGui_Map();
       progress = 2;
       return -1;
    } else {
@@ -348,24 +345,15 @@ void drawLevelLocations()
    }
 }
 
-int drawMap( int dt )
+void drawMapBar()
 {
-   int retval = 0;
-   RenderWindow *r_window = SFML_GlobalRenderWindow::get();
-   r_window->setView(*map_view);
-   r_window->draw( *s_map );
-
-   drawLevelLocations();
-
-   r_window->setView( r_window->getDefaultView() );
-
    int bar_height = config::height() / 15;
    RectangleShape gui_bar( Vector2f( config::width(), bar_height ) );
    Color c( 249, 204, 159 );
    gui_bar.setFillColor(c);
    gui_bar.setOutlineThickness( 0 );
 
-   r_window->draw( gui_bar );
+   SFML_GlobalRenderWindow::get()->draw( gui_bar );
 
    if (b_map_to_splash->doWidget()) {
       menu_state = MENU_MAIN | MENU_PRI_SPLASH;
@@ -379,6 +367,20 @@ int drawMap( int dt )
    if (b_map_to_presets->doWidget()) {
       menu_state = MENU_MAIN | MENU_PRI_MAP | MENU_MAP_PRESETS;
    }
+}
+
+int drawMap( int dt )
+{
+   int retval = 0;
+   RenderWindow *r_window = SFML_GlobalRenderWindow::get();
+   r_window->setView(*map_view);
+   r_window->draw( *s_map );
+
+   drawLevelLocations();
+
+   r_window->setView( r_window->getDefaultView() );
+
+   drawMapBar();
 
    if (selected_level >= 0) {
       if (b_map_start_level->doWidget())

@@ -156,6 +156,8 @@ int StaticEffect::update( float dtf )
 
 Sprite *sp_summon_cloud = NULL;
 Sprite *sp_spear_anim = NULL;
+Sprite *sp_alert_marker = NULL;
+Sprite *sp_go_marker = NULL;
 
 int StaticEffect::draw()
 {
@@ -174,26 +176,57 @@ int StaticEffect::draw()
       normalizeTo1x1( sp_spear_anim );
       sp_spear_anim->scale( 3.0, 1.0 );
    }
+   if (NULL == sp_alert_marker) {
+      Texture *tex =SFML_TextureManager::getSingleton().getTexture( "PlayerAlert.png" ); 
+      sp_alert_marker = new Sprite( *(tex));
+      Vector2u dim = tex->getSize();
+      sp_alert_marker->setOrigin( dim.x / 2.0, dim.y / 2.0 );
+      normalizeTo1x1( sp_alert_marker );
+      sp_alert_marker->scale( 0.5, 0.5 );
+   }
+   if (NULL == sp_go_marker) {
+      Texture *tex =SFML_TextureManager::getSingleton().getTexture( "PlayerGoButton.png" ); 
+      sp_go_marker = new Sprite( *(tex));
+      Vector2u dim = tex->getSize();
+      sp_go_marker->setOrigin( dim.x / 2.0, dim.y / 2.0 );
+      normalizeTo1x1( sp_go_marker );
+      sp_go_marker->scale( 0.5, 0.5 );
+   }
 
    Sprite *sp = NULL;
    if (type == SE_SUMMON_CLOUD)
       sp = sp_summon_cloud;
    else if (type == SE_SPEAR_ANIM)
       sp = sp_spear_anim;
+   else if (type == SE_ALERT_MARKER)
+      sp = sp_alert_marker;
+   else if (type == SE_GO_MARKER)
+      sp = sp_go_marker;
 
    if (NULL != sp) {
       sp->setPosition( pos );
       sp->setRotation( rotation );
+
+      Color c = Color::White;
+      if (fade_dur > 0.05 && duration < fade_dur) {
+         int alpha = 255 - (int)(((fade_dur - duration) / fade_dur) * 255);
+         if (alpha < 0) alpha = 0;
+         if (alpha > 255) alpha = 255;
+         c = Color( 255, 255, 255, alpha );
+      }
+      sp->setColor( c );
+
       SFML_GlobalRenderWindow::get()->draw( *sp );
    }
 
    return 0;
 }
 
-StaticEffect::StaticEffect( Effect_Type t, float dur, float x, float y, float rot )
+StaticEffect::StaticEffect( Effect_Type t, float dur, float x, float y, float rot, float fade )
 {
    type = t;
    duration = dur;
+   fade_dur = fade;
    rotation = rot;
    pos = Vector2f( x, y );
 }
@@ -225,12 +258,12 @@ Projectile *genProjectile( Effect_Type t, int tm, float x, float y, float speed,
    return result;
 }
 
-StaticEffect *genEffect( Effect_Type t, float dur, float x, float y, float rotation )
+StaticEffect *genEffect( Effect_Type t, float dur, float x, float y, float rotation, float fade )
 {
    StaticEffect *result = NULL;
    if (t >= SE_SUMMON_CLOUD && t <= SE_SPEAR_ANIM) {
       log("Generating effect");
-      result = new StaticEffect( t, dur, x, y, rotation );
+      result = new StaticEffect( t, dur, x, y, rotation, fade );
    }
 
    return result;

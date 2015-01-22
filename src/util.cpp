@@ -51,3 +51,17 @@ int addDirection( Direction d, int &x, int &y )
 
    return 0;
 }
+
+Direction reverseDirection( Direction d )
+{
+   if (d == NORTH)
+      return SOUTH;
+   if (d == SOUTH)
+      return NORTH;
+   if (d == EAST)
+      return WEST;
+   if (d == WEST)
+      return EAST;
+   
+   return ALL_DIR;
+}

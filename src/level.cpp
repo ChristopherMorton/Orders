@@ -34,6 +34,8 @@
 
 #define MOUSE_DOWN_SELECT_TIME 150
 
+#define MAX_DIMENSION 253
+
 using namespace sf;
 using namespace std;
 
@@ -255,6 +257,66 @@ int zoomView( int ticks, Vector2f zoom_around )
 }
 
 //////////////////////////////////////////////////////////////////////
+// Winning ---
+
+bool victory = false;
+
+set<Unit*> win_if_killed;
+Vector2i win_if_reached;
+
+void clearWinConditions()
+{
+   win_if_killed.clear();
+   win_if_reached = Vector2i( -1, -1 );
+}
+
+void addUnitWinCondition( Unit *u )
+{
+   if (NULL == u) return;
+
+   win_if_killed.insert( u );
+   u->win_condition = true;
+}
+
+void removeUnitWinCondition( Unit *u )
+{
+   if (NULL == u) return;
+
+   set<Unit*>::iterator it = find( win_if_killed.begin(), win_if_killed.end(), u );
+   if (it != win_if_killed.end()) {
+      win_if_killed.erase( it );
+      u->win_condition = false;
+   }
+}
+
+void addLocationWinCondition( int x, int y )
+{
+   if (x < 0 || x > MAX_DIMENSION || y < 0 || y > MAX_DIMENSION)
+      win_if_reached = Vector2i( -1, -1 );
+   else
+      win_if_reached = Vector2i( x, y );
+}
+
+bool checkWinConditions()
+{
+   for (set<Unit*>::iterator it=win_if_killed.begin(); it != win_if_killed.end(); ++it) {
+      list<Unit*>::iterator it2=find( unit_list.begin(), unit_list.end(), (*it) );
+      if (it2 != unit_list.end()) // A target is still alive
+         return false;
+   }
+
+   // If we reach here, all targets are dead
+   if (win_if_reached.x == -1 || win_if_reached.y == -1) 
+      return true; // No location required
+
+   Unit *u = GRID_AT(unit_grid,win_if_reached.x,win_if_reached.y);
+   if (u && u->team == 0)
+      return true; // Location reached
+
+   return false;
+}
+
+//////////////////////////////////////////////////////////////////////
 // Adding stuff ---
 
 int removeUnit (list<Unit*>::iterator it)
@@ -341,9 +403,9 @@ int addProjectile( Effect_Type t, int team, float x, float y, float speed, float
    return -1;
 }
 
-int addEffect( Effect_Type t, float dur, float x, float y, float rot )
+int addEffect( Effect_Type t, float dur, float x, float y, float rot, float fade )
 {
-   Effect *e = genEffect( t, dur, x, y, rot );
+   Effect *e = genEffect( t, dur, x, y, rot, fade );
 
    if (e) {
       effect_list.push_back(e);
@@ -1100,7 +1162,7 @@ int completeSummon( Order o )
    if (NULL != u)
    {
       addUnit( u );
-      addEffect( SE_SUMMON_CLOUD, 0.5, x + 0.5, y + 0.5, 0 );
+      addEffect( SE_SUMMON_CLOUD, 5.5, x + 0.5, y + 0.5, 0, 2.2 );
    }
 
    return 0;
@@ -1112,6 +1174,8 @@ int alert( Unit *u )
 
    u->active = 0;
    u->clearOrders();
+
+   addEffect( SE_ALERT_MARKER, 0.3, u->x_real, u->y_real, 0, 0.1 );
 
    return 0;
 }
@@ -1147,6 +1211,9 @@ int alertUnits( Order o )
 
             if (u && u->team == 0) { // On my team
 
+               if (o.count != 1 && u->group != o.count)
+                  continue;
+
                if (o.action == PL_ALERT_ALL) {
                   alert(u);
                } else if (o.action == PL_ALERT_MONSTERS && u->type == MONSTER_T) {
@@ -1158,8 +1225,6 @@ int alertUnits( Order o )
                } else if (o.action == PL_ALERT_BIRDS && u->type == BIRD_T) {
                   alert(u);
                } else if (o.action == PL_ALERT_BUGS && u->type == BUG_T) {
-                  alert(u);
-               } else if (o.action == PL_ALERT_TEAM && u->team == o.count) {
                   alert(u);
                }
 
@@ -1180,6 +1245,9 @@ int activateUnits( Order o )
             if (u == player) continue;
 
             if (u && u->team == 0) { // On my team
+
+               if (o.count != 1 && u->group != o.count)
+                  continue;
 
                if (o.action == PL_CMD_GO_ALL) {
                   u->activate();
@@ -1205,7 +1273,7 @@ int activateUnits( Order o )
    return 0;
 }
 
-int activateAlert()
+int activateAlert( Order o )
 {
    log("Activating alert units");
 
@@ -1213,7 +1281,25 @@ int activateAlert()
    {
       Unit* unit = (*it);
       if (unit) {
+         if (o.count != 1 && unit->group != o.count)
+            continue;
+
          unit->activate();
+      }
+   }
+   
+   return 0;
+}
+
+int setUnitsGroup( Order o )
+{
+   log("Setting alert units' group");
+
+   for (list<Unit*>::iterator it=listening_units.begin(); it != listening_units.end(); ++it)
+   {
+      Unit* unit = (*it);
+      if (unit) {
+         unit->group = o.count;
       }
    }
    
@@ -1244,7 +1330,6 @@ int startPlayerCommand( Order o )
 
    switch( o.action ) {
       case PL_ALERT_ALL:
-      case PL_ALERT_TEAM:
       case PL_ALERT_MONSTERS:
       case PL_ALERT_SOLDIERS:
       case PL_ALERT_WORMS:
@@ -1252,13 +1337,15 @@ int startPlayerCommand( Order o )
       case PL_ALERT_BUGS:
          alertUnits( o );
          break;
+      case PL_SET_GROUP:
+         setUnitsGroup( o );
+         break;
       case SUMMON_MONSTER:
       case SUMMON_SOLDIER:
       case SUMMON_WORM:
       case SUMMON_BIRD:
       case SUMMON_BUG:
          return startSummon( o );
-         break;
       case PL_CAST_HEAL:
       case PL_CAST_LIGHTNING:
       case PL_CAST_TIMELOCK:
@@ -1287,7 +1374,7 @@ int completePlayerCommand( Order o )
          activateUnits( o );
          break;
       case PL_CMD_GO:
-         activateAlert();
+         activateAlert( o );
          break;
       case SUMMON_MONSTER:
       case SUMMON_SOLDIER:
@@ -1491,6 +1578,9 @@ void clearAll()
 
 int initGrids(int x, int y)
 {
+   if (x < 1 || x > MAX_DIMENSION || y < 1 || y > MAX_DIMENSION)
+      return -1;
+
    clearGrids();
 
    level_dim_x = x;
@@ -1518,7 +1608,9 @@ int initGrids(int x, int y)
 
 int changeLevelDimensions( int new_x_dim, int new_y_dim )
 {
-   if (new_x_dim < 1 || new_y_dim < 1) return -2;
+   if (new_x_dim < 1 || new_x_dim > MAX_DIMENSION 
+         || new_y_dim < 1 || new_y_dim > MAX_DIMENSION) 
+      return -2;
 
    // Copy old stuff
    int old_x_dim = level_dim_x, old_y_dim = level_dim_y;
@@ -1572,10 +1664,13 @@ int terrainToCharData( Terrain t, char&c )
    return 0;
 }
 
+#define FACING_BITS 0x3
+#define WIN_CONDITION_BIT 0x4
+
 int parseAndCreateUnit( char c1, char c2, char x, char y )
 {
    Direction facing;
-   switch ((c2 & 0x3))
+   switch ((c2 & FACING_BITS))
    {
       case 0x0:
          facing = EAST;
@@ -1599,7 +1694,10 @@ int parseAndCreateUnit( char c1, char c2, char x, char y )
          addPlayer();
          break;
       default:
-         addUnit( genBaseUnit( (UnitType)(int)c1, (int)x, (int)y, facing ) );
+         Unit *u = genBaseUnit( (UnitType)(int)c1, (int)x, (int)y, facing );
+         addUnit( u );
+         if (c2 & WIN_CONDITION_BIT)
+            addUnitWinCondition( u );
          break;
    }
 
@@ -1629,6 +1727,9 @@ int unitToCharData( Unit *u, char &c1, char &c2, char &x, char &y )
       default:
          break;
    }
+
+   if (u->win_condition == true)
+      c2 &= WIN_CONDITION_BIT;
 
    c1 = (char)(int)u->type;
 
@@ -1668,6 +1769,10 @@ int createLevelFromFile( string filename )
          float view_pos_x = (float)(int)fileContents[counter++];
          float view_pos_y = (float)(int)fileContents[counter++];
          setView( view_size_x, Vector2f( view_pos_x, view_pos_y ) );
+
+         x = fileContents[counter++];
+         y = fileContents[counter++];
+         addLocationWinCondition( x, y );
 
          for (x = 0; x < dim_x; ++x) {
             for (y = 0; y < dim_y; ++y) {
@@ -1716,6 +1821,11 @@ int writeLevelToFile( string filename )
       fileContents[i++] = (char)(int)level_view->getSize().x;
       fileContents[i++] = (char)(int)level_view->getCenter().x;
       fileContents[i++] = (char)(int)level_view->getCenter().y;
+
+      if (win_if_reached.x == -1) fileContents[i++] = (char)0xff;
+      else fileContents[i++] = (char)win_if_reached.x;
+      if (win_if_reached.y == -1) fileContents[i++] = (char)0xff;
+      else fileContents[i++] = (char)win_if_reached.y;
 
       for (x = 0; x < level_dim_x; ++x) {
          for (y = 0; y < level_dim_y; ++y) {
@@ -1767,12 +1877,26 @@ int loadLevel( int level_id )
    if (!level_init)
       init();
 
+   clearWinConditions();
+
    // Currently only loads test level
    if (level_id == -1)
    {
       base_terrain = BASE_TER_GRASS;
       if (createLevelFromFile( "res/level_editor_in.lvl" ) == -1)
          return -1;
+   }
+   else if (level_id == -2)
+   {
+      base_terrain = BASE_TER_GRASS;
+      if (createLevelFromFile( "res/testlevel2.lvl" ) == -1)
+         return -1;
+
+      AIUnit *u = new AIUnit( R_HUMAN_ARCHER_T, 9, 2, WEST, 2 );
+      addUnit( u );
+      addUnitWinCondition( u );
+      u->setAI( MV_HOLD_POSITION, AGR_PURSUE_VISIBLE, 10, 4, NULL );
+      u->addWaypoint( 9, 2 );
    }
    else if (level_id == 0 || true)
    {
@@ -1782,11 +1906,14 @@ int loadLevel( int level_id )
 
       //player->x_grid = 1;
       //player->y_grid = 4;
-      addUnit( new RangedUnit( R_HUMAN_ARCHER_T, 3, 2, EAST, 2 ) );
+      Unit *u = new AIUnit( R_HUMAN_ARCHER_T, 3, 2, EAST, 2 );
+      addUnit( u );
+      addUnitWinCondition( u );
       addUnit( new TargetPractice( 3, 3, EAST ) );
 
       //writeLevelToFile( "res/testlevel.txt" );
    }
+
 
    menu_state = MENU_MAIN | MENU_PRI_INGAME;
    setLevelListener(true);
@@ -1960,6 +2087,9 @@ int updateLevel( int dt )
    if (updatePause( dt ) == 2)
       return 2;
 
+   if (victory == true)
+      return 3;
+
    int til_end = TURN_LENGTH - turn_progress;
    turn_progress += dt;
 
@@ -1970,6 +2100,11 @@ int updateLevel( int dt )
 
       between_turns = true;
       completeTurnAll();
+
+      if (checkWinConditions() == true) {
+         victory = true;
+         return 0;
+      }
 
       turn++;
       tickfps = tickcount;
@@ -2333,6 +2468,8 @@ IMImageButton *b_con_enemy_adjacent,
               *b_pl_alert_all,
               *b_pl_cmd_go,
               *b_pl_cmd_go_all,
+              *b_pl_set_group,
+              *b_pl_delay,
               *b_pl_alert_monster,
               *b_pl_cmd_go_monster,
               *b_o_monster_guard,
@@ -2554,7 +2691,7 @@ void fitGui_Level()
 
    // Player commands
 
-   b_pl_cmd_area->setSize( (border * 3) + (spacer * 4) + (button_size * 3),
+   b_pl_cmd_area->setSize( (border * 5) + (spacer * 6) + (button_size * 5),
                            (border * 2) + (spacer * 3) + (button_size * 1));
    b_pl_cmd_area->setPosition( sec_start_numpad - (2 * border),
                                height - ((border * 2) + (spacer * 7) + (button_size * 5)));
@@ -2570,6 +2707,15 @@ void fitGui_Level()
    b_pl_cmd_go_all->setSize( button_size, button_size );
    b_pl_cmd_go_all->setPosition( sec_start_numpad + (spacer * 3) + (button_size * 2),
                                  height - ((border * 1) + (spacer * 6) + (button_size * 5)));
+
+   b_pl_set_group->setSize( button_size, button_size );
+   b_pl_set_group->setPosition( sec_start_numpad + (spacer * 4) + (button_size * 3),
+                               height - ((border * 1) + (spacer * 6) + (button_size * 5)));
+
+   b_pl_delay->setSize( button_size, button_size );
+   b_pl_delay->setPosition( sec_start_numpad + (spacer * 5) + (button_size * 4),
+                            height - ((border * 1) + (spacer * 6) + (button_size * 5)));
+
 
    // Conditionals
 
@@ -3115,6 +3261,18 @@ int initLevelGui()
    b_pl_cmd_go_all->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Player: command go all", b_pl_cmd_go_all);
 
+   b_pl_set_group = new IMImageButton();
+   b_pl_set_group->setAllTextures( t_manager.getTexture( "StarFull.png" ) );
+   b_pl_set_group->setImage( NULL );
+   b_pl_set_group->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Player: set team", b_pl_set_group);
+
+   b_pl_delay = new IMImageButton();
+   b_pl_delay->setAllTextures( t_manager.getTexture( "OrderWait.png" ) );
+   b_pl_delay->setImage( NULL );
+   b_pl_delay->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Player: delay", b_pl_delay);
+
    b_pl_alert_monster = new IMImageButton();
    b_pl_alert_monster->setAllTextures( t_manager.getTexture( "MonsterAlertButton.png" ) );
    b_pl_alert_monster->setImage( NULL );
@@ -3531,8 +3689,8 @@ int initLevelGui()
    b_bug_area->setEdgeWidth( 3 );
    gui_manager.registerWidget( "Bug area", b_bug_area);
 
-   fitGui_Level();
    init_level_gui = true;
+   fitGui_Level();
    return 0;
 }
 
@@ -3712,6 +3870,12 @@ int drawOrderButtons()
    if (b_pl_cmd_go_all->doWidget())
       playerAddOrder( PL_CMD_GO_ALL );
 
+   if (b_pl_set_group->doWidget())
+      playerAddOrder( PL_SET_GROUP );
+
+   if (b_pl_delay->doWidget())
+      playerAddOrder( PL_DELAY );
+
    if (b_pl_alert_monster->doWidget())
       playerAddOrder( PL_ALERT_MONSTERS );
 
@@ -3837,8 +4001,8 @@ int drawOrderButtons()
    b_bug_image->doWidget();
 
    b_numpad_area->doWidget();
-   b_pl_cmd_area->doWidget();
    b_conditional_area->doWidget();
+   b_pl_cmd_area->doWidget();
    b_control_area->doWidget();
    b_movement_area->doWidget();
    b_attack_area->doWidget();
@@ -3985,6 +4149,11 @@ int drawSelectedUnit()
 
          gui_window->draw( unit_image );
 
+         if (selected_unit->team == 0 && selected_unit->group != 1) {
+            // Display group number
+            drawCount( selected_unit->group, window_edge - selection_box_width + 5, 5, picture_size, false, 12 );
+         }
+
          // Health box
          int health_box_start_x = window_edge - selection_box_width + selection_box_height + 5,
              health_box_width = window_edge - health_box_start_x - 5,
@@ -4092,8 +4261,330 @@ int drawGui()
 //////////////////////////////////////////////////////////////////////
 // Level Editor ---
 
-Vector2u l_e_selection;
+// Gui
+bool init_level_editor_gui = false;
+IMEdgeButton *b_editor_gui_area;
+IMButton *b_ed_dec_x_dim,
+         *b_ed_inc_x_dim,
+         *b_ed_dec_y_dim,
+         *b_ed_inc_y_dim,
+         *b_ed_move_player_north,
+         *b_ed_move_player_south,
+         *b_ed_move_player_east,
+         *b_ed_move_player_west,
+         *b_ed_mark_location_wc,
+         *b_ed_mark_unit_wc,
+         *b_ed_turn_unit_north,
+         *b_ed_turn_unit_south,
+         *b_ed_turn_unit_east,
+         *b_ed_turn_unit_west,
+         *b_ed_dec_unit_team,
+         *b_ed_inc_unit_team;
+IMEdgeTextButton *b_ed_write_level,
+                 *b_ed_clear_level;
+string s_ed_write_level = "Write to File",
+       s_ed_clear_level = "Clear Level";
+Text *txt_x_dim,
+     *txt_y_dim,
+     *txt_x_dim_value,
+     *txt_y_dim_value,
+     *txt_move_player,
+     *txt_mark_unit_wc,
+     *txt_mark_location_wc,
+     *txt_unit_turn,
+     *txt_unit_team,
+     *txt_unit_team_value;
+Sprite *sp_ed_unit;
+
+void fitGui_LevelEditor()
+{
+   b_editor_gui_area->setSize( 220, config::height() );
+   b_editor_gui_area->setPosition( config::width() - 220, 0 );
+
+   txt_x_dim->setPosition( config::width() - 210, 10 );
+
+   // Set dimensions
+   b_ed_dec_x_dim->setSize( 30, 30 );
+   b_ed_dec_x_dim->setPosition( config::width() - 130, 10 );
+
+   txt_x_dim_value->setPosition( config::width() - 90, 10 );
+
+   b_ed_inc_x_dim->setSize( 30, 30 );
+   b_ed_inc_x_dim->setPosition( config::width() - 40, 10 );
+
+   txt_y_dim->setPosition( config::width() - 210, 50 );
+
+   b_ed_dec_y_dim->setSize( 30, 30 );
+   b_ed_dec_y_dim->setPosition( config::width() - 130, 50 );
+
+   txt_y_dim_value->setPosition( config::width() - 90, 50 );
+
+   b_ed_inc_y_dim->setSize( 30, 30 );
+   b_ed_inc_y_dim->setPosition( config::width() - 40, 50 );
+
+   // Move player
+   txt_move_player->setPosition( config::width() - 210, 110 );
+
+   b_ed_move_player_north->setSize( 30, 30 );
+   b_ed_move_player_north->setPosition( config::width() - 90, 110 );
+
+   b_ed_move_player_south->setSize( 30, 30 );
+   b_ed_move_player_south->setPosition( config::width() - 90, 150 );
+
+   b_ed_move_player_east->setSize( 30, 30 );
+   b_ed_move_player_east->setPosition( config::width() - 50, 130 );
+
+   b_ed_move_player_west->setSize( 30, 30 );
+   b_ed_move_player_west->setPosition( config::width() - 130, 130 );
+
+   // Win conditions
+
+   txt_mark_location_wc->setPosition( config::width() - 210, 210 );
+
+   b_ed_mark_location_wc->setSize( 30, 30 );
+   b_ed_mark_location_wc->setPosition( config::width() - 50, 210 );
+
+   txt_mark_unit_wc->setPosition( config::width() - 210, 250 );
+
+   b_ed_mark_unit_wc->setSize( 30, 30 );
+   b_ed_mark_unit_wc->setPosition( config::width() - 50, 250 );
+
+   // Unit info
+   txt_unit_turn->setPosition( config::width() - 210, config::height() - 250 );
+
+   b_ed_turn_unit_north->setSize( 30, 30 );
+   b_ed_turn_unit_north->setPosition( config::width() - 90, config::height() - 270 );
+
+   b_ed_turn_unit_south->setSize( 30, 30 );
+   b_ed_turn_unit_south->setPosition( config::width() - 90, config::height() - 230 );
+
+   b_ed_turn_unit_east->setSize( 30, 30 );
+   b_ed_turn_unit_east->setPosition( config::width() - 50, config::height() - 250 );
+
+   b_ed_turn_unit_west->setSize( 30, 30 );
+   b_ed_turn_unit_west->setPosition( config::width() - 130, config::height() - 250 );
+
+   txt_unit_team->setPosition( config::width() - 210, config::height() - 190 );
+
+   b_ed_dec_unit_team->setSize( 30, 30 );
+   b_ed_dec_unit_team->setPosition( config::width() - 130, config::height() - 190 );
+
+   txt_unit_team_value->setPosition( config::width() - 90, config::height() - 190 );
+
+   b_ed_inc_unit_team->setSize( 30, 30 );
+   b_ed_inc_unit_team->setPosition( config::width() - 40, config::height() - 190 );
+
+   b_ed_write_level->setPosition( config::width() - 210, config::height() - 120 );
+   b_ed_write_level->setSize( 200, 50 );
+   b_ed_write_level->centerText();
+
+   b_ed_clear_level->setPosition( config::width() - 210, config::height() - 60 );
+   b_ed_clear_level->setSize( 200, 50 );
+   b_ed_clear_level->centerText();
+}
+
+bool isMouseOverLevelGui( int x, int y )
+{
+   if (x >= config::width() - 220)
+      return true;
+
+   return false;
+}
+
+int initLevelEditorGui()
+{
+   SFML_TextureManager &t_manager = SFML_TextureManager::getSingleton();
+   IMGuiManager &gui_manager = IMGuiManager::getSingleton();
+
+   b_editor_gui_area = new IMEdgeButton();
+   b_editor_gui_area->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
+   b_editor_gui_area->setCornerAllTextures( t_manager.getTexture( "UICornerBrown3px.png" ) );
+   b_editor_gui_area->setEdgeAllTextures( t_manager.getTexture( "UIEdgeBrown3px.png" ) );
+   b_editor_gui_area->setEdgeWidth( 3 );
+   gui_manager.registerWidget( "Level Editor Area", b_editor_gui_area);
+
+   b_ed_dec_x_dim = new IMButton();
+   b_ed_dec_x_dim->setAllTextures( t_manager.getTexture( "OrderTurnWest.png" ) );
+   gui_manager.registerWidget( "L.E. Dec X Dim", b_ed_dec_x_dim);
+
+   b_ed_inc_x_dim = new IMButton();
+   b_ed_inc_x_dim->setAllTextures( t_manager.getTexture( "OrderTurnEast.png" ) );
+   gui_manager.registerWidget( "L.E. Inc X Dim", b_ed_inc_x_dim);
+
+   b_ed_dec_y_dim = new IMButton();
+   b_ed_dec_y_dim->setAllTextures( t_manager.getTexture( "OrderTurnWest.png" ) );
+   gui_manager.registerWidget( "L.E. Dec Y Dim", b_ed_dec_y_dim);
+
+   b_ed_inc_y_dim = new IMButton();
+   b_ed_inc_y_dim->setAllTextures( t_manager.getTexture( "OrderTurnEast.png" ) );
+   gui_manager.registerWidget( "L.E. Inc Y Dim", b_ed_inc_y_dim);
+
+   b_ed_move_player_north = new IMButton();
+   b_ed_move_player_north->setAllTextures( t_manager.getTexture( "OrderTurnNorth.png" ) );
+   gui_manager.registerWidget( "L.E. Move Player North", b_ed_move_player_north);
+
+   b_ed_move_player_south = new IMButton();
+   b_ed_move_player_south->setAllTextures( t_manager.getTexture( "OrderTurnSouth.png" ) );
+   gui_manager.registerWidget( "L.E. Move Player South", b_ed_move_player_south);
+
+   b_ed_move_player_east = new IMButton();
+   b_ed_move_player_east->setAllTextures( t_manager.getTexture( "OrderTurnEast.png" ) );
+   gui_manager.registerWidget( "L.E. Move Player East", b_ed_move_player_east);
+
+   b_ed_move_player_west = new IMButton();
+   b_ed_move_player_west->setAllTextures( t_manager.getTexture( "OrderTurnWest.png" ) );
+   gui_manager.registerWidget( "L.E. Move Player West", b_ed_move_player_west);
+
+   b_ed_mark_location_wc = new IMButton();
+   b_ed_mark_location_wc->setAllTextures( t_manager.getTexture( "CountButtonBase.png" ) );
+   gui_manager.registerWidget( "L.E. Mark Location Win Condition", b_ed_mark_location_wc );
+
+   b_ed_mark_unit_wc = new IMButton();
+   b_ed_mark_unit_wc->setAllTextures( t_manager.getTexture( "CountButtonBase.png" ) );
+   gui_manager.registerWidget( "L.E. Mark Unit Win Condition", b_ed_mark_unit_wc );
+
+   b_ed_turn_unit_north = new IMButton();
+   b_ed_turn_unit_north->setAllTextures( t_manager.getTexture( "OrderTurnNorth.png" ) );
+   gui_manager.registerWidget( "L.E. Turn Unit North", b_ed_turn_unit_north);
+
+   b_ed_turn_unit_south = new IMButton();
+   b_ed_turn_unit_south->setAllTextures( t_manager.getTexture( "OrderTurnSouth.png" ) );
+   gui_manager.registerWidget( "L.E. Turn Unit South", b_ed_turn_unit_south);
+
+   b_ed_turn_unit_east = new IMButton();
+   b_ed_turn_unit_east->setAllTextures( t_manager.getTexture( "OrderTurnEast.png" ) );
+   gui_manager.registerWidget( "L.E. Turn Unit East", b_ed_turn_unit_east);
+
+   b_ed_turn_unit_west = new IMButton();
+   b_ed_turn_unit_west->setAllTextures( t_manager.getTexture( "OrderTurnWest.png" ) );
+   gui_manager.registerWidget( "L.E. Turn Unit West", b_ed_turn_unit_west);
+
+   b_ed_dec_unit_team = new IMButton();
+   b_ed_dec_unit_team->setAllTextures( t_manager.getTexture( "OrderTurnWest.png" ) );
+   gui_manager.registerWidget( "L.E. Inc Unit Team", b_ed_dec_unit_team);
+
+   b_ed_inc_unit_team = new IMButton();
+   b_ed_inc_unit_team->setAllTextures( t_manager.getTexture( "OrderTurnEast.png" ) );
+   gui_manager.registerWidget( "L.E. Inc Unit Team", b_ed_inc_unit_team);
+
+   txt_x_dim = new Text();
+   txt_x_dim->setFont( *menu_font );
+   txt_x_dim->setColor( Color::Black );
+   txt_x_dim->setCharacterSize( 24 );
+   txt_x_dim->setString( String( "X Dim:" ) );
+
+   txt_x_dim_value = new Text();
+   txt_x_dim_value->setFont( *menu_font );
+   txt_x_dim_value->setColor( Color::Black );
+   txt_x_dim_value->setCharacterSize( 24 );
+
+   txt_y_dim = new Text();
+   txt_y_dim->setFont( *menu_font );
+   txt_y_dim->setColor( Color::Black );
+   txt_y_dim->setCharacterSize( 24 );
+   txt_y_dim->setString( String( "Y Dim:" ) );
+
+   txt_y_dim_value = new Text();
+   txt_y_dim_value->setFont( *menu_font );
+   txt_y_dim_value->setColor( Color::Black );
+   txt_y_dim_value->setCharacterSize( 24 );
+
+   txt_move_player = new Text();
+   txt_move_player->setFont( *menu_font );
+   txt_move_player->setColor( Color::Black );
+   txt_move_player->setCharacterSize( 16 );
+   txt_move_player->setString( String( "Move Player" ) );
+
+   txt_mark_location_wc = new Text();
+   txt_mark_location_wc->setFont( *menu_font );
+   txt_mark_location_wc->setColor( Color::Black );
+   txt_mark_location_wc->setCharacterSize( 16 );
+   txt_mark_location_wc->setString( String( "Mark Loc. WC" ) );
+
+   txt_mark_unit_wc = new Text();
+   txt_mark_unit_wc->setFont( *menu_font );
+   txt_mark_unit_wc->setColor( Color::Black );
+   txt_mark_unit_wc->setCharacterSize( 16 );
+   txt_mark_unit_wc->setString( String( "Mark Unit WC" ) );
+
+   txt_unit_turn = new Text();
+   txt_unit_turn->setFont( *menu_font );
+   txt_unit_turn->setColor( Color::Black );
+   txt_unit_turn->setCharacterSize( 24 );
+   txt_unit_turn->setString( String( "Turn" ) );
+
+   txt_unit_team = new Text();
+   txt_unit_team->setFont( *menu_font );
+   txt_unit_team->setColor( Color::Black );
+   txt_unit_team->setCharacterSize( 24 );
+   txt_unit_team->setString( String( "Team:" ) );
+
+   txt_unit_team_value = new Text();
+   txt_unit_team_value->setFont( *menu_font );
+   txt_unit_team_value->setColor( Color::Black );
+   txt_unit_team_value->setCharacterSize( 24 );
+
+   b_ed_write_level = new IMEdgeTextButton();
+   b_ed_write_level->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
+   b_ed_write_level->setCornerAllTextures( t_manager.getTexture( "UICornerBrown3px.png" ) );
+   b_ed_write_level->setEdgeAllTextures( t_manager.getTexture( "UIEdgeBrown3px.png" ) );
+   b_ed_write_level->setEdgeWidth( 3 );
+   b_ed_write_level->setText( &s_ed_write_level );
+   b_ed_write_level->setFont( menu_font );
+   b_ed_write_level->setTextSize( 24 );
+   b_ed_write_level->setTextColor( sf::Color::Black );
+   gui_manager.registerWidget( "Editor Write Level to File", b_ed_write_level);
+
+   b_ed_clear_level = new IMEdgeTextButton();
+   b_ed_clear_level->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
+   b_ed_clear_level->setCornerAllTextures( t_manager.getTexture( "UICornerBrown3px.png" ) );
+   b_ed_clear_level->setEdgeAllTextures( t_manager.getTexture( "UIEdgeBrown3px.png" ) );
+   b_ed_clear_level->setEdgeWidth( 3 );
+   b_ed_clear_level->setText( &s_ed_clear_level );
+   b_ed_clear_level->setFont( menu_font );
+   b_ed_clear_level->setTextSize( 24 );
+   b_ed_clear_level->setTextColor( sf::Color::Black );
+   gui_manager.registerWidget( "Editor Clear Level", b_ed_clear_level);
+
+   sp_ed_unit = new Sprite();
+
+   fitGui_LevelEditor();
+
+   init_level_editor_gui = true;
+
+   return 0;
+}
+
+Vector2i l_e_selection;
 bool l_e_selected;
+
+bool l_e_selected_loc_wc = false;
+bool l_e_selected_unit_wc = false;
+
+void levelEditorUpdateOnSelection()
+{
+   SFML_TextureManager &t_manager = SFML_TextureManager::getSingleton();
+   // Update location WC button
+   if (win_if_reached.x == l_e_selection.x && win_if_reached.y == l_e_selection.y) {
+      // We have selected the current win_if_reached location
+      b_ed_mark_location_wc->setAllTextures( t_manager.getTexture( "GuiExitX.png" ) );
+      l_e_selected_loc_wc = true;
+   } else {
+      b_ed_mark_location_wc->setAllTextures( t_manager.getTexture( "CountButtonBase.png" ) );
+      l_e_selected_loc_wc = false;
+   }
+
+   // Update unit WC button
+   Unit *u = GRID_AT(unit_grid,l_e_selection.x,l_e_selection.y);
+   if (find(win_if_killed.begin(), win_if_killed.end(), u) != win_if_killed.end()) {
+      // This unit is already a target
+      b_ed_mark_unit_wc->setAllTextures( t_manager.getTexture( "GuiExitX.png" ) );
+      l_e_selected_unit_wc = true;
+   } else {
+      b_ed_mark_unit_wc->setAllTextures( t_manager.getTexture( "CountButtonBase.png" ) );
+      l_e_selected_unit_wc = false;
+   }
+}
 
 int levelEditorSelectGrid( Vector2f coords )
 {
@@ -4108,6 +4599,8 @@ int levelEditorSelectGrid( Vector2f coords )
    l_e_selection.x = cx;
    l_e_selection.y = cy;
    l_e_selected = true;
+
+   levelEditorUpdateOnSelection();
 
    return 0;
 }
@@ -4223,262 +4716,6 @@ int levelEditorWriteToFile()
    return writeLevelToFile( level_name_out );
 }
 
-// Gui
-bool init_level_editor_gui = false;
-IMEdgeButton *b_editor_gui_area;
-IMButton *b_ed_dec_x_dim,
-         *b_ed_inc_x_dim,
-         *b_ed_dec_y_dim,
-         *b_ed_inc_y_dim,
-         *b_ed_move_player_north,
-         *b_ed_move_player_south,
-         *b_ed_move_player_east,
-         *b_ed_move_player_west,
-         *b_ed_turn_unit_north,
-         *b_ed_turn_unit_south,
-         *b_ed_turn_unit_east,
-         *b_ed_turn_unit_west,
-         *b_ed_dec_unit_team,
-         *b_ed_inc_unit_team;
-IMEdgeTextButton *b_ed_write_level,
-                 *b_ed_clear_level;
-string s_ed_write_level = "Write to File",
-       s_ed_clear_level = "Clear Level";
-Text *txt_x_dim,
-     *txt_y_dim,
-     *txt_x_dim_value,
-     *txt_y_dim_value,
-     *txt_move_player,
-     *txt_unit_turn,
-     *txt_unit_team,
-     *txt_unit_team_value;
-Sprite *sp_ed_unit;
-
-void fitGui_LevelEditor()
-{
-   b_editor_gui_area->setSize( 220, config::height() );
-   b_editor_gui_area->setPosition( config::width() - 220, 0 );
-
-   txt_x_dim->setPosition( config::width() - 210, 10 );
-
-   // Set dimensions
-   b_ed_dec_x_dim->setSize( 30, 30 );
-   b_ed_dec_x_dim->setPosition( config::width() - 130, 10 );
-
-   txt_x_dim_value->setPosition( config::width() - 90, 10 );
-
-   b_ed_inc_x_dim->setSize( 30, 30 );
-   b_ed_inc_x_dim->setPosition( config::width() - 40, 10 );
-
-   txt_y_dim->setPosition( config::width() - 210, 50 );
-
-   b_ed_dec_y_dim->setSize( 30, 30 );
-   b_ed_dec_y_dim->setPosition( config::width() - 130, 50 );
-
-   txt_y_dim_value->setPosition( config::width() - 90, 50 );
-
-   b_ed_inc_y_dim->setSize( 30, 30 );
-   b_ed_inc_y_dim->setPosition( config::width() - 40, 50 );
-
-   // Move player
-   txt_move_player->setPosition( config::width() - 210, 110 );
-
-   b_ed_move_player_north->setSize( 30, 30 );
-   b_ed_move_player_north->setPosition( config::width() - 90, 110 );
-
-   b_ed_move_player_south->setSize( 30, 30 );
-   b_ed_move_player_south->setPosition( config::width() - 90, 150 );
-
-   b_ed_move_player_east->setSize( 30, 30 );
-   b_ed_move_player_east->setPosition( config::width() - 50, 130 );
-
-   b_ed_move_player_west->setSize( 30, 30 );
-   b_ed_move_player_west->setPosition( config::width() - 130, 130 );
-
-   // Unit info
-   txt_unit_turn->setPosition( config::width() - 210, config::height() - 250 );
-
-   b_ed_turn_unit_north->setSize( 30, 30 );
-   b_ed_turn_unit_north->setPosition( config::width() - 90, config::height() - 270 );
-
-   b_ed_turn_unit_south->setSize( 30, 30 );
-   b_ed_turn_unit_south->setPosition( config::width() - 90, config::height() - 230 );
-
-   b_ed_turn_unit_east->setSize( 30, 30 );
-   b_ed_turn_unit_east->setPosition( config::width() - 50, config::height() - 250 );
-
-   b_ed_turn_unit_west->setSize( 30, 30 );
-   b_ed_turn_unit_west->setPosition( config::width() - 130, config::height() - 250 );
-
-   txt_unit_team->setPosition( config::width() - 210, config::height() - 190 );
-
-   b_ed_dec_unit_team->setSize( 30, 30 );
-   b_ed_dec_unit_team->setPosition( config::width() - 130, config::height() - 190 );
-
-   txt_unit_team_value->setPosition( config::width() - 90, config::height() - 190 );
-
-   b_ed_inc_unit_team->setSize( 30, 30 );
-   b_ed_inc_unit_team->setPosition( config::width() - 40, config::height() - 190 );
-
-   b_ed_write_level->setPosition( config::width() - 210, config::height() - 120 );
-   b_ed_write_level->setSize( 200, 50 );
-   b_ed_write_level->centerText();
-
-   b_ed_clear_level->setPosition( config::width() - 210, config::height() - 60 );
-   b_ed_clear_level->setSize( 200, 50 );
-   b_ed_clear_level->centerText();
-}
-
-bool isMouseOverLevelGui( int x, int y )
-{
-   if (x >= config::width() - 220)
-      return true;
-
-   return false;
-}
-
-void initLevelEditorGui()
-{
-   SFML_TextureManager &t_manager = SFML_TextureManager::getSingleton();
-   IMGuiManager &gui_manager = IMGuiManager::getSingleton();
-
-   b_editor_gui_area = new IMEdgeButton();
-   b_editor_gui_area->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
-   b_editor_gui_area->setCornerAllTextures( t_manager.getTexture( "UICornerBrown3px.png" ) );
-   b_editor_gui_area->setEdgeAllTextures( t_manager.getTexture( "UIEdgeBrown3px.png" ) );
-   b_editor_gui_area->setEdgeWidth( 3 );
-   gui_manager.registerWidget( "Level Editor Area", b_editor_gui_area);
-
-   b_ed_dec_x_dim = new IMButton();
-   b_ed_dec_x_dim->setAllTextures( t_manager.getTexture( "OrderTurnWest.png" ) );
-   gui_manager.registerWidget( "L.E. Dec X Dim", b_ed_dec_x_dim);
-
-   b_ed_inc_x_dim = new IMButton();
-   b_ed_inc_x_dim->setAllTextures( t_manager.getTexture( "OrderTurnEast.png" ) );
-   gui_manager.registerWidget( "L.E. Inc X Dim", b_ed_inc_x_dim);
-
-   b_ed_dec_y_dim = new IMButton();
-   b_ed_dec_y_dim->setAllTextures( t_manager.getTexture( "OrderTurnWest.png" ) );
-   gui_manager.registerWidget( "L.E. Dec Y Dim", b_ed_dec_y_dim);
-
-   b_ed_inc_y_dim = new IMButton();
-   b_ed_inc_y_dim->setAllTextures( t_manager.getTexture( "OrderTurnEast.png" ) );
-   gui_manager.registerWidget( "L.E. Inc Y Dim", b_ed_inc_y_dim);
-
-   b_ed_move_player_north = new IMButton();
-   b_ed_move_player_north->setAllTextures( t_manager.getTexture( "OrderTurnNorth.png" ) );
-   gui_manager.registerWidget( "L.E. Move Player North", b_ed_move_player_north);
-
-   b_ed_move_player_south = new IMButton();
-   b_ed_move_player_south->setAllTextures( t_manager.getTexture( "OrderTurnSouth.png" ) );
-   gui_manager.registerWidget( "L.E. Move Player South", b_ed_move_player_south);
-
-   b_ed_move_player_east = new IMButton();
-   b_ed_move_player_east->setAllTextures( t_manager.getTexture( "OrderTurnEast.png" ) );
-   gui_manager.registerWidget( "L.E. Move Player East", b_ed_move_player_east);
-
-   b_ed_move_player_west = new IMButton();
-   b_ed_move_player_west->setAllTextures( t_manager.getTexture( "OrderTurnWest.png" ) );
-   gui_manager.registerWidget( "L.E. Move Player West", b_ed_move_player_west);
-
-   b_ed_turn_unit_north = new IMButton();
-   b_ed_turn_unit_north->setAllTextures( t_manager.getTexture( "OrderTurnNorth.png" ) );
-   gui_manager.registerWidget( "L.E. Turn Unit North", b_ed_turn_unit_north);
-
-   b_ed_turn_unit_south = new IMButton();
-   b_ed_turn_unit_south->setAllTextures( t_manager.getTexture( "OrderTurnSouth.png" ) );
-   gui_manager.registerWidget( "L.E. Turn Unit South", b_ed_turn_unit_south);
-
-   b_ed_turn_unit_east = new IMButton();
-   b_ed_turn_unit_east->setAllTextures( t_manager.getTexture( "OrderTurnEast.png" ) );
-   gui_manager.registerWidget( "L.E. Turn Unit East", b_ed_turn_unit_east);
-
-   b_ed_turn_unit_west = new IMButton();
-   b_ed_turn_unit_west->setAllTextures( t_manager.getTexture( "OrderTurnWest.png" ) );
-   gui_manager.registerWidget( "L.E. Turn Unit West", b_ed_turn_unit_west);
-
-   b_ed_dec_unit_team = new IMButton();
-   b_ed_dec_unit_team->setAllTextures( t_manager.getTexture( "OrderTurnWest.png" ) );
-   gui_manager.registerWidget( "L.E. Inc Unit Team", b_ed_dec_unit_team);
-
-   b_ed_inc_unit_team = new IMButton();
-   b_ed_inc_unit_team->setAllTextures( t_manager.getTexture( "OrderTurnEast.png" ) );
-   gui_manager.registerWidget( "L.E. Inc Unit Team", b_ed_inc_unit_team);
-
-   txt_x_dim = new Text();
-   txt_x_dim->setFont( *menu_font );
-   txt_x_dim->setColor( Color::Black );
-   txt_x_dim->setCharacterSize( 24 );
-   txt_x_dim->setString( String( "X Dim:" ) );
-
-   txt_x_dim_value = new Text();
-   txt_x_dim_value->setFont( *menu_font );
-   txt_x_dim_value->setColor( Color::Black );
-   txt_x_dim_value->setCharacterSize( 24 );
-
-   txt_y_dim = new Text();
-   txt_y_dim->setFont( *menu_font );
-   txt_y_dim->setColor( Color::Black );
-   txt_y_dim->setCharacterSize( 24 );
-   txt_y_dim->setString( String( "Y Dim:" ) );
-
-   txt_y_dim_value = new Text();
-   txt_y_dim_value->setFont( *menu_font );
-   txt_y_dim_value->setColor( Color::Black );
-   txt_y_dim_value->setCharacterSize( 24 );
-
-   txt_move_player = new Text();
-   txt_move_player->setFont( *menu_font );
-   txt_move_player->setColor( Color::Black );
-   txt_move_player->setCharacterSize( 16 );
-   txt_move_player->setString( String( "Move Player" ) );
-
-   txt_unit_turn = new Text();
-   txt_unit_turn->setFont( *menu_font );
-   txt_unit_turn->setColor( Color::Black );
-   txt_unit_turn->setCharacterSize( 24 );
-   txt_unit_turn->setString( String( "Turn" ) );
-
-   txt_unit_team = new Text();
-   txt_unit_team->setFont( *menu_font );
-   txt_unit_team->setColor( Color::Black );
-   txt_unit_team->setCharacterSize( 24 );
-   txt_unit_team->setString( String( "Team:" ) );
-
-   txt_unit_team_value = new Text();
-   txt_unit_team_value->setFont( *menu_font );
-   txt_unit_team_value->setColor( Color::Black );
-   txt_unit_team_value->setCharacterSize( 24 );
-
-   b_ed_write_level = new IMEdgeTextButton();
-   b_ed_write_level->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
-   b_ed_write_level->setCornerAllTextures( t_manager.getTexture( "UICornerBrown3px.png" ) );
-   b_ed_write_level->setEdgeAllTextures( t_manager.getTexture( "UIEdgeBrown3px.png" ) );
-   b_ed_write_level->setEdgeWidth( 3 );
-   b_ed_write_level->setText( &s_ed_write_level );
-   b_ed_write_level->setFont( menu_font );
-   b_ed_write_level->setTextSize( 24 );
-   b_ed_write_level->setTextColor( sf::Color::Black );
-   gui_manager.registerWidget( "Editor Write Level to File", b_ed_write_level);
-
-   b_ed_clear_level = new IMEdgeTextButton();
-   b_ed_clear_level->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
-   b_ed_clear_level->setCornerAllTextures( t_manager.getTexture( "UICornerBrown3px.png" ) );
-   b_ed_clear_level->setEdgeAllTextures( t_manager.getTexture( "UIEdgeBrown3px.png" ) );
-   b_ed_clear_level->setEdgeWidth( 3 );
-   b_ed_clear_level->setText( &s_ed_clear_level );
-   b_ed_clear_level->setFont( menu_font );
-   b_ed_clear_level->setTextSize( 24 );
-   b_ed_clear_level->setTextColor( sf::Color::Black );
-   gui_manager.registerWidget( "Editor Clear Level", b_ed_clear_level);
-
-   sp_ed_unit = new Sprite();
-
-   fitGui_LevelEditor();
-
-   init_level_editor_gui = true;
-}
-
 void drawLevelEditorGui()
 {
    RenderWindow *gui_window = SFML_GlobalRenderWindow::get();
@@ -4551,27 +4788,47 @@ void drawLevelEditorGui()
    }
 
    if (l_e_selected) {
+      IMGuiManager::getSingleton().pushSprite( txt_mark_location_wc );
+      if (b_ed_mark_location_wc->doWidget()) {
+         if (l_e_selected_loc_wc)
+            addLocationWinCondition( -1, -1 );
+         else
+            addLocationWinCondition( l_e_selection.x, l_e_selection.y );
+
+         levelEditorUpdateOnSelection();
+      }
+
       Unit *u = GRID_AT(unit_grid,l_e_selection.x,l_e_selection.y);
       if (u != NULL) {
+         if (b_ed_mark_unit_wc->doWidget()) {
+            if (l_e_selected_unit_wc)
+               removeUnitWinCondition( u );
+            else
+               addUnitWinCondition( u );
+
+            levelEditorUpdateOnSelection();
+         }
+
          sp_ed_unit->setTexture( *u->getTexture() );
          normalizeTo1x1( sp_ed_unit );
          sp_ed_unit->scale( 128, 128 );
          sp_ed_unit->setPosition( config::width() - 169, config::height() - 400 );
 
          if (b_ed_turn_unit_north->doWidget())
-            u->TurnTo(NORTH);
+            u->turnTo(NORTH);
          if (b_ed_turn_unit_south->doWidget())
-            u->TurnTo(SOUTH);
+            u->turnTo(SOUTH);
          if (b_ed_turn_unit_east->doWidget())
-            u->TurnTo(EAST);
+            u->turnTo(EAST);
          if (b_ed_turn_unit_west->doWidget())
-            u->TurnTo(WEST);
+            u->turnTo(WEST);
 
          stringstream ss3;
          ss3 << u->team;
          txt_unit_team_value->setString( String( ss3.str() ) );
 
          IMGuiManager::getSingleton().pushSprite( sp_ed_unit );
+         IMGuiManager::getSingleton().pushSprite( txt_mark_unit_wc );
          IMGuiManager::getSingleton().pushSprite( txt_unit_turn );
          IMGuiManager::getSingleton().pushSprite( txt_unit_team );
          IMGuiManager::getSingleton().pushSprite( txt_unit_team_value );
@@ -4734,6 +4991,18 @@ int drawFog()
    return 0;
 }
 
+void drawVictory()
+{
+   Text victory_text;
+   victory_text.setFont( *menu_font );
+   victory_text.setColor( Color::Red );
+   victory_text.setCharacterSize( 120 );
+
+   victory_text.setString( String("Victory") );
+   victory_text.setPosition( config::width() / 2 - 200, config::height() / 2 - 100 );
+   SFML_GlobalRenderWindow::get()->draw( victory_text );
+}
+
 int drawLevel()
 {
    SFML_GlobalRenderWindow::get()->setView(*level_view);
@@ -4749,8 +5018,11 @@ int drawLevel()
 
    if (menu_state & MENU_PRI_LEVEL_EDITOR)
       drawLevelEditorGui();
-   else
+   else {
       drawGui();
+      if (victory)
+         drawVictory();
+   }
 
    return 0;
 } 

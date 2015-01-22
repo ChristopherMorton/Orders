@@ -8,5 +8,6 @@ namespace sf { class Sprite; }
 void normalizeTo1x1( sf::Sprite *s );
 sum::Direction getDirection( int x, int y, int to_x, int to_y );
 int addDirection( sum::Direction d, int &x, int &y );
+sum::Direction reverseDirection( sum::Direction d );
 
 #endif

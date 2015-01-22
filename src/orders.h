@@ -67,7 +67,6 @@ namespace sum
       // Player Commands
       // Alert
       PL_ALERT_ALL,
-      PL_ALERT_TEAM,
       PL_ALERT_MONSTERS,
       PL_ALERT_SOLDIERS,
       PL_ALERT_WORMS,
@@ -82,6 +81,10 @@ namespace sum
       PL_CMD_GO_WORMS,
       PL_CMD_GO_BIRDS,
       PL_CMD_GO_BUGS,
+
+      PL_SET_GROUP,
+
+      PL_DELAY,
 
       // Player spells
       PL_CAST_HEAL,

@@ -168,11 +168,11 @@ void Order::logSelf()
       case BUG_MEDITATE:
          s << "BUG_MEDITATE";
          break;
+      case PL_SET_GROUP:
+         s << "PL_SET_GROUP";
+         break;
       case PL_ALERT_ALL:
          s << "PL_ALERT_ALL";
-         break;
-      case PL_ALERT_TEAM:
-         s << "PL_ALERT_TEAM";
          break;
       case PL_ALERT_MONSTERS:
          s << "PL_ALERT_MONSTERS";
@@ -212,6 +212,9 @@ void Order::logSelf()
          break;
       case PL_CMD_GO_BUGS:
          s << "PL_CMD_GO_BUGS";
+         break;
+      case PL_DELAY:
+         s << "PL_DELAY";
          break;
       case PL_CAST_HEAL:
          s << "PL_CAST_HEAL";
@@ -393,6 +396,9 @@ Texture *getOrderTexture( Order o )
       case BUG_MEDITATE:
          base_tex = t_manager.getTexture( "BugOrderMeditate.png" );
          break;
+      case PL_SET_GROUP:
+         base_tex = t_manager.getTexture( "StarFull.png" );
+         break;
       case BUG_CAST_FIREBALL:
          base_tex = t_manager.getTexture( "BugOrderFireball.png" );
          break;
@@ -410,9 +416,6 @@ Texture *getOrderTexture( Order o )
          break;
 
       case PL_ALERT_ALL:
-         base_tex = t_manager.getTexture( "PlayerAlert.png" );
-         break;
-      case PL_ALERT_TEAM:
          base_tex = t_manager.getTexture( "PlayerAlert.png" );
          break;
       case PL_ALERT_MONSTERS:
@@ -451,6 +454,10 @@ Texture *getOrderTexture( Order o )
          break;
       case PL_CMD_GO_BUGS:
          base_tex = t_manager.getTexture( "BugGoButton.png" );
+         break;
+
+      case PL_DELAY:
+         base_tex = t_manager.getTexture( "OrderWait.png" );
          break;
 
       case PL_CAST_HEAL:
@@ -690,7 +697,7 @@ void drawOrder( Order o, int x, int y, int size )
    sp_order.setPosition( x, y );
    SFML_GlobalRenderWindow::get()->draw( sp_order );
 
-   if (o.count != 1 && o.action < PL_ALERT_ALL)
+   if (o.count != 1 && o.action <= PL_DELAY)
       drawCount( o.count, x, y, size );
 
    // Condition

@@ -32,10 +32,28 @@ IMAGE BirdScratch.png
 IMAGE BugScratch.png
 IMAGE BugScratchWiggleAnimation.png
 IMAGE MonsterStatic.png
+IMAGE SoldierScratch.png
 IMAGE WormStatic.png
+IMAGE BirdStatic.png
 // Unit Animations
 IMAGE MonsterAnimIdle.png
 IMAGE MonsterAnimMove.png
+IMAGE MonsterAnimAttackStart.png
+IMAGE MonsterAnimAttackEnd.png
+IMAGE MonsterAnimDeath.png
+IMAGE SoldierAnimIdleAxe.png
+IMAGE SoldierAnimMoveAxe.png
+IMAGE SoldierAnimAttackStartAxe.png
+IMAGE SoldierAnimAttackEndAxe.png
+IMAGE SoldierAnimIdleSpear.png
+IMAGE SoldierAnimMoveSpear.png
+IMAGE SoldierAnimAttackStartSpear.png
+IMAGE SoldierAnimAttackEndSpear.png
+IMAGE SoldierAnimIdleBow.png
+IMAGE SoldierAnimMoveBow.png
+IMAGE SoldierAnimAttackStartBow.png
+IMAGE SoldierAnimAttackEndBow.png
+IMAGE SoldierAnimDeath.png
 IMAGE WormAnimIdle.png
 IMAGE WormAnimMove.png
 IMAGE WormAnimAttackStart.png
@@ -50,6 +68,9 @@ IMAGE StarFullRight.png
 IMAGE StarEmpty.png
 IMAGE StarEmptyLeft.png
 IMAGE StarEmptyRight.png
+IMAGE FocusPipEmpty.png
+IMAGE FocusPipHover.png
+IMAGE FocusPipSelected.png
 // Edge button pieces
 IMAGE UICornerBrown3px.png
 IMAGE UICornerGrey3px.png

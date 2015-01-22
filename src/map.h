@@ -5,6 +5,7 @@ namespace sum
 {
    int initMap();
    int drawMap( int dt );
+   void drawMapBar();
 
    void setMapListener( bool set );
 

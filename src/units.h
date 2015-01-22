@@ -5,6 +5,9 @@
 #include "orders.h"
 
 #include <string>
+#include <deque>
+
+#include <SFML/System/Vector2.hpp>
 
 namespace sf { class Texture; };
 
@@ -28,10 +31,6 @@ enum UnitType {
    SUMMONMARKER_T
 };
 
-enum AI_Type {
-   STAND_AND_FIRE
-};
-
 // BASE CLASS
 
 class Unit
@@ -42,7 +41,7 @@ public:
    Direction facing;
 
    int team; // 0 = player
-   int group; // 0 = ungrouped
+   int group; // 1 = main group
    UnitType type;
 
    int alive;
@@ -62,20 +61,22 @@ public:
 
    int anim_data;
 
+   bool win_condition; // If true, must die to win the level
+
    Order *order_queue;
    Order this_turn_order;
    int current_order, final_order, max_orders, order_count;
    int current_iteration;
    int active;
 
-   int TurnTo( Direction face );
+   int turnTo( Direction face );
 
    int prepareBasicOrder( Order &o, bool cond );
    int startBasicOrder( );
    int updateBasicOrder( float dtf, Order o );
    int completeBasicOrder( Order &o );
 
-   bool evaluateConditional( Order o );
+   bool evaluateConditional( Order_Conditional oc );
 
    void activate();
    void clearOrders();
@@ -101,28 +102,72 @@ public:
 
 // GENERIC UNIT CLASSES
 
-class RangedUnit : public Unit
+enum AI_Movement {
+   MV_HOLD_POSITION,
+   MV_PATROL,
+   MV_PATROL_PATH,
+   MV_FOLLOW_ALLY,
+   MV_FREE_ROAM
+};
+
+enum AI_Aggression {
+   AGR_FLEE,
+   AGR_PASSIVE,
+   AGR_DEFEND_SELF,
+   AGR_ATTACK_IN_RANGE,
+   AGR_PURSUE_VISIBLE
+};
+
+class AIUnit : public Unit
 {
 private:
-   RangedUnit(); // disallowed
-   AI_Type ai_type;
+   AIUnit(); // disallowed
+
 public:
-   RangedUnit( UnitType t, int x, int y, Direction face, int my_team );
+   // AI movement data
+   AI_Movement ai_move_style;
+   std::deque<sf::Vector2i> ai_waypoints;
+   int ai_waypoint_next;
+   std::deque<sum::Direction> ai_path;
+
+   // AI other data
+   AI_Aggression ai_aggro;
+   float ai_chase_distance;
+   float ai_attack_distance;
+   Unit* ai_leader;
+   bool ai_overridden;
+   int ai_counter;
+   int aggroed;
+
+   void setAI( AI_Movement move, AI_Aggression aggro, float chase_dis, float attack_dis, Unit* follow = NULL );
+
+   int addWaypoint( int x, int y );
+   void clearWaypoints();
+   int reconstructPath( sum::Direction *came_from_grid, int goal_x, int goal_y );
+   int aStar( int start_x, int start_y, int goal_x, int goal_y );
+   int aiCalculatePath();
+   int aiFollowPath();
+
+   virtual int ai();
+
+   AIUnit( UnitType t, int x, int y, Direction face, int my_team );
 
    //virtual int addOrder( Order o );
 
    virtual int doAttack( Order o );
 
+   virtual int takeDamage( int damage, int flags = 0 );
+
    virtual std::string descriptor();
 
    virtual int prepareTurn();
    //virtual int startTurn();
-   //virtual int completeTurn();
+   virtual int completeTurn();
    virtual int update( float dtf );
    virtual sf::Texture* getTexture();
    virtual int draw();
 
-   virtual ~RangedUnit();
+   virtual ~AIUnit();
 };
 
 // SPECIALIZED CLASSES
@@ -156,8 +201,8 @@ class SummonMarker : public Unit
 {
 private:
    SummonMarker();
-   float rotation;
 public:
+   float rotation;
    static SummonMarker* get( int grid_x, int grid_y );
 
    virtual std::string descriptor();
@@ -275,9 +320,9 @@ class Bug : public Unit
 private:
    Bug(); // Disallowed 
 
+public:
    float orb_speed;
 
-public:
    Bug( int grid_x, int grid_y, Direction face );
 
    virtual int addOrder( Order o );
