@@ -1895,8 +1895,10 @@ int loadLevel( int level_id )
       AIUnit *u = new AIUnit( R_HUMAN_ARCHER_T, 9, 2, WEST, 2 );
       addUnit( u );
       addUnitWinCondition( u );
-      u->setAI( MV_HOLD_POSITION, AGR_PURSUE_VISIBLE, 10, 4, NULL );
-      u->addWaypoint( 9, 2 );
+      u->setAI( MV_PATROL, AGR_PURSUE_VISIBLE, 10, 4, NULL );
+      u->addWaypoint( 9, 2, SOUTH );
+      u->addWaypoint( 12, 11, WEST );
+      u->addWaypoint( 5, 11, NORTH );
    }
    else if (level_id == 0 || true)
    {

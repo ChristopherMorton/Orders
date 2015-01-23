@@ -126,9 +126,9 @@ private:
 public:
    // AI movement data
    AI_Movement ai_move_style;
-   std::deque<sf::Vector2i> ai_waypoints;
+   std::deque< std::pair<sf::Vector2i,Direction> > ai_waypoints;
    int ai_waypoint_next;
-   std::deque<sum::Direction> ai_path;
+   std::deque<Direction> ai_path;
 
    // AI other data
    AI_Aggression ai_aggro;
@@ -141,11 +141,11 @@ public:
 
    void setAI( AI_Movement move, AI_Aggression aggro, float chase_dis, float attack_dis, Unit* follow = NULL );
 
-   int addWaypoint( int x, int y );
+   int addWaypoint( int x, int y, Direction d = ALL_DIR );
    void clearWaypoints();
-   int reconstructPath( sum::Direction *came_from_grid, int goal_x, int goal_y );
+   int reconstructPath( Direction *came_from_grid, int goal_x, int goal_y );
    int aStar( int start_x, int start_y, int goal_x, int goal_y );
-   int aiCalculatePath();
+   int aiCalculatePath( bool next = false );
    int aiFollowPath();
 
    virtual int ai();

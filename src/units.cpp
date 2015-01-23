@@ -543,6 +543,11 @@ AIUnit::AIUnit( UnitType t, int x, int y, Direction face, int my_team )
    team = my_team;
    group = 1;
 
+   ai_move_style = MV_FREE_ROAM;
+   ai_aggro = AGR_PASSIVE;
+   ai_leader = NULL;
+   clearWaypoints();
+
    switch (t) {
       case R_HUMAN_ARCHER_T:
          radius = 0.3;
@@ -550,9 +555,6 @@ AIUnit::AIUnit( UnitType t, int x, int y, Direction face, int my_team )
          vision_range = 8.5;
          attack_range = 8.5;
          speed = 0.6;
-         ai_move_style = MV_HOLD_POSITION;
-         ai_aggro = AGR_ATTACK_IN_RANGE;
-         ai_leader = NULL;
          break;
       case M_HUMAN_SWORDSMAN_T:
          radius = 0.3;
@@ -560,9 +562,6 @@ AIUnit::AIUnit( UnitType t, int x, int y, Direction face, int my_team )
          vision_range = 5.5;
          attack_range = 1.3;
          speed = 0.5;
-         ai_move_style = MV_HOLD_POSITION;
-         ai_aggro = AGR_ATTACK_IN_RANGE;
-         ai_leader = NULL;
          break;
       default:
          break;
@@ -653,9 +652,9 @@ void AIUnit::setAI( AI_Movement move, AI_Aggression aggro, float chase_dis, floa
    ai_leader = follow;
 }
 
-int AIUnit::addWaypoint( int x, int y )
+int AIUnit::addWaypoint( int x, int y, Direction d )
 {
-   ai_waypoints.push_back( Vector2i( x, y ) );
+   ai_waypoints.push_back( pair<Vector2i,Direction>(Vector2i( x, y ), d ) );
 
    if (ai_waypoint_next == -1)
       ai_waypoint_next = 0;
@@ -793,43 +792,18 @@ int AIUnit::aStar( int start_x, int start_y, int goal_x, int goal_y )
 
    return -1;
 }
-/*
-    closedset := the empty set    // The set of nodes already evaluated.
-    openset := {start}    // The set of tentative nodes to be evaluated, initially containing the start node
-    came_from := the empty map    // The map of navigated nodes.
  
-    g_score[start] := 0    // Cost from start along best known path.
-    // Estimated total cost from start to goal through y.
-    f_score[start] := g_score[start] + heuristic_cost_estimate(start, goal)
- 
-    while openset is not empty
-        current := the node in openset having the lowest f_score[] value
-        if current = goal
-            return reconstruct_path(came_from, goal)
- 
-        remove current from openset
-        add current to closedset
-        for each neighbor in neighbor_nodes(current)
-            if neighbor in closedset
-                continue
-            tentative_g_score := g_score[current] + dist_between(current,neighbor)
- 
-            if neighbor not in openset or tentative_g_score < g_score[neighbor] 
-                came_from[neighbor] := current
-                g_score[neighbor] := tentative_g_score
-                f_score[neighbor] := g_score[neighbor] + heuristic_cost_estimate(neighbor, goal)
-                if neighbor not in openset
-                    add neighbor to openset
- 
-    return failure
-    */
- 
-int AIUnit::aiCalculatePath()
+int AIUnit::aiCalculatePath( bool next_waypoint )
 {
    if (ai_waypoints.size() == 0) return -1;
 
-   // TODO: select destination based on ai_waypoint_next
-   Vector2i destination = ai_waypoints.front();
+   if (next_waypoint) {
+      ai_waypoint_next++;
+      if (ai_waypoint_next >= ai_waypoints.size())
+         ai_waypoint_next = 0;
+   }
+
+   Vector2i destination = ai_waypoints.at( ai_waypoint_next ).first;
 
    aStar( x_grid, y_grid, destination.x, destination.y );
 
@@ -934,12 +908,18 @@ int AIUnit::ai()
    // Second, if not aggroed, move in the customary way
    if (aggroed == 0) {
 
-      if (ai_move_style == MV_HOLD_POSITION) {
+      if (ai_move_style == MV_HOLD_POSITION || ai_move_style == MV_PATROL) {
          if (ai_waypoints.size() == 0) return -1;
 
-         Vector2i h_pos = ai_waypoints.front();
+         Vector2i h_pos = ai_waypoints.at( ai_waypoint_next ).first;
          if (h_pos.x == x_grid && h_pos.y == y_grid) {// at position
-            this_turn_order = Order( WAIT );
+            if (ai_move_style == MV_HOLD_POSITION) {
+               turnTo( ai_waypoints.at( ai_waypoint_next ).second );
+               this_turn_order = Order( WAIT );
+            } else {
+               aiCalculatePath( true );
+               return aiFollowPath();
+            }
             return 0;
          }
          else
@@ -2830,7 +2810,7 @@ Unit *genBaseUnit( UnitType t, int grid_x, int grid_y, Direction face )
    if (t == R_HUMAN_ARCHER_T) {
       AIUnit *u = new AIUnit( t, grid_x, grid_y, face, 1 );
       u->setAI( MV_HOLD_POSITION, AGR_PURSUE_VISIBLE, 10, 4, NULL );
-      u->addWaypoint( grid_x, grid_y );
+      u->addWaypoint( grid_x, grid_y, face );
       return u;
    }
    if (t == M_HUMAN_SWORDSMAN_T) return NULL;
