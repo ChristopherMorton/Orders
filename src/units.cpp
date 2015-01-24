@@ -524,6 +524,8 @@ AIUnit::AIUnit( UnitType t, int x, int y, Direction face, int my_team )
 
    aff_poison = 0;
    aff_confusion = 0;
+    
+   flying = false;
 
    type = t;
    x_grid = x;
@@ -1076,6 +1078,8 @@ int Player::init( int x, int y, Direction face )
 
    aff_poison = 0;
    aff_confusion = 0;
+    
+   flying = false;
 
    radius = 0.4;
 
@@ -1273,6 +1277,8 @@ Monster::Monster( int x, int y, Direction face )
 
    aff_poison = 0;
    aff_confusion = 0;
+    
+   flying = false;
 
    radius = 0.5;
 
@@ -1511,6 +1517,8 @@ Soldier::Soldier( int x, int y, Direction face )
 
    aff_poison = 0;
    aff_confusion = 0;
+    
+   flying = false;
 
    radius = 0.2;
 
@@ -1877,6 +1885,8 @@ Worm::Worm( int x, int y, Direction face )
 
    aff_poison = 0;
    aff_confusion = 0;
+    
+   flying = false;
 
    radius = 0.2;
 
@@ -2137,6 +2147,8 @@ Bird::Bird( int x, int y, Direction face )
 
    aff_poison = 0;
    aff_confusion = 0;
+
+   flying = true;
 
    radius = 0.2;
 
@@ -2401,6 +2413,8 @@ Bug::Bug( int x, int y, Direction face )
 
    aff_poison = 0;
    aff_confusion = 0;
+    
+   flying = false;
 
    radius = 0.4;
 
@@ -2566,6 +2580,8 @@ SummonMarker::SummonMarker( )
 
    aff_poison = 0;
    aff_confusion = 0;
+    
+   flying = false;
 
    health = max_health = 0;
 
@@ -2726,6 +2742,8 @@ TargetPractice::TargetPractice( int x, int y, Direction face )
 
    aff_poison = 0;
    aff_confusion = 0;
+    
+   flying = false;
 
    health = max_health = 100000;
 

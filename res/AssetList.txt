@@ -12,6 +12,9 @@ IMAGE CliffStraight.png
 IMAGE CliffEnd.png
 IMAGE CliffCorner90.png
 IMAGE CliffCorner270.png
+IMAGE EdgeCliffStraight.png
+IMAGE EdgeCliffCorner90.png
+IMAGE EdgeCliffCorner270.png
 IMAGE AtelierCenter.png
 IMAGE AtelierEdge.png
 IMAGE AtelierCorner.png

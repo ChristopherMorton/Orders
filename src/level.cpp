@@ -422,37 +422,54 @@ bool isVisible( int x, int y )
    return !vision_enabled || (GRID_AT(vision_grid,x,y) == VIS_VISIBLE);
 }
 
-bool blocksVision( int x, int y, int from_x, int from_y, Direction ew, Direction ns, int flags )
+bool blocksVision( int x, int y, int from_x, int from_y, Direction ew, Direction ns, int &flags )
 {
    Terrain t = GRID_AT(terrain_grid,x,y);
 
+   // Always always block vision
+   if (t >= TER_EDGE_CLIFF_N && t <= TER_EDGE_CLIFF_CORNER_NE_270)
+      return true;
+
+   // If flying, and not forest, then doesn't block vision
+   if ( (flags & FLAG_VIS_FLYING) && !(t >= TER_TREE_1 && t <= TER_TREE_LAST) )
+      return false;
+
+   // If treesight, and is forest, then pierces it
+   if ( (flags & FLAG_VIS_TREESIGHT_MASK) && t >= TER_TREE_1 && t <= TER_TREE_LAST) {
+      flags--;
+      return false;
+   }
+   
+   // Otherwise continue as normal
+
+   // Things that block vision
    if (t >= TER_ROCK_1 && t <= TER_TREE_LAST)
       return true;
 
    // Cliffs
-   if ((t == CLIFF_SOUTH || t == CLIFF_SOUTH_EAST_EDGE || t == CLIFF_SOUTH_WEST_EDGE)
+   if ((t == TER_CLIFF_S || t == TER_CLIFF_S_E_EDGE || t == TER_CLIFF_S_W_EDGE)
       && ns == NORTH && (y < from_y))
       return true;
-   if ((t == CLIFF_NORTH || t == CLIFF_NORTH_EAST_EDGE || t == CLIFF_NORTH_WEST_EDGE)
+   if ((t == TER_CLIFF_N || t == TER_CLIFF_N_E_EDGE || t == TER_CLIFF_N_W_EDGE)
       && ns == SOUTH && (y > from_y))
       return true;
-   if ((t == CLIFF_EAST || t == CLIFF_EAST_NORTH_EDGE || t == CLIFF_EAST_SOUTH_EDGE)
+   if ((t == TER_CLIFF_E || t == TER_CLIFF_E_N_EDGE || t == TER_CLIFF_E_S_EDGE)
       && ew == WEST && (x < from_x))
       return true;
-   if ((t == CLIFF_WEST || t == CLIFF_WEST_SOUTH_EDGE || t == CLIFF_WEST_NORTH_EDGE)
+   if ((t == TER_CLIFF_W || t == TER_CLIFF_W_S_EDGE || t == TER_CLIFF_W_N_EDGE)
       && ew == EAST && (x > from_x))
       return true;
    // Cliff corners
-   if ((t == CLIFF_CORNER_SOUTHEAST_90 || t == CLIFF_CORNER_SOUTHEAST_270)
+   if ((t == TER_CLIFF_CORNER_SE_90 || t == TER_CLIFF_CORNER_SE_270)
          && ns != SOUTH && ew != EAST)
       return true;
-   if ((t == CLIFF_CORNER_SOUTHWEST_90 || t == CLIFF_CORNER_SOUTHWEST_270)
+   if ((t == TER_CLIFF_CORNER_SW_90 || t == TER_CLIFF_CORNER_SW_270)
          && ns != SOUTH && ew != WEST)
       return true;
-   if ((t == CLIFF_CORNER_NORTHWEST_90 || t == CLIFF_CORNER_NORTHWEST_270)
+   if ((t == TER_CLIFF_CORNER_NW_90 || t == TER_CLIFF_CORNER_NW_270)
          && ns != NORTH && ew != WEST)
       return true;
-   if ((t == CLIFF_CORNER_NORTHEAST_90 || t == CLIFF_CORNER_NORTHEAST_270)
+   if ((t == TER_CLIFF_CORNER_NE_90 || t == TER_CLIFF_CORNER_NE_270)
          && ns != NORTH && ew != EAST)
       return true;
 
@@ -609,6 +626,10 @@ int calculateUnitVision( Unit *unit, bool ai=false )
       if (unit->team != 0 || ai)
          v_grid = ai_vision_grid;
 
+      int flags = 0x1; // Give units treesight 1
+      if (unit->flying == true)
+         flags |= FLAG_VIS_FLYING;
+
       float vision_range_squared = unit->vision_range * unit->vision_range;
 
       // Strategy: go around in boxes, skipping already visible squares,
@@ -623,28 +644,28 @@ int calculateUnitVision( Unit *unit, bool ai=false )
             for (x = unit->x_grid - radius; x <= unit->x_grid + radius; ++x) {
                if (x < 0 || x >= level_dim_x) continue;
                if (GRID_AT(v_grid, x, unit->y_grid - radius) == VIS_VISIBLE) continue;
-               calculateLineVision( unit->x_grid, unit->y_grid, x, (unit->y_grid - radius), vision_range_squared, 0, v_grid );
+               calculateLineVision( unit->x_grid, unit->y_grid, x, (unit->y_grid - radius), vision_range_squared, flags, v_grid );
             }
 
          if (unit->y_grid + radius < level_dim_y)
             for (x = unit->x_grid - radius; x <= unit->x_grid + radius; ++x) {
                if (x < 0 || x >= level_dim_x) continue;
                if (GRID_AT(v_grid, x, unit->y_grid + radius) == VIS_VISIBLE) continue;
-               calculateLineVision( unit->x_grid, unit->y_grid, x, (unit->y_grid + radius), vision_range_squared, 0, v_grid );
+               calculateLineVision( unit->x_grid, unit->y_grid, x, (unit->y_grid + radius), vision_range_squared, flags, v_grid );
             }
 
          if (unit->x_grid - radius >= 0)
             for (y = unit->y_grid - radius; y <= unit->y_grid + radius; ++y) {
                if (y < 0 || y >= level_dim_y) continue;
                if (GRID_AT(v_grid, unit->x_grid - radius, y) == VIS_VISIBLE) continue;
-               calculateLineVision( unit->x_grid, unit->y_grid, (unit->x_grid - radius), y, vision_range_squared, 0, v_grid );
+               calculateLineVision( unit->x_grid, unit->y_grid, (unit->x_grid - radius), y, vision_range_squared, flags, v_grid );
             }
 
          if (unit->x_grid + radius < level_dim_x)
             for (y = unit->y_grid - radius; y <= unit->y_grid + radius; ++y) {
                if (y < 0 || y >= level_dim_y) continue;
                if (GRID_AT(v_grid, unit->x_grid + radius, y) == VIS_VISIBLE) continue;
-               calculateLineVision( unit->x_grid, unit->y_grid, (unit->x_grid + radius), y, vision_range_squared, 0, v_grid );
+               calculateLineVision( unit->x_grid, unit->y_grid, (unit->x_grid + radius), y, vision_range_squared, flags, v_grid );
             }
 
       }
@@ -906,8 +927,9 @@ bool canMove( int x, int y, int from_x, int from_y )
 
    // TODO: building collision
    Terrain t = GRID_AT(terrain_grid,x,y);
-   if ( (t >= CLIFF_SOUTH && t <= CLIFF_CORNER_NORTHWEST_270)
-     || (t >= TER_ROCK_1 && t <= TER_ROCK_LAST))
+   if ( (t >= TER_CLIFF_S && t <= TER_CLIFF_CORNER_NW_270)
+     || (t >= TER_ROCK_1 && t <= TER_ROCK_LAST)
+     || (t >= TER_EDGE_CLIFF_S && t <= TER_EDGE_CLIFF_CORNER_NE_270))
       return false; // cliffs impassable
 
    return true;
@@ -1416,87 +1438,138 @@ void initTextures()
       normalizeTo1x1( terrain_sprites[i] );
    }
 
-   // CLIFF
+   // CLIFF & EDGE_CLIFF
    // straight
    Vector2u dim = t_manager.getTexture( "CliffStraight.png" )->getSize();
-   terrain_sprites[CLIFF_SOUTH] = new Sprite( *(t_manager.getTexture( "CliffStraight.png" )));
-   normalizeTo1x1( terrain_sprites[CLIFF_SOUTH] );
-   terrain_sprites[CLIFF_WEST] = new Sprite( *(t_manager.getTexture( "CliffStraight.png" )));
-   normalizeTo1x1( terrain_sprites[CLIFF_WEST] );
-   terrain_sprites[CLIFF_WEST]->setRotation( 90 );
-   terrain_sprites[CLIFF_WEST]->setOrigin( 0, dim.y );
-   terrain_sprites[CLIFF_NORTH] = new Sprite( *(t_manager.getTexture( "CliffStraight.png" )));
-   normalizeTo1x1( terrain_sprites[CLIFF_NORTH] );
-   terrain_sprites[CLIFF_NORTH]->setRotation( 180 );
-   terrain_sprites[CLIFF_NORTH]->setOrigin( dim.x, dim.y );
-   terrain_sprites[CLIFF_EAST] = new Sprite( *(t_manager.getTexture( "CliffStraight.png" )));
-   normalizeTo1x1( terrain_sprites[CLIFF_EAST] );
-   terrain_sprites[CLIFF_EAST]->setRotation( 270 );
-   terrain_sprites[CLIFF_EAST]->setOrigin( dim.x, 0 );
+   terrain_sprites[TER_CLIFF_S] = new Sprite( *(t_manager.getTexture( "CliffStraight.png" )));
+   normalizeTo1x1( terrain_sprites[TER_CLIFF_S] );
+   terrain_sprites[TER_CLIFF_W] = new Sprite( *(t_manager.getTexture( "CliffStraight.png" )));
+   normalizeTo1x1( terrain_sprites[TER_CLIFF_W] );
+   terrain_sprites[TER_CLIFF_W]->setRotation( 90 );
+   terrain_sprites[TER_CLIFF_W]->setOrigin( 0, dim.y );
+   terrain_sprites[TER_CLIFF_N] = new Sprite( *(t_manager.getTexture( "CliffStraight.png" )));
+   normalizeTo1x1( terrain_sprites[TER_CLIFF_N] );
+   terrain_sprites[TER_CLIFF_N]->setRotation( 180 );
+   terrain_sprites[TER_CLIFF_N]->setOrigin( dim.x, dim.y );
+   terrain_sprites[TER_CLIFF_E] = new Sprite( *(t_manager.getTexture( "CliffStraight.png" )));
+   normalizeTo1x1( terrain_sprites[TER_CLIFF_E] );
+   terrain_sprites[TER_CLIFF_E]->setRotation( 270 );
+   terrain_sprites[TER_CLIFF_E]->setOrigin( dim.x, 0 );
+
+   // EDGE_CLIFF
+   dim = t_manager.getTexture( "EdgeCliffStraight.png" )->getSize();
+   terrain_sprites[TER_EDGE_CLIFF_S] = new Sprite( *(t_manager.getTexture( "EdgeCliffStraight.png" )));
+   normalizeTo1x1( terrain_sprites[TER_EDGE_CLIFF_S] );
+   terrain_sprites[TER_EDGE_CLIFF_W] = new Sprite( *(t_manager.getTexture( "EdgeCliffStraight.png" )));
+   normalizeTo1x1( terrain_sprites[TER_EDGE_CLIFF_W] );
+   terrain_sprites[TER_EDGE_CLIFF_W]->setRotation( 90 );
+   terrain_sprites[TER_EDGE_CLIFF_W]->setOrigin( 0, dim.y );
+   terrain_sprites[TER_EDGE_CLIFF_N] = new Sprite( *(t_manager.getTexture( "EdgeCliffStraight.png" )));
+   normalizeTo1x1( terrain_sprites[TER_EDGE_CLIFF_N] );
+   terrain_sprites[TER_EDGE_CLIFF_N]->setRotation( 180 );
+   terrain_sprites[TER_EDGE_CLIFF_N]->setOrigin( dim.x, dim.y );
+   terrain_sprites[TER_EDGE_CLIFF_E] = new Sprite( *(t_manager.getTexture( "EdgeCliffStraight.png" )));
+   normalizeTo1x1( terrain_sprites[TER_EDGE_CLIFF_E] );
+   terrain_sprites[TER_EDGE_CLIFF_E]->setRotation( 270 );
+   terrain_sprites[TER_EDGE_CLIFF_E]->setOrigin( dim.x, 0 );
+
 
    // edge
-   terrain_sprites[CLIFF_SOUTH_WEST_EDGE] = new Sprite( *(t_manager.getTexture( "CliffEndLeft.png" )));
-   normalizeTo1x1( terrain_sprites[CLIFF_SOUTH_WEST_EDGE] );
-   terrain_sprites[CLIFF_SOUTH_EAST_EDGE] = new Sprite( *(t_manager.getTexture( "CliffEndRight.png" )));
-   normalizeTo1x1( terrain_sprites[CLIFF_SOUTH_EAST_EDGE] );
+   terrain_sprites[TER_CLIFF_S_W_EDGE] = new Sprite( *(t_manager.getTexture( "CliffEndLeft.png" )));
+   normalizeTo1x1( terrain_sprites[TER_CLIFF_S_W_EDGE] );
+   terrain_sprites[TER_CLIFF_S_E_EDGE] = new Sprite( *(t_manager.getTexture( "CliffEndRight.png" )));
+   normalizeTo1x1( terrain_sprites[TER_CLIFF_S_E_EDGE] );
 
-   terrain_sprites[CLIFF_WEST_NORTH_EDGE] = new Sprite( *(t_manager.getTexture( "CliffEndLeft.png" )));
-   normalizeTo1x1( terrain_sprites[CLIFF_WEST_NORTH_EDGE] );
-   terrain_sprites[CLIFF_WEST_SOUTH_EDGE] = new Sprite( *(t_manager.getTexture( "CliffEndRight.png" )));
-   normalizeTo1x1( terrain_sprites[CLIFF_WEST_SOUTH_EDGE] );
-   terrain_sprites[CLIFF_WEST_NORTH_EDGE]->setRotation( 90 );
-   terrain_sprites[CLIFF_WEST_NORTH_EDGE]->setOrigin( 0, dim.y );
-   terrain_sprites[CLIFF_WEST_SOUTH_EDGE]->setRotation( 90 );
-   terrain_sprites[CLIFF_WEST_SOUTH_EDGE]->setOrigin( 0, dim.y );
+   terrain_sprites[TER_CLIFF_W_N_EDGE] = new Sprite( *(t_manager.getTexture( "CliffEndLeft.png" )));
+   normalizeTo1x1( terrain_sprites[TER_CLIFF_W_N_EDGE] );
+   terrain_sprites[TER_CLIFF_W_S_EDGE] = new Sprite( *(t_manager.getTexture( "CliffEndRight.png" )));
+   normalizeTo1x1( terrain_sprites[TER_CLIFF_W_S_EDGE] );
+   terrain_sprites[TER_CLIFF_W_N_EDGE]->setRotation( 90 );
+   terrain_sprites[TER_CLIFF_W_N_EDGE]->setOrigin( 0, dim.y );
+   terrain_sprites[TER_CLIFF_W_S_EDGE]->setRotation( 90 );
+   terrain_sprites[TER_CLIFF_W_S_EDGE]->setOrigin( 0, dim.y );
 
-   terrain_sprites[CLIFF_NORTH_EAST_EDGE] = new Sprite( *(t_manager.getTexture( "CliffEndLeft.png" )));
-   normalizeTo1x1( terrain_sprites[CLIFF_NORTH_EAST_EDGE] );
-   terrain_sprites[CLIFF_NORTH_WEST_EDGE] = new Sprite( *(t_manager.getTexture( "CliffEndRight.png" )));
-   normalizeTo1x1( terrain_sprites[CLIFF_NORTH_WEST_EDGE] );
-   terrain_sprites[CLIFF_NORTH_EAST_EDGE]->setRotation( 180 );
-   terrain_sprites[CLIFF_NORTH_EAST_EDGE]->setOrigin( dim.x, dim.y );
-   terrain_sprites[CLIFF_NORTH_WEST_EDGE]->setRotation( 180 );
-   terrain_sprites[CLIFF_NORTH_WEST_EDGE]->setOrigin( dim.x, dim.y );
+   terrain_sprites[TER_CLIFF_N_E_EDGE] = new Sprite( *(t_manager.getTexture( "CliffEndLeft.png" )));
+   normalizeTo1x1( terrain_sprites[TER_CLIFF_N_E_EDGE] );
+   terrain_sprites[TER_CLIFF_N_W_EDGE] = new Sprite( *(t_manager.getTexture( "CliffEndRight.png" )));
+   normalizeTo1x1( terrain_sprites[TER_CLIFF_N_W_EDGE] );
+   terrain_sprites[TER_CLIFF_N_E_EDGE]->setRotation( 180 );
+   terrain_sprites[TER_CLIFF_N_E_EDGE]->setOrigin( dim.x, dim.y );
+   terrain_sprites[TER_CLIFF_N_W_EDGE]->setRotation( 180 );
+   terrain_sprites[TER_CLIFF_N_W_EDGE]->setOrigin( dim.x, dim.y );
 
-   terrain_sprites[CLIFF_EAST_SOUTH_EDGE] = new Sprite( *(t_manager.getTexture( "CliffEndLeft.png" )));
-   normalizeTo1x1( terrain_sprites[CLIFF_EAST_SOUTH_EDGE] );
-   terrain_sprites[CLIFF_EAST_NORTH_EDGE] = new Sprite( *(t_manager.getTexture( "CliffEndRight.png" )));
-   normalizeTo1x1( terrain_sprites[CLIFF_EAST_NORTH_EDGE] );
-   terrain_sprites[CLIFF_EAST_SOUTH_EDGE]->setRotation( 270 );
-   terrain_sprites[CLIFF_EAST_SOUTH_EDGE]->setOrigin( dim.x, 0 );
-   terrain_sprites[CLIFF_EAST_NORTH_EDGE]->setRotation( 270 );
-   terrain_sprites[CLIFF_EAST_NORTH_EDGE]->setOrigin( dim.x, 0 );
+   terrain_sprites[TER_CLIFF_E_S_EDGE] = new Sprite( *(t_manager.getTexture( "CliffEndLeft.png" )));
+   normalizeTo1x1( terrain_sprites[TER_CLIFF_E_S_EDGE] );
+   terrain_sprites[TER_CLIFF_E_N_EDGE] = new Sprite( *(t_manager.getTexture( "CliffEndRight.png" )));
+   normalizeTo1x1( terrain_sprites[TER_CLIFF_E_N_EDGE] );
+   terrain_sprites[TER_CLIFF_E_S_EDGE]->setRotation( 270 );
+   terrain_sprites[TER_CLIFF_E_S_EDGE]->setOrigin( dim.x, 0 );
+   terrain_sprites[TER_CLIFF_E_N_EDGE]->setRotation( 270 );
+   terrain_sprites[TER_CLIFF_E_N_EDGE]->setOrigin( dim.x, 0 );
+
 
    // corner
-   terrain_sprites[CLIFF_CORNER_SOUTHEAST_90] = new Sprite( *(t_manager.getTexture( "CliffCorner90.png" )));
-   normalizeTo1x1( terrain_sprites[CLIFF_CORNER_SOUTHEAST_90] );
-   terrain_sprites[CLIFF_CORNER_SOUTHWEST_90] = new Sprite( *(t_manager.getTexture( "CliffCorner90.png" )));
-   normalizeTo1x1( terrain_sprites[CLIFF_CORNER_SOUTHWEST_90] );
-   terrain_sprites[CLIFF_CORNER_SOUTHWEST_90]->setRotation( 90 );
-   terrain_sprites[CLIFF_CORNER_SOUTHWEST_90]->setOrigin( 0, dim.y );
-   terrain_sprites[CLIFF_CORNER_NORTHWEST_90] = new Sprite( *(t_manager.getTexture( "CliffCorner90.png" )));
-   normalizeTo1x1( terrain_sprites[CLIFF_CORNER_NORTHWEST_90] );
-   terrain_sprites[CLIFF_CORNER_NORTHWEST_90]->setRotation( 180 ); 
-   terrain_sprites[CLIFF_CORNER_NORTHWEST_90]->setOrigin( dim.x, dim.y );
-   terrain_sprites[CLIFF_CORNER_NORTHEAST_90] = new Sprite( *(t_manager.getTexture( "CliffCorner90.png" )));
-   normalizeTo1x1( terrain_sprites[CLIFF_CORNER_NORTHEAST_90] );
-   terrain_sprites[CLIFF_CORNER_NORTHEAST_90]->setRotation( 270 );
-   terrain_sprites[CLIFF_CORNER_NORTHEAST_90]->setOrigin( dim.x, 0 );
+   terrain_sprites[TER_CLIFF_CORNER_SE_90] = new Sprite( *(t_manager.getTexture( "CliffCorner90.png" )));
+   normalizeTo1x1( terrain_sprites[TER_CLIFF_CORNER_SE_90] );
+   terrain_sprites[TER_CLIFF_CORNER_SW_90] = new Sprite( *(t_manager.getTexture( "CliffCorner90.png" )));
+   normalizeTo1x1( terrain_sprites[TER_CLIFF_CORNER_SW_90] );
+   terrain_sprites[TER_CLIFF_CORNER_SW_90]->setRotation( 90 );
+   terrain_sprites[TER_CLIFF_CORNER_SW_90]->setOrigin( 0, dim.y );
+   terrain_sprites[TER_CLIFF_CORNER_NW_90] = new Sprite( *(t_manager.getTexture( "CliffCorner90.png" )));
+   normalizeTo1x1( terrain_sprites[TER_CLIFF_CORNER_NW_90] );
+   terrain_sprites[TER_CLIFF_CORNER_NW_90]->setRotation( 180 ); 
+   terrain_sprites[TER_CLIFF_CORNER_NW_90]->setOrigin( dim.x, dim.y );
+   terrain_sprites[TER_CLIFF_CORNER_NE_90] = new Sprite( *(t_manager.getTexture( "CliffCorner90.png" )));
+   normalizeTo1x1( terrain_sprites[TER_CLIFF_CORNER_NE_90] );
+   terrain_sprites[TER_CLIFF_CORNER_NE_90]->setRotation( 270 );
+   terrain_sprites[TER_CLIFF_CORNER_NE_90]->setOrigin( dim.x, 0 );
 
-   terrain_sprites[CLIFF_CORNER_SOUTHEAST_270] = new Sprite( *(t_manager.getTexture( "CliffCorner270.png" )));
-   normalizeTo1x1( terrain_sprites[CLIFF_CORNER_SOUTHEAST_270] );
-   terrain_sprites[CLIFF_CORNER_SOUTHWEST_270] = new Sprite( *(t_manager.getTexture( "CliffCorner270.png" )));
-   normalizeTo1x1( terrain_sprites[CLIFF_CORNER_SOUTHWEST_270] );
-   terrain_sprites[CLIFF_CORNER_SOUTHWEST_270]->setRotation( 90 );
-   terrain_sprites[CLIFF_CORNER_SOUTHWEST_270]->setOrigin( 0, dim.y );
-   terrain_sprites[CLIFF_CORNER_NORTHWEST_270] = new Sprite( *(t_manager.getTexture( "CliffCorner270.png" )));
-   normalizeTo1x1( terrain_sprites[CLIFF_CORNER_NORTHWEST_270] );
-   terrain_sprites[CLIFF_CORNER_NORTHWEST_270]->setRotation( 180 ); 
-   terrain_sprites[CLIFF_CORNER_NORTHWEST_270]->setOrigin( dim.x, dim.y );
-   terrain_sprites[CLIFF_CORNER_NORTHEAST_270] = new Sprite( *(t_manager.getTexture( "CliffCorner270.png" )));
-   normalizeTo1x1( terrain_sprites[CLIFF_CORNER_NORTHEAST_270] );
-   terrain_sprites[CLIFF_CORNER_NORTHEAST_270]->setRotation( 270 );
-   terrain_sprites[CLIFF_CORNER_NORTHEAST_270]->setOrigin( dim.x, 0 );
+   terrain_sprites[TER_CLIFF_CORNER_SE_270] = new Sprite( *(t_manager.getTexture( "CliffCorner270.png" )));
+   normalizeTo1x1( terrain_sprites[TER_CLIFF_CORNER_SE_270] );
+   terrain_sprites[TER_CLIFF_CORNER_SW_270] = new Sprite( *(t_manager.getTexture( "CliffCorner270.png" )));
+   normalizeTo1x1( terrain_sprites[TER_CLIFF_CORNER_SW_270] );
+   terrain_sprites[TER_CLIFF_CORNER_SW_270]->setRotation( 90 );
+   terrain_sprites[TER_CLIFF_CORNER_SW_270]->setOrigin( 0, dim.y );
+   terrain_sprites[TER_CLIFF_CORNER_NW_270] = new Sprite( *(t_manager.getTexture( "CliffCorner270.png" )));
+   normalizeTo1x1( terrain_sprites[TER_CLIFF_CORNER_NW_270] );
+   terrain_sprites[TER_CLIFF_CORNER_NW_270]->setRotation( 180 ); 
+   terrain_sprites[TER_CLIFF_CORNER_NW_270]->setOrigin( dim.x, dim.y );
+   terrain_sprites[TER_CLIFF_CORNER_NE_270] = new Sprite( *(t_manager.getTexture( "CliffCorner270.png" )));
+   normalizeTo1x1( terrain_sprites[TER_CLIFF_CORNER_NE_270] );
+   terrain_sprites[TER_CLIFF_CORNER_NE_270]->setRotation( 270 );
+   terrain_sprites[TER_CLIFF_CORNER_NE_270]->setOrigin( dim.x, 0 );
+
+   // EDGE_CLIFF
+   terrain_sprites[TER_EDGE_CLIFF_CORNER_SE_90] = new Sprite( *(t_manager.getTexture( "EdgeCliffCorner90.png" )));
+   normalizeTo1x1( terrain_sprites[TER_EDGE_CLIFF_CORNER_SE_90] );
+   terrain_sprites[TER_EDGE_CLIFF_CORNER_SW_90] = new Sprite( *(t_manager.getTexture( "EdgeCliffCorner90.png" )));
+   normalizeTo1x1( terrain_sprites[TER_EDGE_CLIFF_CORNER_SW_90] );
+   terrain_sprites[TER_EDGE_CLIFF_CORNER_SW_90]->setRotation( 90 );
+   terrain_sprites[TER_EDGE_CLIFF_CORNER_SW_90]->setOrigin( 0, dim.y );
+   terrain_sprites[TER_EDGE_CLIFF_CORNER_NW_90] = new Sprite( *(t_manager.getTexture( "EdgeCliffCorner90.png" )));
+   normalizeTo1x1( terrain_sprites[TER_EDGE_CLIFF_CORNER_NW_90] );
+   terrain_sprites[TER_EDGE_CLIFF_CORNER_NW_90]->setRotation( 180 ); 
+   terrain_sprites[TER_EDGE_CLIFF_CORNER_NW_90]->setOrigin( dim.x, dim.y );
+   terrain_sprites[TER_EDGE_CLIFF_CORNER_NE_90] = new Sprite( *(t_manager.getTexture( "EdgeCliffCorner90.png" )));
+   normalizeTo1x1( terrain_sprites[TER_EDGE_CLIFF_CORNER_NE_90] );
+   terrain_sprites[TER_EDGE_CLIFF_CORNER_NE_90]->setRotation( 270 );
+   terrain_sprites[TER_EDGE_CLIFF_CORNER_NE_90]->setOrigin( dim.x, 0 );
+
+   terrain_sprites[TER_EDGE_CLIFF_CORNER_SE_270] = new Sprite( *(t_manager.getTexture( "EdgeCliffCorner270.png" )));
+   normalizeTo1x1( terrain_sprites[TER_EDGE_CLIFF_CORNER_SE_270] );
+   terrain_sprites[TER_EDGE_CLIFF_CORNER_SW_270] = new Sprite( *(t_manager.getTexture( "EdgeCliffCorner270.png" )));
+   normalizeTo1x1( terrain_sprites[TER_EDGE_CLIFF_CORNER_SW_270] );
+   terrain_sprites[TER_EDGE_CLIFF_CORNER_SW_270]->setRotation( 90 );
+   terrain_sprites[TER_EDGE_CLIFF_CORNER_SW_270]->setOrigin( 0, dim.y );
+   terrain_sprites[TER_EDGE_CLIFF_CORNER_NW_270] = new Sprite( *(t_manager.getTexture( "EdgeCliffCorner270.png" )));
+   normalizeTo1x1( terrain_sprites[TER_EDGE_CLIFF_CORNER_NW_270] );
+   terrain_sprites[TER_EDGE_CLIFF_CORNER_NW_270]->setRotation( 180 ); 
+   terrain_sprites[TER_EDGE_CLIFF_CORNER_NW_270]->setOrigin( dim.x, dim.y );
+   terrain_sprites[TER_EDGE_CLIFF_CORNER_NE_270] = new Sprite( *(t_manager.getTexture( "EdgeCliffCorner270.png" )));
+   normalizeTo1x1( terrain_sprites[TER_EDGE_CLIFF_CORNER_NE_270] );
+   terrain_sprites[TER_EDGE_CLIFF_CORNER_NE_270]->setRotation( 270 );
+   terrain_sprites[TER_EDGE_CLIFF_CORNER_NE_270]->setOrigin( dim.x, 0 );
+
 
    // Atelier
 
@@ -1505,36 +1578,36 @@ void initTextures()
 
    // edge
    dim = t_manager.getTexture( "AtelierEdge.png" )->getSize();
-   terrain_sprites[TER_ATELIER_SOUTH_EDGE] = new Sprite( *(t_manager.getTexture( "AtelierEdge.png" )));
-   normalizeTo1x1( terrain_sprites[TER_ATELIER_SOUTH_EDGE] );
-   terrain_sprites[TER_ATELIER_WEST_EDGE] = new Sprite( *(t_manager.getTexture( "AtelierEdge.png" )));
-   normalizeTo1x1( terrain_sprites[TER_ATELIER_WEST_EDGE] );
-   terrain_sprites[TER_ATELIER_WEST_EDGE]->setRotation( 90 );
-   terrain_sprites[TER_ATELIER_WEST_EDGE]->setOrigin( 0, dim.y );
-   terrain_sprites[TER_ATELIER_NORTH_EDGE] = new Sprite( *(t_manager.getTexture( "AtelierEdge.png" )));
-   normalizeTo1x1( terrain_sprites[TER_ATELIER_NORTH_EDGE] );
-   terrain_sprites[TER_ATELIER_NORTH_EDGE]->setRotation( 180 );
-   terrain_sprites[TER_ATELIER_NORTH_EDGE]->setOrigin( dim.x, dim.y );
-   terrain_sprites[TER_ATELIER_EAST_EDGE] = new Sprite( *(t_manager.getTexture( "AtelierEdge.png" )));
-   normalizeTo1x1( terrain_sprites[TER_ATELIER_EAST_EDGE] );
-   terrain_sprites[TER_ATELIER_EAST_EDGE]->setRotation( 270 );
-   terrain_sprites[TER_ATELIER_EAST_EDGE]->setOrigin( dim.x, 0 );
+   terrain_sprites[TER_ATELIER_S_EDGE] = new Sprite( *(t_manager.getTexture( "AtelierEdge.png" )));
+   normalizeTo1x1( terrain_sprites[TER_ATELIER_S_EDGE] );
+   terrain_sprites[TER_ATELIER_W_EDGE] = new Sprite( *(t_manager.getTexture( "AtelierEdge.png" )));
+   normalizeTo1x1( terrain_sprites[TER_ATELIER_W_EDGE] );
+   terrain_sprites[TER_ATELIER_W_EDGE]->setRotation( 90 );
+   terrain_sprites[TER_ATELIER_W_EDGE]->setOrigin( 0, dim.y );
+   terrain_sprites[TER_ATELIER_N_EDGE] = new Sprite( *(t_manager.getTexture( "AtelierEdge.png" )));
+   normalizeTo1x1( terrain_sprites[TER_ATELIER_N_EDGE] );
+   terrain_sprites[TER_ATELIER_N_EDGE]->setRotation( 180 );
+   terrain_sprites[TER_ATELIER_N_EDGE]->setOrigin( dim.x, dim.y );
+   terrain_sprites[TER_ATELIER_E_EDGE] = new Sprite( *(t_manager.getTexture( "AtelierEdge.png" )));
+   normalizeTo1x1( terrain_sprites[TER_ATELIER_E_EDGE] );
+   terrain_sprites[TER_ATELIER_E_EDGE]->setRotation( 270 );
+   terrain_sprites[TER_ATELIER_E_EDGE]->setOrigin( dim.x, 0 );
    
    // corner
-   terrain_sprites[TER_ATELIER_CORNER_SOUTHWEST] = new Sprite( *(t_manager.getTexture( "AtelierCorner.png" )));
-   normalizeTo1x1( terrain_sprites[TER_ATELIER_CORNER_SOUTHWEST] );
-   terrain_sprites[TER_ATELIER_CORNER_NORTHWEST] = new Sprite( *(t_manager.getTexture( "AtelierCorner.png" )));
-   normalizeTo1x1( terrain_sprites[TER_ATELIER_CORNER_NORTHWEST] );
-   terrain_sprites[TER_ATELIER_CORNER_NORTHWEST]->setRotation( 90 );
-   terrain_sprites[TER_ATELIER_CORNER_NORTHWEST]->setOrigin( 0, dim.y );
-   terrain_sprites[TER_ATELIER_CORNER_NORTHEAST] = new Sprite( *(t_manager.getTexture( "AtelierCorner.png" )));
-   normalizeTo1x1( terrain_sprites[TER_ATELIER_CORNER_NORTHEAST] );
-   terrain_sprites[TER_ATELIER_CORNER_NORTHEAST]->setRotation( 180 ); 
-   terrain_sprites[TER_ATELIER_CORNER_NORTHEAST]->setOrigin( dim.x, dim.y );
-   terrain_sprites[TER_ATELIER_CORNER_SOUTHEAST] = new Sprite( *(t_manager.getTexture( "AtelierCorner.png" )));
-   normalizeTo1x1( terrain_sprites[TER_ATELIER_CORNER_SOUTHEAST] );
-   terrain_sprites[TER_ATELIER_CORNER_SOUTHEAST]->setRotation( 270 );
-   terrain_sprites[TER_ATELIER_CORNER_SOUTHEAST]->setOrigin( dim.x, 0 );
+   terrain_sprites[TER_ATELIER_CORNER_SW] = new Sprite( *(t_manager.getTexture( "AtelierCorner.png" )));
+   normalizeTo1x1( terrain_sprites[TER_ATELIER_CORNER_SW] );
+   terrain_sprites[TER_ATELIER_CORNER_NW] = new Sprite( *(t_manager.getTexture( "AtelierCorner.png" )));
+   normalizeTo1x1( terrain_sprites[TER_ATELIER_CORNER_NW] );
+   terrain_sprites[TER_ATELIER_CORNER_NW]->setRotation( 90 );
+   terrain_sprites[TER_ATELIER_CORNER_NW]->setOrigin( 0, dim.y );
+   terrain_sprites[TER_ATELIER_CORNER_NE] = new Sprite( *(t_manager.getTexture( "AtelierCorner.png" )));
+   normalizeTo1x1( terrain_sprites[TER_ATELIER_CORNER_NE] );
+   terrain_sprites[TER_ATELIER_CORNER_NE]->setRotation( 180 ); 
+   terrain_sprites[TER_ATELIER_CORNER_NE]->setOrigin( dim.x, dim.y );
+   terrain_sprites[TER_ATELIER_CORNER_SE] = new Sprite( *(t_manager.getTexture( "AtelierCorner.png" )));
+   normalizeTo1x1( terrain_sprites[TER_ATELIER_CORNER_SE] );
+   terrain_sprites[TER_ATELIER_CORNER_SE]->setRotation( 270 );
+   terrain_sprites[TER_ATELIER_CORNER_SE]->setOrigin( dim.x, 0 );
 
    base_grass_sprite = new Sprite( *(t_manager.getTexture( "GreenGrass.png" )));
    base_mountain_sprite = new Sprite( *(t_manager.getTexture( "GrayRock.png" )));
