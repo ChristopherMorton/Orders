@@ -158,7 +158,7 @@ public:
 
    virtual int doAttack( Order o );
 
-   virtual int takeDamage( int damage, int flags = 0 );
+   virtual int takeDamage( float damage, int flags = 0 );
 
    virtual std::string descriptor();
 

@@ -3,6 +3,8 @@
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Texture.hpp>
 
+#include "stdlib.h"
+
 using namespace sum;
 
 void normalizeTo1x1( sf::Sprite *s )

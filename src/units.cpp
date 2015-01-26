@@ -622,7 +622,7 @@ int AIUnit::doAttack( Order o )
    return 0;
 }
 
-int AIUnit::takeDamage( int damage, int flags )
+int AIUnit::takeDamage( float damage, int flags )
 {
    health -= damage;
    if (health <= 0) {
@@ -1700,7 +1700,7 @@ int Soldier::prepareTurn()
       visited_orders.insert( current_order );
       bool decision = evaluateConditional(this_turn_order.condition);
       // SOLDIER UNIQUE CODE
-      int r;
+      int r = 1;
       if (this_turn_order.action <= SKIP)
          r = prepareBasicOrder(order_queue[current_order], decision);
       else if (this_turn_order.action == SOLDIER_SWITCH_AXE) {

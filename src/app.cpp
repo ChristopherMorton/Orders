@@ -112,8 +112,7 @@ void openAVOptions()
 int applyAVOptions()
 {
    log("Applying AV Options");
-   int w, h, f;
-   f = 0;
+   int w = 0, h = 0, f = 0;
    if (av_selected_resolution == 0) {
       w = 800;
       h = 600;
