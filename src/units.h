@@ -130,7 +130,7 @@ public:
    AI_Movement ai_move_style;
    std::deque< std::pair<sf::Vector2i,Direction> > ai_waypoints;
    int ai_waypoint_next;
-   std::deque<Direction> ai_path;
+   std::deque<Direction> ai_pathing;
 
    // AI other data
    AI_Aggression ai_aggro;
@@ -147,8 +147,8 @@ public:
    void clearWaypoints();
    int reconstructPath( Direction *came_from_grid, int goal_x, int goal_y );
    int aStar( int start_x, int start_y, int goal_x, int goal_y );
-   int aiCalculatePath( bool next = false );
-   int aiFollowPath();
+   int aiCalculatePathing( bool next = false );
+   int aiFollowPathing();
 
    virtual int ai();
 

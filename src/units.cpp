@@ -71,11 +71,54 @@ int rand_int = 12345;
 int Unit::prepareBasicOrder( Order &o, bool cond_result )
 {
    int nest;
+   Terrain t;
+   bool can_follow;
 
    if (o.action <= WAIT) {
       switch (o.action) {
 
          // MOVEMENT
+         case FOLLOW_PATH:
+            if (cond_result == false) return 0;
+
+            can_follow = false;
+            t = GRID_AT(terrain_grid,x_grid,y_grid);
+
+            // Change direction based on the exits to the path
+            if (t == TER_PATH_N_END && facing == SOUTH) {
+               can_follow = true;
+            } else if (t == TER_PATH_S_END && facing == NORTH) {
+               can_follow = true;
+            } else if (t == TER_PATH_E_END && facing == WEST) {
+               can_follow = true;
+            } else if (t == TER_PATH_W_END && facing == EAST) {
+               can_follow = true;
+            } else if (t == TER_PATH_EW && (facing == EAST || facing == WEST)) {
+               can_follow = true;
+            } else if (t == TER_PATH_NS && (facing == NORTH || facing == SOUTH)) {
+               can_follow = true;
+            } else if (t == TER_PATH_NE) {
+               can_follow = true;
+               if (facing == WEST) turnTo( NORTH );
+               if (facing == SOUTH) turnTo( EAST );
+            } else if (t == TER_PATH_SE) {
+               can_follow = true;
+               if (facing == WEST) turnTo( SOUTH );
+               if (facing == NORTH) turnTo( EAST );
+            } else if (t == TER_PATH_SW) {
+               can_follow = true;
+               if (facing == EAST) turnTo( SOUTH );
+               if (facing == NORTH) turnTo( WEST );
+            } else if (t == TER_PATH_NW) {
+               can_follow = true;
+               if (facing == EAST) turnTo( NORTH );
+               if (facing == SOUTH) turnTo( WEST );
+            }
+
+            if (can_follow == false || !canMove( x_next, y_next, x_grid, y_grid ))
+               return 0;
+
+            return 1;
 
          case MOVE_BACK:
             if (cond_result == true) {
@@ -217,7 +260,8 @@ int Unit::startBasicOrder( )
    if (this_turn_order.action > WAIT) return -1;
 
    if (this_turn_order.action == MOVE_FORWARD || 
-       this_turn_order.action == MOVE_BACK)
+       this_turn_order.action == MOVE_BACK ||
+       this_turn_order.action == FOLLOW_PATH)
    {
       testUnitCanMove( this );
    }
@@ -232,6 +276,7 @@ int Unit::updateBasicOrder( float dtf, Order o )
          case MOVE_BACK:
             dtf = -dtf;
          case MOVE_FORWARD:
+         case FOLLOW_PATH:
             if (facing == NORTH)
                y_real -= dtf;
             else if (facing == SOUTH)
@@ -282,6 +327,7 @@ int Unit::completeBasicOrder( Order &o )
       switch (o.action) {
          case MOVE_BACK:
          case MOVE_FORWARD:
+         case FOLLOW_PATH:
             moveUnit( this, x_next, y_next );
             x_grid = x_next;
             y_grid = y_next;
@@ -685,11 +731,11 @@ int costEstimateH( int from_x, int from_y, int goal_x, int goal_y )
 
 int AIUnit::reconstructPath( Direction *came_from_grid, int x, int y )
 {
-   ai_path.clear();
+   ai_pathing.clear();
 
    Direction d;
    while ((d = came_from_grid[ x + (y * level_dim_x) ]) != ALL_DIR) {
-      ai_path.push_front( reverseDirection( d ) );
+      ai_pathing.push_front( reverseDirection( d ) );
       addDirection( d, x, y );
    }
 
@@ -795,7 +841,7 @@ int AIUnit::aStar( int start_x, int start_y, int goal_x, int goal_y )
    return -1;
 }
  
-int AIUnit::aiCalculatePath( bool next_waypoint )
+int AIUnit::aiCalculatePathing( bool next_waypoint )
 {
    if (ai_waypoints.size() == 0) return -1;
 
@@ -812,16 +858,16 @@ int AIUnit::aiCalculatePath( bool next_waypoint )
    return 0;
 }
 
-int AIUnit::aiFollowPath()
+int AIUnit::aiFollowPathing()
 {
-   if (ai_path.size() == 0) return -1;
+   if (ai_pathing.size() == 0) return -1;
 
-   Direction d = ai_path.front();
+   Direction d = ai_pathing.front();
    turnTo(d);
 
    if (canMove( x_next, y_next, x_grid, y_grid )) {
       this_turn_order = Order( MOVE_FORWARD );
-      ai_path.pop_front();
+      ai_pathing.pop_front();
    }
    else
       this_turn_order = Order( BUMP );
@@ -832,7 +878,12 @@ int AIUnit::aiFollowPath()
 
 std::string AIUnit::descriptor()
 {
-   return "Human Archer";
+   if (type == R_HUMAN_ARCHER_T)
+      return "Human Archer";
+   if (type == M_HUMAN_SWORDSMAN_T)
+      return "Human Swordsman";
+
+   return "I am Error";
 }
 
 int AIUnit::ai()
@@ -850,7 +901,7 @@ int AIUnit::ai()
       }
 
       if (aggroed == 1) {
-         aiCalculatePath();
+         aiCalculatePathing();
       }
       aggroed = 0;
    }
@@ -869,7 +920,7 @@ int AIUnit::ai()
       }
 
       if (aggroed == 1) {
-         aiCalculatePath();
+         aiCalculatePathing();
       }
       aggroed = 0;
    }
@@ -901,7 +952,7 @@ int AIUnit::ai()
       }
 
       if (aggroed == 1) {
-         aiCalculatePath();
+         aiCalculatePathing();
       }
       aggroed = 0;
    }
@@ -919,13 +970,13 @@ int AIUnit::ai()
                turnTo( ai_waypoints.at( ai_waypoint_next ).second );
                this_turn_order = Order( WAIT );
             } else {
-               aiCalculatePath( true );
-               return aiFollowPath();
+               aiCalculatePathing( true );
+               return aiFollowPathing();
             }
             return 0;
          }
          else
-            return aiFollowPath();
+            return aiFollowPathing();
       }
 
 
@@ -940,7 +991,7 @@ int AIUnit::ai()
             return 0;
          }
          else
-            return aiFollowPath();
+            return aiFollowPathing();
       }
       */
 
@@ -1401,7 +1452,7 @@ int Monster::draw()
          alpha = 255 - ((DEATH_FADE_TIME + alive) * 256 / DEATH_FADE_TIME);
       sp_monster->setColor( Color( 255, 255, 255, alpha ) );
    } else 
-   if (this_turn_order.action == MOVE_FORWARD) {
+   if (this_turn_order.action == MOVE_FORWARD || this_turn_order.action == FOLLOW_PATH) {
       sp_monster = monster_anim_move.getSprite( (int)(progress * 1000) );
    } else if (this_turn_order.action == MOVE_BACK) {
       sp_monster = monster_anim_move.getSprite( 999 - (int)(progress * 1000) );
@@ -1794,7 +1845,7 @@ int Soldier::draw()
       if (alive > -DEATH_FADE_TIME)
          alpha = 255 - ((DEATH_FADE_TIME + alive) * 256 / DEATH_FADE_TIME);
       sp_soldier->setColor( Color( 255, 255, 255, alpha ) );
-   } else if (this_turn_order.action == MOVE_FORWARD) {
+   } else if (this_turn_order.action == MOVE_FORWARD || this_turn_order.action == FOLLOW_PATH) {
       if (stance == 0) sp_soldier = soldier_anim_move_axe.getSprite( (int)(progress * 1000) );
       if (stance == 1) sp_soldier = soldier_anim_move_spear.getSprite( (int)(progress * 1000) );
       if (stance == 2) sp_soldier = soldier_anim_move_bow.getSprite( (int)(progress * 1000) );
@@ -2053,7 +2104,7 @@ int Worm::draw()
       if (alive > -DEATH_FADE_TIME)
          alpha = 255 - ((DEATH_FADE_TIME + alive) * 256 / DEATH_FADE_TIME);
       sp_worm->setColor( Color( 255, 255, 255, alpha ) );
-   } else if (this_turn_order.action == MOVE_FORWARD) {
+   } else if (this_turn_order.action == MOVE_FORWARD || this_turn_order.action == FOLLOW_PATH) {
       sp_worm = worm_anim_move.getSprite( (int)(progress * 1000) );
    } else if (this_turn_order.action == MOVE_BACK) {
       // TODO: Worm should have different retreat animation
@@ -2112,8 +2163,8 @@ void initBirdAnimations()
    Texture *t = SFML_TextureManager::getSingleton().getTexture( "BirdStatic.png" );
    bird_anim_idle1.load( t, 128, 128, 1, 1000 );
 
-   t = SFML_TextureManager::getSingleton().getTexture( "BirdStatic.png" );
-   bird_anim_idle2.load( t, 128, 128, 1, 1000 );
+   t = SFML_TextureManager::getSingleton().getTexture( "BirdAnimIdle2.png" );
+   bird_anim_idle2.load( t, 128, 128, 14, 1000 );
 
    t = SFML_TextureManager::getSingleton().getTexture( "BirdStatic.png" );
    bird_anim_idle3.load( t, 128, 128, 1, 1000 );
@@ -2272,7 +2323,7 @@ int Bird::update( float dtf )
    if (active == 1 && current_order != final_order) {
       Order &o = this_turn_order;
       // Bird Specific
-      if (o.action == MOVE_FORWARD || o.action == MOVE_BACK) {
+      if (o.action == MOVE_FORWARD || o.action == MOVE_BACK || this_turn_order.action == FOLLOW_PATH) {
          float d_real = 0.0, d_offset = 0.0;
          if (progress < .1) return 0;
          if (progress >= .1 && progress < .3) {
@@ -2346,7 +2397,7 @@ int Bird::draw()
       if (alive > -DEATH_FADE_TIME)
          alpha = 255 - ((DEATH_FADE_TIME + alive) * 256 / DEATH_FADE_TIME);
       sp_bird->setColor( Color( 255, 255, 255, alpha ) );
-   } else if (this_turn_order.action == MOVE_FORWARD) {
+   } else if (this_turn_order.action == MOVE_FORWARD || this_turn_order.action == FOLLOW_PATH) {
       sp_bird = bird_anim_move.getSprite( (int)(progress * 1000) );
    } else if (this_turn_order.action == MOVE_BACK) {
       // TODO: Worm should have different retreat animation

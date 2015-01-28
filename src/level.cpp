@@ -1571,6 +1571,46 @@ void initTextures()
    terrain_sprites[TER_EDGE_CLIFF_CORNER_NE_270]->setOrigin( dim.x, 0 );
 
 
+   // Path
+   dim = t_manager.getTexture( "DirtPathEW.png" )->getSize();
+   terrain_sprites[TER_PATH_EW] = new Sprite( *(t_manager.getTexture( "DirtPathEW.png" )));
+   normalizeTo1x1( terrain_sprites[TER_PATH_EW] );
+   terrain_sprites[TER_PATH_NS] = new Sprite( *(t_manager.getTexture( "DirtPathEW.png" )));
+   normalizeTo1x1( terrain_sprites[TER_PATH_NS] );
+   terrain_sprites[TER_PATH_NS]->setRotation( 90 );
+   terrain_sprites[TER_PATH_NS]->setOrigin( 0, dim.y );
+
+   terrain_sprites[TER_PATH_W_END] = new Sprite( *(t_manager.getTexture( "DirtPathEndW.png" )));
+   normalizeTo1x1( terrain_sprites[TER_PATH_W_END] );
+   terrain_sprites[TER_PATH_N_END] = new Sprite( *(t_manager.getTexture( "DirtPathEndW.png" )));
+   normalizeTo1x1( terrain_sprites[TER_PATH_N_END] );
+   terrain_sprites[TER_PATH_N_END]->setRotation( 90 );
+   terrain_sprites[TER_PATH_N_END]->setOrigin( 0, dim.y );
+   terrain_sprites[TER_PATH_E_END] = new Sprite( *(t_manager.getTexture( "DirtPathEndW.png" )));
+   normalizeTo1x1( terrain_sprites[TER_PATH_E_END] );
+   terrain_sprites[TER_PATH_E_END]->setRotation( 180 ); 
+   terrain_sprites[TER_PATH_E_END]->setOrigin( dim.x, dim.y );
+   terrain_sprites[TER_PATH_S_END] = new Sprite( *(t_manager.getTexture( "DirtPathEndW.png" )));
+   normalizeTo1x1( terrain_sprites[TER_PATH_S_END] );
+   terrain_sprites[TER_PATH_S_END]->setRotation( 270 );
+   terrain_sprites[TER_PATH_S_END]->setOrigin( dim.x, 0 );
+
+   terrain_sprites[TER_PATH_NW] = new Sprite( *(t_manager.getTexture( "DirtPathNW.png" )));
+   normalizeTo1x1( terrain_sprites[TER_PATH_NW] );
+   terrain_sprites[TER_PATH_NE] = new Sprite( *(t_manager.getTexture( "DirtPathNW.png" )));
+   normalizeTo1x1( terrain_sprites[TER_PATH_NE] );
+   terrain_sprites[TER_PATH_NE]->setRotation( 90 );
+   terrain_sprites[TER_PATH_NE]->setOrigin( 0, dim.y );
+   terrain_sprites[TER_PATH_SE] = new Sprite( *(t_manager.getTexture( "DirtPathNW.png" )));
+   normalizeTo1x1( terrain_sprites[TER_PATH_SE] );
+   terrain_sprites[TER_PATH_SE]->setRotation( 180 ); 
+   terrain_sprites[TER_PATH_SE]->setOrigin( dim.x, dim.y );
+   terrain_sprites[TER_PATH_SW] = new Sprite( *(t_manager.getTexture( "DirtPathNW.png" )));
+   normalizeTo1x1( terrain_sprites[TER_PATH_SW] );
+   terrain_sprites[TER_PATH_SW]->setRotation( 270 );
+   terrain_sprites[TER_PATH_SW]->setOrigin( dim.x, 0 );
+
+
    // Atelier
 
    terrain_sprites[TER_ATELIER] = new Sprite( *(t_manager.getTexture( "AtelierCenter.png" )));
@@ -1865,6 +1905,10 @@ int createLevelFromFile( string filename )
 
       }
       level_file.close();
+   }
+   if (!player) {
+      player = Player::initPlayer( 0, 0, SOUTH );
+      addPlayer();
    }
    return 0;
 }
@@ -2527,6 +2571,7 @@ IMImageButton *b_con_enemy_adjacent,
               *b_con_clear,
               *b_o_move_forward,
               *b_o_move_backward,
+              *b_o_follow_path,
               *b_o_turn_north,
               *b_o_turn_east,
               *b_o_turn_south,
@@ -2908,6 +2953,12 @@ void fitGui_Level()
                                      height - ((spacer * 2) + (button_size * 2)));
    b_o_turn_nearest_enemy->setPosition( b_turn_nearest_enemy_count_pos.x, b_turn_nearest_enemy_count_pos.y );
 
+   b_o_follow_path->setSize( button_size, button_size );
+   b_o_follow_path->setImageSize( button_size, button_size );
+   b_o_follow_path->setPosition( sec_start_movement + (spacer * 3) + (button_size * 2),
+                                 height - ((spacer * 2) + (button_size * 2)));
+
+
    // Attack
 
    b_attack_area->setSize( (border * 3) + (spacer * 3) + (button_size * 2),
@@ -3285,6 +3336,14 @@ int initLevelGui()
    b_o_turn_nearest_enemy->setImage(  t_manager.getTexture( "OrderTurnNearestEnemy.png" ) );
    b_o_turn_nearest_enemy->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Order: turn nearest enemy", b_o_turn_nearest_enemy);
+
+   b_o_follow_path = new IMImageButton();
+   b_o_follow_path->setNormalTexture( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_o_follow_path->setPressedTexture( t_manager.getTexture( "OrderButtonPressed.png" ) );
+   b_o_follow_path->setHoverTexture( t_manager.getTexture( "OrderButtonHover.png" ) );
+   b_o_follow_path->setImage(  t_manager.getTexture( "OrderTurnNearestEnemy.png" ) );
+   b_o_follow_path->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Order: turn nearest enemy", b_o_follow_path);
 
    b_o_attack_smallest = new IMImageButton();
    b_o_attack_smallest->setNormalTexture( t_manager.getTexture( "OrderButtonBase.png" ) );
@@ -3911,6 +3970,9 @@ int drawOrderButtons()
       
    if (b_o_turn_nearest_enemy->doWidget())
       playerAddOrder( TURN_NEAREST_ENEMY );
+      
+   if (b_o_follow_path->doWidget())
+      playerAddOrder( FOLLOW_PATH );
       
    if (b_o_attack_smallest->doWidget())
       playerAddOrder( ATTACK_SMALLEST );
