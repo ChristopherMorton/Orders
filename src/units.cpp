@@ -2126,7 +2126,7 @@ int Worm::draw()
    // Move/scale sprite
    Vector2u dim (worm_anim_idle.image_size_x, worm_anim_idle.image_size_y);
    sp_worm->setOrigin( dim.x / 2.0, dim.y / 2.0 );
-   sp_worm->setScale( 0.4 / dim.x, 0.4 / dim.y );
+   sp_worm->setScale( 0.3 / dim.x, 0.3 / dim.y );
 
    sp_worm->setPosition( x_real, y_real );
 
@@ -2160,14 +2160,14 @@ Animation bird_anim_death;
 
 void initBirdAnimations()
 {
-   Texture *t = SFML_TextureManager::getSingleton().getTexture( "BirdStatic.png" );
-   bird_anim_idle1.load( t, 128, 128, 1, 1000 );
+   Texture *t = SFML_TextureManager::getSingleton().getTexture( "BirdAnimIdle1.png" );
+   bird_anim_idle1.load( t, 128, 128, 7, 1000 );
 
    t = SFML_TextureManager::getSingleton().getTexture( "BirdAnimIdle2.png" );
    bird_anim_idle2.load( t, 128, 128, 16, 1000 );
 
-   t = SFML_TextureManager::getSingleton().getTexture( "BirdStatic.png" );
-   bird_anim_idle3.load( t, 128, 128, 1, 1000 );
+   t = SFML_TextureManager::getSingleton().getTexture( "BirdAnimIdle3.png" );
+   bird_anim_idle3.load( t, 128, 128, 16, 1000 );
 
    t = SFML_TextureManager::getSingleton().getTexture( "BirdAnimMove.png" );
    bird_anim_move.load( t, 128, 128, 10, 1000 );
@@ -2293,9 +2293,14 @@ int Bird::startTurn()
    startBasicOrder();
 
    if (this_turn_order.action == WAIT) {
-      anim_data = (anim_data + 1) % 4;
-      if (rand_int % 7 == 0)
+      anim_data = (anim_data + 1) % 7;
+
+      rand_int++;
+      if (rand_int % 13 == 0)
          anim_data = -1;
+
+      if (anim_data == 6 && rand_int % 2 == 0)
+         anim_data = 7;
    }
 
    return 0;
@@ -2413,8 +2418,8 @@ int Bird::draw()
          sp_bird = bird_anim_attack_start.getSprite( d_anim );
       }
    } else {
-      if (anim_data == 4) sp_bird = bird_anim_idle3.getSprite( (int)(progress * 1000) );
-      else if (anim_data == 2) sp_bird = bird_anim_idle2.getSprite( (int)(progress * 1000) );
+      if (anim_data >= 6) sp_bird = bird_anim_idle3.getSprite( (int)(progress * 1000) );
+      else if (anim_data == 3) sp_bird = bird_anim_idle2.getSprite( (int)(progress * 1000) );
       else sp_bird = bird_anim_idle1.getSprite( (int)(progress * 1000) );
    }
    if (NULL == sp_bird) return -1;
@@ -2424,6 +2429,9 @@ int Bird::draw()
    Vector2u dim (bird_anim_idle1.image_size_x, bird_anim_idle1.image_size_y);
    sp_bird->setOrigin( dim.x / 2.0, dim.y / 2.0 );
    sp_bird->setScale( 0.6 / dim.x, 0.6 / dim.y );
+
+   if (anim_data % 2 == 1)
+      sp_bird->scale( 1, -1 );
 
    sp_bird->setRotation( rotation );
 
