@@ -2164,7 +2164,7 @@ void initBirdAnimations()
    bird_anim_idle1.load( t, 128, 128, 1, 1000 );
 
    t = SFML_TextureManager::getSingleton().getTexture( "BirdAnimIdle2.png" );
-   bird_anim_idle2.load( t, 128, 128, 14, 1000 );
+   bird_anim_idle2.load( t, 128, 128, 16, 1000 );
 
    t = SFML_TextureManager::getSingleton().getTexture( "BirdStatic.png" );
    bird_anim_idle3.load( t, 128, 128, 1, 1000 );
