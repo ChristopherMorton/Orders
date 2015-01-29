@@ -13,6 +13,7 @@ enum Effect_Type
    // Projectiles
    PR_ARROW,
    PR_HOMING_ORB,
+   PR_WIND_SLASH,
    // General Effects
    SE_SUMMON_CLOUD,
    SE_ALERT_MARKER,

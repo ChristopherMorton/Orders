@@ -47,7 +47,7 @@
 #define BIRD_BASE_HEALTH 200
 #define BIRD_BASE_MEMORY 16
 #define BIRD_BASE_VISION 6.5
-#define BIRD_BASE_SPEED 0.1
+#define BIRD_BASE_SPEED 0.6
 
 #define BUG_BASE_HEALTH 100
 #define BUG_BASE_MEMORY 14
@@ -2172,8 +2172,8 @@ void initBirdAnimations()
    t = SFML_TextureManager::getSingleton().getTexture( "BirdAnimMove.png" );
    bird_anim_move.load( t, 128, 128, 10, 1000 );
 
-   t = SFML_TextureManager::getSingleton().getTexture( "BirdStatic.png" );
-   bird_anim_attack_start.load( t, 128, 128, 1, 1000 );
+   t = SFML_TextureManager::getSingleton().getTexture( "BirdAnimAttack.png" );
+   bird_anim_attack_start.load( t, 128, 128, 14, 1000 );
 
    t = SFML_TextureManager::getSingleton().getTexture( "BirdStatic.png" );
    bird_anim_attack_end.load( t, 128, 128, 1, 1000 );
@@ -2212,7 +2212,7 @@ Bird::Bird( int x, int y, Direction face )
    health = max_health = BIRD_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
 
    vision_range = BIRD_BASE_VISION * (1.0 + ((float)focus_perception / 25.0));
-   attack_range = 1.3;
+   attack_range = vision_range;
 
    speed = BIRD_BASE_SPEED * ( 1.0 - ( focus_speed * 0.02 ) );
 
@@ -2280,6 +2280,7 @@ int Bird::doAttack( Order o )
 
    if (target) {
       log("Bird attack");
+      addProjectile( PR_WIND_SLASH, team, x_real, y_real, 3.0, attack_range, target, 0.0, 0.1 );
    }
 
    done_attack = 1;
@@ -2405,13 +2406,12 @@ int Bird::draw()
    } else if (this_turn_order.action == MOVE_FORWARD || this_turn_order.action == FOLLOW_PATH) {
       sp_bird = bird_anim_move.getSprite( (int)(progress * 1000) );
    } else if (this_turn_order.action == MOVE_BACK) {
-      // TODO: Worm should have different retreat animation
       sp_bird = bird_anim_move.getSprite( 999 - (int)(progress * 1000) );
    } else if (this_turn_order.action >= ATTACK_CLOSEST && this_turn_order.action <= ATTACK_SMALLEST) {
       if (done_attack) {
          int d_anim = (int)( ((progress - speed) / (1-speed)) * 1000);
          if (d_anim >= 1000) d_anim = 999;
-         sp_bird = bird_anim_attack_end.getSprite( d_anim );
+         sp_bird = bird_anim_attack_start.getSprite( 999 - d_anim );
       } else {
          int d_anim = (int)( (progress / speed) * 1000);
          if (d_anim >= 1000) d_anim = 999;
@@ -2555,7 +2555,7 @@ int Bug::doAttack( Order o )
 
    if (target) {
       log("Bug pre-generate");
-      addProjectile( PR_HOMING_ORB, team, x_real, y_real, orb_speed, attack_range, target, 100 );
+      addProjectile( PR_HOMING_ORB, team, x_real, y_real, orb_speed, attack_range, target, 100, 0.1 );
    }
 
    log("Bug finishing attack");

@@ -3,6 +3,7 @@
 #include "util.h"
 #include "units.h"
 #include "log.h"
+#include "animation.h"
 
 #include <cmath>
 
@@ -56,35 +57,55 @@ int Projectile::update( float dtf )
       float dist_sq = (dx * dx) + (dy * dy);
       float sum_radius = (radius + nearest->radius);
       if (dist_sq <= (sum_radius * sum_radius)) {
-         nearest->takeDamage( damage );
-         return 1;
+         if (type == PR_WIND_SLASH) {
+            nearest->takeDamage( damage * dtf );
+            return 0;
+         } else {
+            nearest->takeDamage( damage );
+            return 1;
+         }
       }
    }
 
    return 0;
 }
 
+bool init_projectiles = false;
+
 Sprite *sp_magic_projectile = NULL;
 Sprite *sp_arrow = NULL;
+Animation anim_wind_slash;
 
-int Projectile::draw( )
+void initProjectiles()
 {
+   Texture *t;
    if (NULL == sp_arrow) {
-      Texture *tex =SFML_TextureManager::getSingleton().getTexture( "Arrow.png" ); 
-      sp_arrow = new Sprite( *(tex));
-      Vector2u dim = tex->getSize();
+      t = SFML_TextureManager::getSingleton().getTexture( "Arrow.png" ); 
+      sp_arrow = new Sprite( *(t));
+      Vector2u dim = t->getSize();
       sp_arrow->setOrigin( dim.x / 2.0, dim.y / 2.0 );
       normalizeTo1x1( sp_arrow );
       sp_arrow->scale( 0.4, 0.4 );
    }
 
    if (NULL == sp_magic_projectile) {
-      Texture *tex =SFML_TextureManager::getSingleton().getTexture( "orb0.png" ); 
-      sp_magic_projectile = new Sprite( *(tex));
-      Vector2u dim = tex->getSize();
+      t = SFML_TextureManager::getSingleton().getTexture( "orb0.png" ); 
+      sp_magic_projectile = new Sprite( *(t));
+      Vector2u dim = t->getSize();
       sp_magic_projectile->setOrigin( dim.x / 2.0, dim.y / 2.0 );
       normalizeTo1x1( sp_magic_projectile );
    }
+
+   t = SFML_TextureManager::getSingleton().getTexture( "ProjAnimWindSlash.png" );
+   anim_wind_slash.load( t, 100, 100, 1, 500 );
+
+   init_projectiles = true;
+}
+
+int Projectile::draw( )
+{
+   if (!init_projectiles)
+      initProjectiles();
 
    if (!isVisible( (int)pos.x, (int)pos.y ))
       return -1;
@@ -92,6 +113,11 @@ int Projectile::draw( )
    Sprite *sp_pr = NULL;
    if (type == PR_ARROW) sp_pr = sp_arrow;
    else if (type == PR_HOMING_ORB) sp_pr = sp_magic_projectile;
+   else if (type == PR_WIND_SLASH) {
+      sp_pr = anim_wind_slash.getSprite( 0 );
+      sp_pr->setOrigin( 50, 50 );
+      sp_pr->setScale( 0.01, 0.01 );
+   }
 
    if (NULL == sp_pr) return -2;
 
@@ -135,6 +161,9 @@ Projectile::Projectile( Effect_Type t, int tm, float x, float y, float sp, float
          radius = 0.1;
          damage = 30.0;
          break;
+      case PR_WIND_SLASH:
+         radius = 0.3;
+         damage = 25.0; // dps
       default:
          break;
    }
@@ -239,6 +268,7 @@ StaticEffect::~StaticEffect()
 int initEffects()
 {
    // Setup Sprites
+   initProjectiles();
 
    log("initEffects complete");
    return 0;
@@ -247,7 +277,7 @@ int initEffects()
 Projectile *genProjectile( Effect_Type t, int tm, float x, float y, float speed, float range, Unit* target, float homing, float fastforward )
 {
    Projectile *result = NULL;
-   if (target && t <= PR_HOMING_ORB) {
+   if (target && t <= PR_WIND_SLASH) {
       log("Generating projectile");
       result = new Projectile( t, tm, x, y, speed, range, target, homing );
    }
