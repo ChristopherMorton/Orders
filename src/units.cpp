@@ -322,7 +322,6 @@ int Unit::updateBasicOrder( float dtf, Order o )
 
 int Unit::completeBasicOrder( Order &o )
 {
-   o.logSelf();
    if (o.action <= WAIT) {
       switch (o.action) {
          case MOVE_BACK:
@@ -979,22 +978,19 @@ int AIUnit::ai()
             return aiFollowPathing();
       }
 
-
-      /*
       if (ai_move_style == MV_PATROL_PATH) {
-         // TODO: move waypoint in completeTurn
          if (ai_waypoints.size() == 0) return -1;
 
-         Vector2i h_pos = ai_waypoints.front();
+         Vector2i h_pos = ai_waypoints.front().first;
          if (h_pos.x == x_grid && h_pos.y == y_grid) {// at position
             this_turn_order = Order( FOLLOW_PATH );
+            if (prepareBasicOrder(this_turn_order, true) == 0)
+               this_turn_order = Order( WAIT );
             return 0;
          }
          else
             return aiFollowPathing();
       }
-      */
-
 
       if (ai_move_style == MV_FREE_ROAM) {
          this_turn_order = Order( WAIT );
@@ -1051,6 +1047,11 @@ int AIUnit::completeTurn()
    ai_overridden = false; // reset override
 
    completeBasicOrder(this_turn_order);
+
+   if (this_turn_order.action == FOLLOW_PATH) {
+      // Set this location as the current waypoint
+      ai_waypoints.front() = pair<Vector2i,Direction>( Vector2i( x_grid, y_grid ), facing );
+   }
 
    return 0;
 }
@@ -2178,8 +2179,8 @@ void initBirdAnimations()
    t = SFML_TextureManager::getSingleton().getTexture( "BirdStatic.png" );
    bird_anim_attack_end.load( t, 128, 128, 1, 1000 );
 
-   t = SFML_TextureManager::getSingleton().getTexture( "BirdStatic.png" );
-   bird_anim_death.load( t, 128, 128, 1, DEATH_TIME );
+   t = SFML_TextureManager::getSingleton().getTexture( "BirdAnimDeath.png" );
+   bird_anim_death.load( t, 128, 128, 8, DEATH_TIME );
 }
 
 // *tors

@@ -2002,6 +2002,7 @@ int loadLevel( int level_id )
       base_terrain = BASE_TER_GRASS;
       if (createLevelFromFile( "res/level_editor_in.lvl" ) == -1)
          return -1;
+
    }
    else if (level_id == -2)
    {
@@ -2009,13 +2010,10 @@ int loadLevel( int level_id )
       if (createLevelFromFile( "res/testlevel2.lvl" ) == -1)
          return -1;
 
-      AIUnit *u = new AIUnit( R_HUMAN_ARCHER_T, 9, 2, WEST, 2 );
+      AIUnit *u = new AIUnit( R_HUMAN_ARCHER_T, 12, 1, WEST, 1 );
       addUnit( u );
-      addUnitWinCondition( u );
-      u->setAI( MV_PATROL, AGR_PURSUE_VISIBLE, 10, 4, NULL );
-      u->addWaypoint( 9, 2, SOUTH );
-      u->addWaypoint( 12, 11, WEST );
-      u->addWaypoint( 5, 11, NORTH );
+      u->setAI( MV_PATROL_PATH, AGR_PURSUE_VISIBLE, 10, 4, NULL );
+      u->addWaypoint( 12, 1 );
    }
    else if (level_id == 0 || true)
    {
