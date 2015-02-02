@@ -2615,7 +2615,7 @@ int Bug::update( float dtf )
 
 sf::Texture* Bug::getTexture()
 {
-   return SFML_TextureManager::getSingleton().getTexture( "BugScratch.png" );
+   return SFML_TextureManager::getSingleton().getTexture( "BugStatic.png" );
 }
 
 Sprite *sp_bug = NULL;

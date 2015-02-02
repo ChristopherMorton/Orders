@@ -982,7 +982,7 @@ bool canMoveUnit( int x, int y, int from_x, int from_y, Unit *u )
          return false;
 
       Order o = u_next->this_turn_order;
-      if (o.action == MOVE_FORWARD || o.action == MOVE_BACK) {
+      if (o.action == MOVE_FORWARD || o.action == MOVE_BACK || o.action == FOLLOW_PATH) {
          // Is he moving to THIS square?
          if (u_next->x_next == x && u_next->y_next == y) {
             // Well fuck it, we're both gonna bump
