@@ -2449,12 +2449,36 @@ string Bird::descriptor()
 //////////////////////////////////////////////////////////////////////
 // Bug ---
 
-Animation bug_anim_idle;
+Animation bug_anim_idle1;
+Animation bug_anim_idle2;
+Animation bug_anim_idle3;
+Animation bug_anim_move;
+Animation bug_anim_attack_start;
+Animation bug_anim_attack_end;
+Animation bug_anim_death;
 
 void initBugAnimations()
 {
-   Texture *t = SFML_TextureManager::getSingleton().getTexture( "BugScratchWiggleAnimation.png" );
-   bug_anim_idle.load( t, 128, 128, 3, 1000 );
+   Texture *t = SFML_TextureManager::getSingleton().getTexture( "BugStatic.png" );
+   bug_anim_idle1.load( t, 128, 128, 1, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "BugStatic.png" );
+   bug_anim_idle2.load( t, 128, 128, 1, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "BugStatic.png" );
+   bug_anim_idle3.load( t, 128, 128, 1, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "BugStatic.png" );
+   bug_anim_move.load( t, 128, 128, 1, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "BugStatic.png" );
+   bug_anim_attack_start.load( t, 128, 128, 1, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "BugStatic.png" );
+   bug_anim_attack_end.load( t, 128, 128, 1, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "BugStatic.png" );
+   bug_anim_death.load( t, 128, 128, 1, DEATH_TIME );
 }
 
 // *tors
@@ -2594,23 +2618,55 @@ sf::Texture* Bug::getTexture()
    return SFML_TextureManager::getSingleton().getTexture( "BugScratch.png" );
 }
 
+Sprite *sp_bug = NULL;
+Sprite *sp_bug_stars = NULL;
+
 int Bug::draw()
 {
    // Select sprite
-   Sprite *sp_bug = bug_anim_idle.getSprite( (int)(progress * 1000) );
-   if (NULL == sp_bug) return -1;
-
-   // Move/scale sprite
-   sp_bug->setPosition( x_real, y_real );
-   Vector2u dim (bug_anim_idle.image_size_x, bug_anim_idle.image_size_y);
-   sp_bug->setOrigin( dim.x / 2.0, dim.y / 2.0 );
-   sp_bug->setScale( 0.5 / dim.x, 0.5 / dim.y );
-
    int rotation;
    if (facing == EAST) rotation = 0;
    if (facing == SOUTH) rotation = 90;
    if (facing == WEST) rotation = 180;
    if (facing == NORTH) rotation = 270;
+
+   if (alive < 0) {
+      // Death animation
+      int t = alive + DEATH_TIME + DEATH_FADE_TIME;
+      if (t >= DEATH_TIME) t = DEATH_TIME - 1;
+      sp_bug = bug_anim_death.getSprite( t );
+
+      int alpha = 255;
+      if (alive > -DEATH_FADE_TIME)
+         alpha = 255 - ((DEATH_FADE_TIME + alive) * 256 / DEATH_FADE_TIME);
+      sp_bug->setColor( Color( 255, 255, 255, alpha ) );
+   } else if (this_turn_order.action == MOVE_FORWARD || this_turn_order.action == FOLLOW_PATH) {
+      sp_bug = bug_anim_move.getSprite( (int)(progress * 1000) );
+   } else if (this_turn_order.action == MOVE_BACK) {
+      sp_bug = bug_anim_move.getSprite( 999 - (int)(progress * 1000) );
+   } else if (this_turn_order.action >= ATTACK_CLOSEST && this_turn_order.action <= ATTACK_SMALLEST) {
+      if (done_attack) {
+         int d_anim = (int)( ((progress - speed) / (1-speed)) * 1000);
+         if (d_anim >= 1000) d_anim = 999;
+         sp_bug = bug_anim_attack_start.getSprite( 999 - d_anim );
+      } else {
+         int d_anim = (int)( (progress / speed) * 1000);
+         if (d_anim >= 1000) d_anim = 999;
+         sp_bug = bug_anim_attack_start.getSprite( d_anim );
+      }
+   } else {
+      if (anim_data >= 6) sp_bug = bug_anim_idle3.getSprite( (int)(progress * 1000) );
+      else if (anim_data == 3) sp_bug = bug_anim_idle2.getSprite( (int)(progress * 1000) );
+      else sp_bug = bug_anim_idle1.getSprite( (int)(progress * 1000) );
+   }
+   if (NULL == sp_bug) return -1;
+
+   // Move/scale sprite
+   sp_bug->setPosition( x_real, y_real );
+   Vector2u dim (bug_anim_idle1.image_size_x, bug_anim_idle1.image_size_y);
+   sp_bug->setOrigin( dim.x / 2.0, dim.y / 2.0 );
+   sp_bug->setScale( 0.6 / dim.x, 0.6 / dim.y );
+
    sp_bug->setRotation( rotation );
 
    SFML_GlobalRenderWindow::get()->draw( *sp_bug );
