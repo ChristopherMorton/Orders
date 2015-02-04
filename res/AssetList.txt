@@ -38,6 +38,7 @@ IMAGE MonsterStatic.png
 IMAGE SoldierScratch.png
 IMAGE WormStatic.png
 IMAGE BirdStatic.png
+IMAGE BugStatic.png
 // Unit Animations
 IMAGE MonsterAnimIdle.png
 IMAGE MonsterAnimMove.png
@@ -62,6 +63,16 @@ IMAGE WormAnimMove.png
 IMAGE WormAnimAttackStart.png
 IMAGE WormAnimAttackEnd.png
 IMAGE WormAnimDeath.png
+IMAGE BirdAnimIdle1.png
+IMAGE BirdAnimIdle2.png
+IMAGE BirdAnimIdle3.png
+IMAGE BirdAnimMove.png
+IMAGE BirdAnimAttack.png
+IMAGE BirdAnimDeath.png
+IMAGE BugAnimIdle1.png
+IMAGE BugAnimIdle2.png
+IMAGE BugAnimMove.png
+IMAGE BugAnimCastStart.png
 // Map things
 IMAGE MapScratch.png
 IMAGE MapButtonScratch.png

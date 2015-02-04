@@ -275,6 +275,8 @@ private:
    Worm(); // Disallowed 
 
 public:
+   bool invis, trail;
+
    Worm( int grid_x, int grid_y, Direction face );
 
    virtual int addOrder( Order o );
@@ -324,6 +326,7 @@ private:
 
 public:
    float orb_speed;
+   int star_count;
 
    Bug( int grid_x, int grid_y, Direction face );
 
@@ -333,7 +336,7 @@ public:
 
    virtual std::string descriptor();
 
-   //virtual int startTurn();
+   virtual int startTurn();
    //virtual int completeTurn();
    //virtual int update( float dtf );
    virtual sf::Texture* getTexture();

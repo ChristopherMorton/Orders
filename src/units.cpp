@@ -1967,6 +1967,9 @@ Worm::Worm( int x, int y, Direction face )
    progress = 0;
    
    win_condition = false;
+
+   invis = false;
+   trail = false;
 }
 
 Worm::~Worm()
@@ -2010,81 +2013,6 @@ int Worm::doAttack( Order o )
    done_attack = 1;
    return 0;
 }
-
-/*
-int Worm::prepareTurn()
-{
-   if (alive != 1) return 0;
-
-   if (active == 2) active = 1; // Start an active turn
-
-   this_turn_order = Order( WAIT );
-
-   while (active == 1 && 
-          current_order != final_order) {
-      this_turn_order = order_queue[current_order];
-      bool decision = evaluateConditional(this_turn_order.condition);
-      int r = prepareBasicOrder(this_turn_order, decision);
-      // if prepareBasicOrder returns 0, it's a 0-length instruction (e.g. turn)
-      if (r == 0) {
-         current_order++;
-         continue;
-      }
-      else 
-         break;
-   }
-
-   if (current_order == final_order)
-      this_turn_order = Order( WAIT );
-
-   progress = 0;
-   return 0;
-}
-
-int Worm::startTurn()
-{
-   if (alive != 1) return 0;
-
-   startBasicOrder();
-   return 0;
-}
-
-int Worm::completeTurn()
-{
-   if (alive == 0) return 0;
-
-   if (active == 1 && current_order != final_order) {
-      int r = completeBasicOrder(this_turn_order);
-      Order &o = order_queue[current_order];
-      o.iteration++;
-      if (o.iteration >= o.count && o.count != -1) { 
-         current_order++;
-         o.iteration = 0;
-      }
-      return r;
-   }
-
-   return 0;
-}
-
-int Worm::update( float dtf )
-{
-   if (alive < 0) {
-      alive += (int) (1000 + dtf);
-      if (alive >= 0) alive = 0;
-   }
-
-   if (alive == 0)
-      return 1;
-
-   progress += dtf;
-   if (active == 1 && current_order != final_order) {
-      Order &o = this_turn_order;
-      return updateBasicOrder( dtf, o );
-   }
-   return 0;
-}
-*/
 
 sf::Texture* Worm::getTexture()
 {
@@ -2459,20 +2387,17 @@ Animation bug_anim_death;
 
 void initBugAnimations()
 {
-   Texture *t = SFML_TextureManager::getSingleton().getTexture( "BugStatic.png" );
-   bug_anim_idle1.load( t, 128, 128, 1, 1000 );
+   Texture *t = SFML_TextureManager::getSingleton().getTexture( "BugAnimIdle1.png" );
+   bug_anim_idle1.load( t, 128, 128, 6, 1000 );
 
-   t = SFML_TextureManager::getSingleton().getTexture( "BugStatic.png" );
-   bug_anim_idle2.load( t, 128, 128, 1, 1000 );
+   t = SFML_TextureManager::getSingleton().getTexture( "BugAnimIdle2.png" );
+   bug_anim_idle2.load( t, 128, 128, 15, 1000 );
 
-   t = SFML_TextureManager::getSingleton().getTexture( "BugStatic.png" );
-   bug_anim_idle3.load( t, 128, 128, 1, 1000 );
+   t = SFML_TextureManager::getSingleton().getTexture( "BugAnimMove.png" );
+   bug_anim_move.load( t, 128, 128, 12, 500 );
 
-   t = SFML_TextureManager::getSingleton().getTexture( "BugStatic.png" );
-   bug_anim_move.load( t, 128, 128, 1, 1000 );
-
-   t = SFML_TextureManager::getSingleton().getTexture( "BugStatic.png" );
-   bug_anim_attack_start.load( t, 128, 128, 1, 1000 );
+   t = SFML_TextureManager::getSingleton().getTexture( "BugAnimCastStart.png" );
+   bug_anim_attack_start.load( t, 128, 128, 12, 1000 );
 
    t = SFML_TextureManager::getSingleton().getTexture( "BugStatic.png" );
    bug_anim_attack_end.load( t, 128, 128, 1, 1000 );
@@ -2527,7 +2452,8 @@ Bug::Bug( int x, int y, Direction face )
    team = 0;
    group = 1;
    progress = 0;
-   
+   anim_data = 0;
+
    win_condition = false;
 }
 
@@ -2580,7 +2506,10 @@ int Bug::doAttack( Order o )
 
    if (target) {
       log("Bug pre-generate");
-      addProjectile( PR_HOMING_ORB, team, x_real, y_real, orb_speed, attack_range, target, 100, 0.1 );
+      float gen_x = x_real, gen_y = y_real;
+      addDirectionF( facing, gen_x, gen_y, 0.3 );
+      
+      addProjectile( PR_HOMING_ORB, team, gen_x, gen_y, orb_speed, attack_range, target, 100, 0.0 );
    }
 
    log("Bug finishing attack");
@@ -2589,17 +2518,23 @@ int Bug::doAttack( Order o )
    return 0;
 }
 
-/*
 int Bug::startTurn()
 {
-   if (current_order < order_count) {
-      Order o = order_queue[current_order];
-      startBasicOrder(o);
-   }
+   if (alive != 1) return 0;
 
+   startBasicOrder();
+
+   if (this_turn_order.action == WAIT) {
+      anim_data = (anim_data + 1) % 6;
+
+      rand_int++;
+      if (rand_int % 13 == 0)
+         anim_data = -1;
+   }
    return 0;
 }
 
+/*
 int Bug::completeTurn()
 {
 
@@ -2655,8 +2590,7 @@ int Bug::draw()
          sp_bug = bug_anim_attack_start.getSprite( d_anim );
       }
    } else {
-      if (anim_data >= 6) sp_bug = bug_anim_idle3.getSprite( (int)(progress * 1000) );
-      else if (anim_data == 3) sp_bug = bug_anim_idle2.getSprite( (int)(progress * 1000) );
+      if (anim_data == 5) sp_bug = bug_anim_idle2.getSprite( (int)(progress * 1000) );
       else sp_bug = bug_anim_idle1.getSprite( (int)(progress * 1000) );
    }
    if (NULL == sp_bug) return -1;

@@ -54,6 +54,23 @@ int addDirection( Direction d, int &x, int &y )
    return 0;
 }
 
+int addDirectionF( Direction d, float &x, float &y, float add )
+{
+   if (d == NORTH)
+      y -= add;
+   else if (d == SOUTH)
+      y += add;
+   else if (d == EAST)
+      x += add;
+   else if (d == WEST)
+      x -= add;
+
+   if (x < 0 || y < 0 || x >= level_dim_x || y >= level_dim_y)
+      return -1;
+
+   return 0;
+}
+
 Direction reverseDirection( Direction d )
 {
    if (d == NORTH)
