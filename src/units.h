@@ -323,10 +323,12 @@ class Bug : public Unit
 {
 private:
    Bug(); // Disallowed 
+   int star_count;
 
 public:
    float orb_speed;
-   int star_count;
+   
+   int setStarCount( int count );
 
    Bug( int grid_x, int grid_y, Direction face );
 
@@ -337,7 +339,7 @@ public:
    virtual std::string descriptor();
 
    virtual int startTurn();
-   //virtual int completeTurn();
+   virtual int completeTurn();
    //virtual int update( float dtf );
    virtual sf::Texture* getTexture();
    virtual int draw();

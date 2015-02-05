@@ -473,8 +473,6 @@ bool blocksVision( int x, int y, int from_x, int from_y, Direction ew, Direction
          && ns != NORTH && ew != EAST)
       return true;
 
-
-   // TODO: everything else
    return false;
 }
 
@@ -925,7 +923,6 @@ bool canMove( int x, int y, int from_x, int from_y )
    if (x < 0 || y < 0 || x >= level_dim_x || y >= level_dim_y)
       return false;
 
-   // TODO: building collision
    Terrain t = GRID_AT(terrain_grid,x,y);
    if ( (t >= TER_CLIFF_S && t <= TER_CLIFF_CORNER_NW_270)
      || (t >= TER_ROCK_1 && t <= TER_ROCK_LAST)
@@ -947,7 +944,7 @@ Unit* unitIncoming( int to_x, int to_y, int from_x, int from_y )
    if (NULL != u && u->active == 1)
    {
       Order o = u->this_turn_order;
-      if ((o.action == MOVE_FORWARD || o.action == MOVE_BACK)
+      if ((o.action == MOVE_FORWARD || o.action == MOVE_BACK || o.action == FOLLOW_PATH)
             && (u->x_next == to_x && u->y_next == to_y))
          return u;
    }
@@ -1009,8 +1006,6 @@ bool canMoveUnit( int x, int y, int from_x, int from_y, Unit *u )
    // Still here? Then this location is available to move into,
    // but you might not be the only one trying
 
-   // TODO
-   // 2)
    Unit *u_biggest = u;
 
    u_next = unitIncoming( x, y, x - 1, y );
@@ -2274,8 +2269,6 @@ int castMenuCreate( Vector2i grid )
    if (grid.x < 0 || grid.x >= level_dim_x || grid.y < 0 || grid.y >= level_dim_y)
       return -1;
    
-   // TODO: do something so that the menu is always visible
-
    cast_menu_x_grid = grid.x;
    cast_menu_y_grid = grid.y;
 
@@ -5109,7 +5102,6 @@ int drawFog()
       }
    }
 
-   // TODO: Draw something to delineate the level boundaries
    for (x = -1; x <= level_dim_x; ++x) {
       s_dark.setPosition( x - 0.17, -1 );
       r_window->draw( s_dark );

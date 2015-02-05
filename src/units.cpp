@@ -2378,32 +2378,86 @@ string Bird::descriptor()
 // Bug ---
 
 Animation bug_anim_idle1;
+Animation bug_anim_idle1_stars[5];
+
 Animation bug_anim_idle2;
-Animation bug_anim_idle3;
+Animation bug_anim_idle2_stars[5];
+
 Animation bug_anim_move;
-Animation bug_anim_attack_start;
-Animation bug_anim_attack_end;
+Animation bug_anim_move_stars[5];
+
+Animation bug_anim_cast_start;
+Animation bug_anim_cast_start_stars[5];
+
 Animation bug_anim_death;
+Animation bug_anim_death_stars[5];
 
 void initBugAnimations()
 {
    Texture *t = SFML_TextureManager::getSingleton().getTexture( "BugAnimIdle1.png" );
    bug_anim_idle1.load( t, 128, 128, 6, 1000 );
+   t = SFML_TextureManager::getSingleton().getTexture( "BugAnimIdle1_Stars4.png" );
+   bug_anim_idle1_stars[4].load( t, 128, 128, 6, 1000 );
+   t = SFML_TextureManager::getSingleton().getTexture( "BugAnimIdle1_Stars3.png" );
+   bug_anim_idle1_stars[3].load( t, 128, 128, 6, 1000 );
+   t = SFML_TextureManager::getSingleton().getTexture( "BugAnimIdle1_Stars2.png" );
+   bug_anim_idle1_stars[2].load( t, 128, 128, 6, 1000 );
+   t = SFML_TextureManager::getSingleton().getTexture( "BugAnimIdle1_Stars1.png" );
+   bug_anim_idle1_stars[1].load( t, 128, 128, 6, 1000 );
+   t = SFML_TextureManager::getSingleton().getTexture( "BugAnimIdle1_Stars0.png" );
+   bug_anim_idle1_stars[0].load( t, 128, 128, 6, 1000 );
 
    t = SFML_TextureManager::getSingleton().getTexture( "BugAnimIdle2.png" );
    bug_anim_idle2.load( t, 128, 128, 15, 1000 );
+   t = SFML_TextureManager::getSingleton().getTexture( "BugAnimIdle2_Stars4.png" );
+   bug_anim_idle2_stars[4].load( t, 128, 128, 15, 1000 );
+   t = SFML_TextureManager::getSingleton().getTexture( "BugAnimIdle2_Stars3.png" );
+   bug_anim_idle2_stars[3].load( t, 128, 128, 15, 1000 );
+   t = SFML_TextureManager::getSingleton().getTexture( "BugAnimIdle2_Stars2.png" );
+   bug_anim_idle2_stars[2].load( t, 128, 128, 15, 1000 );
+   t = SFML_TextureManager::getSingleton().getTexture( "BugAnimIdle2_Stars1.png" );
+   bug_anim_idle2_stars[1].load( t, 128, 128, 15, 1000 );
+   t = SFML_TextureManager::getSingleton().getTexture( "BugAnimIdle2_Stars0.png" );
+   bug_anim_idle2_stars[0].load( t, 128, 128, 15, 1000 );
 
    t = SFML_TextureManager::getSingleton().getTexture( "BugAnimMove.png" );
    bug_anim_move.load( t, 128, 128, 12, 500 );
+   t = SFML_TextureManager::getSingleton().getTexture( "BugAnimMove_Stars4.png" );
+   bug_anim_move_stars[4].load( t, 128, 128, 12, 500 );
+   t = SFML_TextureManager::getSingleton().getTexture( "BugAnimMove_Stars3.png" );
+   bug_anim_move_stars[3].load( t, 128, 128, 12, 500 );
+   t = SFML_TextureManager::getSingleton().getTexture( "BugAnimMove_Stars2.png" );
+   bug_anim_move_stars[2].load( t, 128, 128, 12, 500 );
+   t = SFML_TextureManager::getSingleton().getTexture( "BugAnimMove_Stars1.png" );
+   bug_anim_move_stars[1].load( t, 128, 128, 12, 500 );
+   t = SFML_TextureManager::getSingleton().getTexture( "BugAnimMove_Stars0.png" );
+   bug_anim_move_stars[0].load( t, 128, 128, 12, 500 );
 
    t = SFML_TextureManager::getSingleton().getTexture( "BugAnimCastStart.png" );
-   bug_anim_attack_start.load( t, 128, 128, 12, 1000 );
-
-   t = SFML_TextureManager::getSingleton().getTexture( "BugStatic.png" );
-   bug_anim_attack_end.load( t, 128, 128, 1, 1000 );
+   bug_anim_cast_start.load( t, 128, 128, 12, 1000 );
+   t = SFML_TextureManager::getSingleton().getTexture( "BugAnimCastStart_Stars4.png" );
+   bug_anim_cast_start_stars[4].load( t, 128, 128, 12, 1000 );
+   t = SFML_TextureManager::getSingleton().getTexture( "BugAnimCastStart_Stars3.png" );
+   bug_anim_cast_start_stars[3].load( t, 128, 128, 12, 1000 );
+   t = SFML_TextureManager::getSingleton().getTexture( "BugAnimCastStart_Stars2.png" );
+   bug_anim_cast_start_stars[2].load( t, 128, 128, 12, 1000 );
+   t = SFML_TextureManager::getSingleton().getTexture( "BugAnimCastStart_Stars1.png" );
+   bug_anim_cast_start_stars[1].load( t, 128, 128, 12, 1000 );
+   t = SFML_TextureManager::getSingleton().getTexture( "BugAnimCastStart_Stars0.png" );
+   bug_anim_cast_start_stars[0].load( t, 128, 128, 12, 1000 );
 
    t = SFML_TextureManager::getSingleton().getTexture( "BugAnimDeath.png" );
    bug_anim_death.load( t, 128, 128, 7, DEATH_TIME );
+   t = SFML_TextureManager::getSingleton().getTexture( "BugAnimDeath_Stars4.png" );
+   bug_anim_death_stars[4].load( t, 128, 128, 7, DEATH_TIME );
+   t = SFML_TextureManager::getSingleton().getTexture( "BugAnimDeath_Stars3.png" );
+   bug_anim_death_stars[3].load( t, 128, 128, 7, DEATH_TIME );
+   t = SFML_TextureManager::getSingleton().getTexture( "BugAnimDeath_Stars2.png" );
+   bug_anim_death_stars[2].load( t, 128, 128, 7, DEATH_TIME );
+   t = SFML_TextureManager::getSingleton().getTexture( "BugAnimDeath_Stars1.png" );
+   bug_anim_death_stars[1].load( t, 128, 128, 7, DEATH_TIME );
+   t = SFML_TextureManager::getSingleton().getTexture( "BugAnimDeath_Stars0.png" );
+   bug_anim_death_stars[0].load( t, 128, 128, 7, DEATH_TIME );
 }
 
 // *tors
@@ -2455,12 +2509,22 @@ Bug::Bug( int x, int y, Direction face )
    anim_data = 0;
 
    win_condition = false;
+
+   setStarCount( 4 );
 }
 
 Bug::~Bug()
 {
    if (order_queue)
       delete order_queue;
+}
+
+int Bug::setStarCount( int count )
+{
+   if (count > 4) count = 4;
+   if (count < 0) count = 0;
+
+   return star_count = count;
 }
 
 // Virtual methods
@@ -2534,13 +2598,30 @@ int Bug::startTurn()
    return 0;
 }
 
-/*
 int Bug::completeTurn()
 {
+   if (alive != 1) return 0;
+
+   if (active == 1 && current_order != final_order) {
+      int r = completeBasicOrder(this_turn_order);
+      if (this_turn_order.action == BUG_MEDITATE)
+         setStarCount( star_count + 1 );
+      else if (this_turn_order.action >= BUG_CAST_FIREBALL 
+            && this_turn_order.action <= BUG_CLOSE_WORMHOLE)
+         setStarCount( star_count - 1 );
+      Order &o = order_queue[current_order];
+      o.iteration++;
+      if (o.iteration >= o.count && o.count != -1) { 
+         current_order++;
+         o.iteration = 0;
+      }
+      return r;
+   }
 
    return 0;
 }
 
+/*
 int Bug::update( float dtf )
 {
 
@@ -2550,7 +2631,11 @@ int Bug::update( float dtf )
 
 sf::Texture* Bug::getTexture()
 {
-   return SFML_TextureManager::getSingleton().getTexture( "BugStatic.png" );
+   if (star_count == 4) return SFML_TextureManager::getSingleton().getTexture( "BugStatic_Stars4.png" );
+   if (star_count == 3) return SFML_TextureManager::getSingleton().getTexture( "BugStatic_Stars3.png" );
+   if (star_count == 2) return SFML_TextureManager::getSingleton().getTexture( "BugStatic_Stars2.png" );
+   if (star_count == 1) return SFML_TextureManager::getSingleton().getTexture( "BugStatic_Stars1.png" );
+   return SFML_TextureManager::getSingleton().getTexture( "BugStatic_Stars0.png" );
 }
 
 Sprite *sp_bug = NULL;
@@ -2570,28 +2655,39 @@ int Bug::draw()
       int t = alive + DEATH_TIME + DEATH_FADE_TIME;
       if (t >= DEATH_TIME) t = DEATH_TIME - 1;
       sp_bug = bug_anim_death.getSprite( t );
+      sp_bug_stars = bug_anim_death_stars[star_count].getSprite( t );
 
       int alpha = 255;
       if (alive > -DEATH_FADE_TIME)
          alpha = 255 - ((DEATH_FADE_TIME + alive) * 256 / DEATH_FADE_TIME);
       sp_bug->setColor( Color( 255, 255, 255, alpha ) );
+      sp_bug_stars->setColor( Color( 255, 255, 255, alpha ) );
    } else if (this_turn_order.action == MOVE_FORWARD || this_turn_order.action == FOLLOW_PATH) {
       sp_bug = bug_anim_move.getSprite( (int)(progress * 1000) );
+      sp_bug_stars = bug_anim_move_stars[star_count].getSprite( (int)(progress * 1000) );
    } else if (this_turn_order.action == MOVE_BACK) {
       sp_bug = bug_anim_move.getSprite( 999 - (int)(progress * 1000) );
+      sp_bug_stars = bug_anim_move_stars[star_count].getSprite( 999 - (int)(progress * 1000) );
    } else if (this_turn_order.action >= ATTACK_CLOSEST && this_turn_order.action <= ATTACK_SMALLEST) {
       if (done_attack) {
          int d_anim = (int)( ((progress - speed) / (1-speed)) * 1000);
          if (d_anim >= 1000) d_anim = 999;
-         sp_bug = bug_anim_attack_start.getSprite( 999 - d_anim );
+         sp_bug = bug_anim_cast_start.getSprite( 999 - d_anim );
+         sp_bug_stars = bug_anim_cast_start_stars[star_count].getSprite( 999 - d_anim );
       } else {
          int d_anim = (int)( (progress / speed) * 1000);
          if (d_anim >= 1000) d_anim = 999;
-         sp_bug = bug_anim_attack_start.getSprite( d_anim );
+         sp_bug = bug_anim_cast_start.getSprite( d_anim );
+         sp_bug_stars = bug_anim_cast_start_stars[star_count].getSprite( d_anim );
       }
    } else {
-      if (anim_data == 5) sp_bug = bug_anim_idle2.getSprite( (int)(progress * 1000) );
-      else sp_bug = bug_anim_idle1.getSprite( (int)(progress * 1000) );
+      if (anim_data == 5) {
+         sp_bug = bug_anim_idle2.getSprite( (int)(progress * 1000) );
+         sp_bug_stars = bug_anim_idle2_stars[star_count].getSprite( (int)(progress * 1000) );
+      } else {
+         sp_bug = bug_anim_idle1.getSprite( (int)(progress * 1000) );
+         sp_bug_stars = bug_anim_idle1_stars[star_count].getSprite( (int)(progress * 1000) );
+      }
    }
    if (NULL == sp_bug) return -1;
 
@@ -2604,6 +2700,17 @@ int Bug::draw()
    sp_bug->setRotation( rotation );
 
    SFML_GlobalRenderWindow::get()->draw( *sp_bug );
+
+   if (NULL != sp_bug_stars) {
+      sp_bug_stars->setPosition( x_real, y_real );
+      Vector2u dim (bug_anim_idle1.image_size_x, bug_anim_idle1.image_size_y);
+      sp_bug_stars->setOrigin( dim.x / 2.0, dim.y / 2.0 );
+      sp_bug_stars->setScale( 0.6 / dim.x, 0.6 / dim.y );
+
+      sp_bug_stars->setRotation( rotation );
+
+      SFML_GlobalRenderWindow::get()->draw( *sp_bug_stars );
+   }
 
    return 0;
 }
