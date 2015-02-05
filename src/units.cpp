@@ -2402,8 +2402,8 @@ void initBugAnimations()
    t = SFML_TextureManager::getSingleton().getTexture( "BugStatic.png" );
    bug_anim_attack_end.load( t, 128, 128, 1, 1000 );
 
-   t = SFML_TextureManager::getSingleton().getTexture( "BugStatic.png" );
-   bug_anim_death.load( t, 128, 128, 1, DEATH_TIME );
+   t = SFML_TextureManager::getSingleton().getTexture( "BugAnimDeath.png" );
+   bug_anim_death.load( t, 128, 128, 7, DEATH_TIME );
 }
 
 // *tors

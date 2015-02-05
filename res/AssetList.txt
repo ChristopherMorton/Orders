@@ -73,6 +73,7 @@ IMAGE BugAnimIdle1.png
 IMAGE BugAnimIdle2.png
 IMAGE BugAnimMove.png
 IMAGE BugAnimCastStart.png
+IMAGE BugAnimDeath.png
 // Map things
 IMAGE MapScratch.png
 IMAGE MapButtonScratch.png
