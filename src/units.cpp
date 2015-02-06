@@ -27,27 +27,28 @@
 #define MONSTER_BASE_HEALTH 600
 #define MONSTER_BASE_MEMORY 10
 #define MONSTER_BASE_VISION 3.5
-#define MONSTER_BASE_SPEED 0.3
+#define MONSTER_BASE_SPEED 0.5
 
-#define MONSTER_CLAW_DAMAGE 10
+#define MONSTER_CLAW_DAMAGE 15
+#define MONSTER_BURST_DAMAGE 35
 
 #define SOLDIER_BASE_HEALTH 40
 #define SOLDIER_BASE_MEMORY 16
 #define SOLDIER_BASE_VISION 6.5
-#define SOLDIER_BASE_SPEED 0.4
+#define SOLDIER_BASE_SPEED 0.6
 
-#define SOLDIER_AXE_DAMAGE 35
-#define SOLDIER_SPEAR_DAMAGE 30
+#define SOLDIER_AXE_DAMAGE 50
+#define SOLDIER_SPEAR_DAMAGE 35
 
 #define WORM_BASE_HEALTH 40
 #define WORM_BASE_MEMORY 14
 #define WORM_BASE_VISION 8.5
-#define WORM_BASE_SPEED 0.2
+#define WORM_BASE_SPEED 0.3
 
 #define BIRD_BASE_HEALTH 200
 #define BIRD_BASE_MEMORY 16
 #define BIRD_BASE_VISION 6.5
-#define BIRD_BASE_SPEED 0.6
+#define BIRD_BASE_SPEED 0.7
 
 #define BUG_BASE_HEALTH 100
 #define BUG_BASE_MEMORY 14
@@ -458,7 +459,7 @@ int Unit::prepareTurn()
 
    if (aff_poison) {
       aff_poison--;
-      takeDamage( MONSTER_CLAW_DAMAGE );
+      takeDamage( 10 );
    }
    if (aff_confusion) {
       aff_confusion--;
@@ -1295,6 +1296,9 @@ Animation monster_anim_attack_start;
 Animation monster_anim_attack_end;
 Animation monster_anim_death;
 
+Animation monster_anim_burst_start;
+Animation monster_anim_burst_end;
+
 void initMonsterAnimations()
 {
    Texture *t = SFML_TextureManager::getSingleton().getTexture( "MonsterAnimIdle.png" );
@@ -1311,6 +1315,12 @@ void initMonsterAnimations()
 
    t = SFML_TextureManager::getSingleton().getTexture( "MonsterAnimDeath.png" );
    monster_anim_death.load( t, 128, 128, 7, DEATH_TIME );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "MonsterAnimBurstStart.png" );
+   monster_anim_burst_start.load( t, 128, 128, 11, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "MonsterAnimBurstEnd.png" );
+   monster_anim_burst_end.load( t, 128, 128, 11, 1000 );
 }
 
 // *tors
@@ -1367,6 +1377,24 @@ Monster::~Monster()
       delete order_queue;
 }
 
+void Monster::doBurst()
+{
+   MonsterBurst *ef_mb = new MonsterBurst( x_real, y_real );
+   addEffectManual( ef_mb );
+
+   for (int x = x_grid - 1; x <= x_grid + 1; ++x) {
+      if (x < 0 || x >= level_dim_x) continue;
+      for (int y = y_grid - 1; y <= y_grid + 1; ++y) {
+         if (y < 0 || y >= level_dim_y) continue;
+         Unit *u = GRID_AT(unit_grid,x,y);
+         if (u && u != this)
+            u->takeDamage( MONSTER_BURST_DAMAGE );
+      }
+   }
+
+   done_attack = 1;
+}
+
 // Virtual methods
 
 int Monster::addOrder( Order o )
@@ -1394,11 +1422,62 @@ int Monster::doAttack( Order o )
 
    if (target) {
       log("Monster attack");
-      target->takeDamage( 15 );
+      target->takeDamage( MONSTER_CLAW_DAMAGE );
       // TODO: Animate
    }
 
    done_attack = 1;
+   return 0;
+}
+
+int Monster::prepareTurn()
+{
+   if (alive != 1) return 0;
+
+   if (active == 2) active = 1; // Start an active turn
+
+   this_turn_order = Order( WAIT );
+
+   if (aff_poison) {
+      aff_poison--;
+      takeDamage( MONSTER_CLAW_DAMAGE );
+   }
+   if (aff_confusion) {
+      aff_confusion--;
+      if (aff_confusion %= 2)
+         return 0;
+   }
+
+   set<int> visited_orders;
+   while (active == 1 && current_order != final_order 
+         && visited_orders.find( current_order ) == visited_orders.end()) {
+      this_turn_order = order_queue[current_order];
+      visited_orders.insert( current_order );
+      bool decision = evaluateConditional(this_turn_order.condition);
+      // MONSTER UNIQUE CODE
+      int r = 1;
+      if (this_turn_order.action <= SKIP)
+         r = prepareBasicOrder(order_queue[current_order], decision);
+      else if (this_turn_order.action == MONSTER_BURST) {
+         if (decision)
+            done_attack = 0;
+         else
+            r = 0;
+      }
+      // END
+      // if prepareBasicOrder returns 0, it's a 0-length instruction (e.g. turn)
+      if (r == 0) {
+         current_order++;
+         continue;
+      }
+      else 
+         break;
+   }
+
+   if (current_order == final_order)
+      this_turn_order = Order( WAIT );
+
+   progress = 0;
    return 0;
 }
 
@@ -1418,13 +1497,35 @@ int Monster::completeTurn()
 
    return 0;
 }
+*/
 
 int Monster::update( float dtf )
 {
+   if (alive < 0) {
+      alive += (int) (1000.0 * dtf);
+      if (alive >= 0) alive = 0;
+   }
 
+   if (alive == 0)
+      return 1;
+
+   progress += dtf;
+   if (active == 1 && current_order != final_order) {
+      Order &o = this_turn_order;
+      // Monster-specific
+      if (this_turn_order.action == MONSTER_BURST) {
+         if (!done_attack) {
+            if (progress >= speed) {
+               doBurst();
+            }
+         }
+         return 0;
+      }
+      // End monster-specific
+      return updateBasicOrder( dtf, o );
+   }
    return 0;
 }
-*/
 
 sf::Texture* Monster::getTexture()
 {
@@ -1465,8 +1566,17 @@ int Monster::draw()
       } else {
          int d_anim = (int)( (progress / speed) * 1000);
          if (d_anim >= 1000) d_anim = 999;
-         sp_monster = monster_anim_attack_start.getSprite( d_anim );
          sp_monster = monster_anim_attack_start.getSprite( (int)( (progress / speed) * 1000) );
+      }
+   } else if (this_turn_order.action == MONSTER_BURST) {
+      if (done_attack) {
+         int d_anim = (int)( ((progress - speed) / (1-speed)) * 1000);
+         if (d_anim >= 1000) d_anim = 999;
+         sp_monster = monster_anim_burst_end.getSprite( d_anim );
+      } else {
+         int d_anim = (int)( (progress / speed) * 1000);
+         if (d_anim >= 1000) d_anim = 999;
+         sp_monster = monster_anim_burst_start.getSprite( (int)( (progress / speed) * 1000) );
       }
    } else
       sp_monster = monster_anim_idle.getSprite( (int)(progress * 1000) );

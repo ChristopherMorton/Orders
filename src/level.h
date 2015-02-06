@@ -34,6 +34,7 @@ namespace sum
    int moveUnit( Unit *u, int new_x, int new_y );
    int addProjectile( Effect_Type t, int team, float x, float y, float speed, float range, Unit* target, float homing = 0, float fastforward = 0 );
    int addEffect( Effect_Type t, float dur, float x, float y, float rot, float fade = 0.0 );
+   int addEffectManual( Effect *e );
 
    int broadcastOrder( Order o );
    int startPlayerCommand( Order o );

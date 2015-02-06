@@ -226,15 +226,18 @@ private:
 public:
    Monster( int grid_x, int grid_y, Direction face );
 
+   void doBurst();
+
    virtual int addOrder( Order o );
 
    virtual int doAttack( Order o );
 
    virtual std::string descriptor();
 
+   virtual int prepareTurn();
    //virtual int startTurn();
    //virtual int completeTurn();
-   //virtual int update( float dtf );
+   virtual int update( float dtf );
    virtual sf::Texture* getTexture();
    virtual int draw();
 

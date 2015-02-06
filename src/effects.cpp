@@ -20,6 +20,9 @@ Effect::~Effect()
 
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Projectile ---
+
 int Projectile::update( float dtf )
 {
    range -= dtf;
@@ -174,6 +177,9 @@ Projectile::~Projectile()
 
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// StaticEffect ---
+
 int StaticEffect::update( float dtf )
 {
    duration -= dtf;
@@ -265,10 +271,122 @@ StaticEffect::~StaticEffect()
 
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Unique Effects ---
+
+Sprite *sp_burst_spike;
+bool init_monster_burst = false;
+
+void initMonsterBurst()
+{
+   Texture *t;
+   if (NULL == sp_burst_spike) {
+      t = SFML_TextureManager::getSingleton().getTexture( "MonsterBurstSpike.png" ); 
+      sp_burst_spike = new Sprite( *(t));
+      Vector2u dim = t->getSize();
+      sp_burst_spike->setOrigin( dim.x / 2.0, dim.y );
+      normalizeTo1x1( sp_burst_spike );
+      sp_burst_spike->scale( 0.3, 0.3 );
+   }
+
+   init_monster_burst = true;
+}
+
+int MonsterBurst::update( float dtf )
+{
+   duration -= dtf;
+   if (duration < 0)
+      return 1;
+
+   return 0;
+}
+
+int MonsterBurst::draw()
+{
+   if (!init_monster_burst)
+      initMonsterBurst();
+
+   // Fade at last moment
+   Color c = Color::White;
+   if (duration < 0.1) {
+      int alpha = 255 - (int)(((0.1 - duration) / 0.1) * 255);
+      if (alpha < 0) alpha = 0;
+      if (alpha > 255) alpha = 255;
+      c = Color( 255, 255, 255, alpha );
+   }
+   sp_burst_spike->setColor( c );
+   sp_burst_spike->setPosition( _x, _y );
+   normalizeTo1x1( sp_burst_spike );
+   sp_burst_spike->scale( 0.3, 0.3 );
+
+   Vector2u dim = SFML_TextureManager::getSingleton().getTexture( "MonsterBurstSpike.png" )->getSize();
+
+   float offset = dim.y * (1 + ((0.25 - duration) * 12));
+   sp_burst_spike->setOrigin( dim.x / 2.0, offset );
+
+   sp_burst_spike->setRotation( 0 );
+   SFML_GlobalRenderWindow::get()->draw( *sp_burst_spike );
+   sp_burst_spike->setRotation( 90 );
+   SFML_GlobalRenderWindow::get()->draw( *sp_burst_spike );
+   sp_burst_spike->setRotation( 180 );
+   SFML_GlobalRenderWindow::get()->draw( *sp_burst_spike );
+   sp_burst_spike->setRotation( 270 );
+   SFML_GlobalRenderWindow::get()->draw( *sp_burst_spike );
+
+   offset = offset * 1.3;
+   sp_burst_spike->setOrigin( dim.x / 2.0, offset );
+
+   sp_burst_spike->setRotation( 45 );
+   SFML_GlobalRenderWindow::get()->draw( *sp_burst_spike );
+   sp_burst_spike->setRotation( 135 );
+   SFML_GlobalRenderWindow::get()->draw( *sp_burst_spike );
+   sp_burst_spike->setRotation( 225 );
+   SFML_GlobalRenderWindow::get()->draw( *sp_burst_spike );
+   sp_burst_spike->setRotation( 315 );
+   SFML_GlobalRenderWindow::get()->draw( *sp_burst_spike );
+
+   sp_burst_spike->setOrigin( dim.x / 2.0, offset );
+   sp_burst_spike->scale( 0.5, 0.5 );
+
+   sp_burst_spike->setRotation( 22.5 );
+   SFML_GlobalRenderWindow::get()->draw( *sp_burst_spike );
+   sp_burst_spike->setRotation( 67.5 );
+   SFML_GlobalRenderWindow::get()->draw( *sp_burst_spike );
+   sp_burst_spike->setRotation( 112.5 );
+   SFML_GlobalRenderWindow::get()->draw( *sp_burst_spike );
+   sp_burst_spike->setRotation( 157.5 );
+   SFML_GlobalRenderWindow::get()->draw( *sp_burst_spike );
+   sp_burst_spike->setRotation( 202.5 );
+   SFML_GlobalRenderWindow::get()->draw( *sp_burst_spike );
+   sp_burst_spike->setRotation( 247.5 );
+   SFML_GlobalRenderWindow::get()->draw( *sp_burst_spike );
+   sp_burst_spike->setRotation( 292.5 );
+   SFML_GlobalRenderWindow::get()->draw( *sp_burst_spike );
+   sp_burst_spike->setRotation( 337.5 );
+   SFML_GlobalRenderWindow::get()->draw( *sp_burst_spike );
+
+   return 0;
+}
+
+MonsterBurst::MonsterBurst( float x, float y )
+{
+   type = EF_MONSTER_BURST;
+   _x = x;
+   _y = y;
+   duration = 0.2;
+}
+
+MonsterBurst::~MonsterBurst()
+{ }
+
+///////////////////////////////////////////////////////////////////////////////
+// General ---
+
 int initEffects()
 {
    // Setup Sprites
    initProjectiles();
+   initMonsterBurst();
 
    log("initEffects complete");
    return 0;

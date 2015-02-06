@@ -20,6 +20,7 @@ enum Effect_Type
    SE_GO_MARKER,
    // Combat Effects
    SE_SPEAR_ANIM,
+   EF_MONSTER_BURST,
 
    NUM_EFFECTS
 };
@@ -63,6 +64,18 @@ struct StaticEffect : public Effect
    StaticEffect( Effect_Type t, float duration, float x, float y, float rotation, float fade = 0.0 );
 
    virtual ~StaticEffect();
+};
+
+struct MonsterBurst : public Effect
+{
+   float _x, _y;
+   float duration;
+
+   virtual int update( float dtf );
+   virtual int draw();
+
+   MonsterBurst( float x, float y );
+   virtual ~MonsterBurst();
 };
 
 Projectile *genProjectile( Effect_Type t, int team, float x, float y, float speed, float range, Unit* target, float homing = 0, float fastforward = 0 );

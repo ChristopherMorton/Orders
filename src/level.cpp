@@ -396,17 +396,18 @@ int addProjectile( Effect_Type t, int team, float x, float y, float speed, float
 {
    Effect *p = genProjectile( t, team, x, y, speed, range, target, homing, fastforward );
 
-   if (p) {
-      effect_list.push_back(p);
-      return 0;
-   }
-   return -1;
+   return addEffectManual( p );
 }
 
 int addEffect( Effect_Type t, float dur, float x, float y, float rot, float fade )
 {
    Effect *e = genEffect( t, dur, x, y, rot, fade );
 
+   return addEffectManual( e );
+}
+
+int addEffectManual( Effect *e )
+{
    if (e) {
       effect_list.push_back(e);
       return 0;
