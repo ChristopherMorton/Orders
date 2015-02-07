@@ -3912,7 +3912,7 @@ int drawOrderButtons()
    drawCount( 0, b_turn_south_count_pos.x, b_turn_south_count_pos.y, button_size, false, count_text_size );
    drawCount( 0, b_turn_west_count_pos.x, b_turn_west_count_pos.y, button_size, false, count_text_size );
    drawCount( 0, b_turn_nearest_enemy_count_pos.x, b_turn_nearest_enemy_count_pos.y, button_size, false, count_text_size );
-   drawCount( 1, b_guard_count_pos.x, b_guard_count_pos.y, button_size, true, count_text_size );
+   drawCount( 2, b_guard_count_pos.x, b_guard_count_pos.y, button_size, true, count_text_size );
    drawCount( 0, b_switch_axe_count_pos.x, b_switch_axe_count_pos.y, button_size, false, count_text_size );
    drawCount( 0, b_switch_spear_count_pos.x, b_switch_spear_count_pos.y, button_size, false, count_text_size );
    drawCount( 0, b_switch_bow_count_pos.x, b_switch_bow_count_pos.y, button_size, false, count_text_size );

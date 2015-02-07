@@ -22,6 +22,9 @@ void Order::initOrder( Order_Action a, Order_Conditional c, int cnt )
    if (a == BUG_MEDITATE)
       cnt *= MEDITATE_DURATION;
 
+   if ((a == MONSTER_GUARD || a == BIRD_FLY) && cnt < 2)
+      cnt = 2;
+
    condition = c;
    count = cnt;
    iteration = 0;

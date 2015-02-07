@@ -31,6 +31,8 @@
 
 #define MONSTER_CLAW_DAMAGE 15
 #define MONSTER_BURST_DAMAGE 35
+#define MONSTER_HARDEN_TIME 0.2
+#define MONSTER_MAX_HARNESS_REDUCTION 0.9
 
 #define SOLDIER_BASE_HEALTH 40
 #define SOLDIER_BASE_MEMORY 16
@@ -1299,6 +1301,10 @@ Animation monster_anim_death;
 Animation monster_anim_burst_start;
 Animation monster_anim_burst_end;
 
+Animation monster_anim_guard_start;
+
+Sprite *sp_monster_guard_bubble;
+
 void initMonsterAnimations()
 {
    Texture *t = SFML_TextureManager::getSingleton().getTexture( "MonsterAnimIdle.png" );
@@ -1320,7 +1326,16 @@ void initMonsterAnimations()
    monster_anim_burst_start.load( t, 128, 128, 11, 1000 );
 
    t = SFML_TextureManager::getSingleton().getTexture( "MonsterAnimBurstEnd.png" );
-   monster_anim_burst_end.load( t, 128, 128, 11, 1000 );
+   monster_anim_burst_end.load( t, 128, 128, 8, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "MonsterAnimGuardStart.png" );
+   monster_anim_guard_start.load( t, 128, 128, 12, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "MonsterGuardBubble.png" );
+   sp_monster_guard_bubble = new Sprite( *t );
+   Vector2u dim = t->getSize();
+   sp_monster_guard_bubble->setOrigin( dim.x / 2.0, dim.y / 2.0 );
+   sp_monster_guard_bubble->setScale( 1.0 / dim.x, 1.0 / dim.y );
 }
 
 // *tors
@@ -1369,6 +1384,8 @@ Monster::Monster( int x, int y, Direction face )
    progress = 0;
 
    win_condition = false;
+
+   hardness = 0.0;
 }
 
 Monster::~Monster()
@@ -1395,7 +1412,31 @@ void Monster::doBurst()
    done_attack = 1;
 }
 
+float Monster::setHardness( float hard )
+{
+   if (hard < 0.0) hard = 0.0;
+   if (hard > 1.0) hard = 1.0;
+
+   return hardness = hard;
+}
+
 // Virtual methods
+
+int Monster::takeDamage( float damage, int flags )
+{
+   if (hardness > 0.01) {
+      float multiplier = 1.0 - (hardness * MONSTER_MAX_HARNESS_REDUCTION); 
+      damage *= multiplier;
+   }
+   health -= damage;
+   if (health <= 0) {
+      // Dead!
+      alive = -( DEATH_TIME + DEATH_FADE_TIME );
+      return -1;
+   }
+
+   return 0;
+}
 
 int Monster::addOrder( Order o )
 {
@@ -1474,8 +1515,13 @@ int Monster::prepareTurn()
          break;
    }
 
-   if (current_order == final_order)
+   if (current_order == final_order) {
       this_turn_order = Order( WAIT );
+      if (hardness > 0.5) {
+         this_turn_order = Order( MONSTER_GUARD, 2 );
+         this_turn_order.iteration = 1;
+      }
+   }
 
    progress = 0;
    return 0;
@@ -1510,13 +1556,29 @@ int Monster::update( float dtf )
       return 1;
 
    progress += dtf;
-   if (active == 1 && current_order != final_order) {
+   if ((active == 1 && current_order != final_order) || this_turn_order.action == MONSTER_GUARD) {
       Order &o = this_turn_order;
       // Monster-specific
       if (this_turn_order.action == MONSTER_BURST) {
          if (!done_attack) {
             if (progress >= speed) {
                doBurst();
+            }
+         }
+         return 0;
+      }
+      if (this_turn_order.action == MONSTER_GUARD) {
+         if (this_turn_order.iteration == 0) {
+            if (progress > speed && progress < speed + MONSTER_HARDEN_TIME) {
+               float new_hardness = (progress - speed) / MONSTER_HARDEN_TIME;
+               if (new_hardness > 1.0) new_hardness = 1.0;
+               setHardness( new_hardness );
+            }
+         } else if (this_turn_order.iteration == this_turn_order.count - 1) {
+            if (progress < (1.0 - speed) && progress > (1.0 - speed - MONSTER_HARDEN_TIME) ) {
+               float new_hardness = 1.0 - ( (progress - (1.0 - speed - MONSTER_HARDEN_TIME)) / MONSTER_HARDEN_TIME);
+               if (new_hardness < 0.0) new_hardness = 0.0;
+               setHardness( new_hardness );
             }
          }
          return 0;
@@ -1566,7 +1628,7 @@ int Monster::draw()
       } else {
          int d_anim = (int)( (progress / speed) * 1000);
          if (d_anim >= 1000) d_anim = 999;
-         sp_monster = monster_anim_attack_start.getSprite( (int)( (progress / speed) * 1000) );
+         sp_monster = monster_anim_attack_start.getSprite( d_anim );
       }
    } else if (this_turn_order.action == MONSTER_BURST) {
       if (done_attack) {
@@ -1576,7 +1638,46 @@ int Monster::draw()
       } else {
          int d_anim = (int)( (progress / speed) * 1000);
          if (d_anim >= 1000) d_anim = 999;
-         sp_monster = monster_anim_burst_start.getSprite( (int)( (progress / speed) * 1000) );
+         sp_monster = monster_anim_burst_start.getSprite( d_anim );
+      }
+   } else if (this_turn_order.action == MONSTER_GUARD) {
+      if (this_turn_order.iteration == 0) {
+         if (progress > speed) {
+            int alpha = (int) (255 * hardness);
+            sp_monster_guard_bubble->setColor( Color( 255, 255, 255, alpha ) ); 
+
+            sp_monster_guard_bubble->setPosition( x_real, y_real );
+            sp_monster_guard_bubble->setRotation( rotation );
+            SFML_GlobalRenderWindow::get()->draw( *sp_monster_guard_bubble );
+
+            sp_monster = monster_anim_guard_start.getSprite( 999 );
+         } else {
+            int d_anim = (int)( (progress / speed) * 1000);
+            if (d_anim >= 1000) d_anim = 999;
+            sp_monster = monster_anim_guard_start.getSprite( d_anim );
+         }
+      } else if (this_turn_order.iteration == this_turn_order.count - 1) {
+         if (progress < (1.0 - speed)) {
+            int alpha = (int) (255 * hardness);
+            sp_monster_guard_bubble->setColor( Color( 255, 255, 255, alpha ) ); 
+
+            sp_monster_guard_bubble->setPosition( x_real, y_real );
+            sp_monster_guard_bubble->setRotation( rotation );
+            SFML_GlobalRenderWindow::get()->draw( *sp_monster_guard_bubble );
+
+            sp_monster = monster_anim_guard_start.getSprite( 999 );
+         } else {
+            int d_anim = (int)( ((progress - (1.0 - speed)) / speed) * 1000);
+            if (d_anim >= 1000) d_anim = 999;
+            sp_monster = monster_anim_guard_start.getSprite( 999 - d_anim );
+         }
+      } else {
+         sp_monster_guard_bubble->setColor( Color::White );
+         sp_monster_guard_bubble->setPosition( x_real, y_real );
+         sp_monster_guard_bubble->setRotation( rotation );
+         SFML_GlobalRenderWindow::get()->draw( *sp_monster_guard_bubble );
+
+         sp_monster = monster_anim_guard_start.getSprite( 999 );
       }
    } else
       sp_monster = monster_anim_idle.getSprite( (int)(progress * 1000) );

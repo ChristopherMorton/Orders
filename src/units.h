@@ -223,10 +223,14 @@ class Monster : public Unit
 private:
    Monster(); // Disallowed 
 
+   float hardness;
 public:
    Monster( int grid_x, int grid_y, Direction face );
 
    void doBurst();
+   float setHardness( float hard );
+
+   virtual int takeDamage( float damage, int flags = 0 );
 
    virtual int addOrder( Order o );
 
