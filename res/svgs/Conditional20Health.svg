@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="128"
+   height="128"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.91 r13725"
+   sodipodi:docname="Conditional20Health.svg"
+   inkscape:export-filename="/home/cg/programming/orders/res/Conditional20Health.png"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90">
+  <defs
+     id="defs4">
+    <inkscape:perspective
+       id="perspective2824"
+       inkscape:persp3d-origin="32 : 21.333333 : 1"
+       inkscape:vp_z="64 : 32 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 32 : 1"
+       sodipodi:type="inkscape:persp3d" />
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="3.959798"
+     inkscape:cx="72.604282"
+     inkscape:cy="63.00236"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1278"
+     inkscape:window-height="1004"
+     inkscape:window-x="-1"
+     inkscape:window-y="17"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-924.36218)">
+    <rect
+       style="opacity:0;fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="rect2826"
+       width="122.99972"
+       height="122.99973"
+       x="-36.024128"
+       y="1010.0353"
+       ry="24.75115"
+       rx="25.260769" />
+    <g
+       transform="matrix(4.0219495,0,0,4.0219495,-64.702139,-3132.4515)"
+       id="layer1-2"
+       inkscape:label="Layer 1"
+       style="fill:#ffffff;stroke:#000000;stroke-width:1.24317821;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:3.72953464,3.72953464;stroke-dashoffset:0">
+      <path
+         sodipodi:nodetypes="scccscs"
+         inkscape:connector-curvature="0"
+         id="path3816"
+         d="m 27.050925,1015.5529 c -2.872005,0 -5.217989,2.308 -5.217989,5.1796 -0.255167,7.8506 10.169671,14.866 10.169671,14.866 0,0 9.69159,-6.0558 10.169065,-14.866 0,-2.8717 -2.307907,-5.1796 -5.179904,-5.1796 -2.375223,0 -4.367197,1.5949 -4.989161,3.7707 -0.621963,-2.1758 -2.576465,-3.7707 -4.951682,-3.7707 z"
+         style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1.24317821;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:3.72953464,3.72953464;stroke-dashoffset:0;stroke-opacity:1" />
+    </g>
+    <g
+       style="fill:#ff00ff;stroke:#000000;stroke-width:1.24317821;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none"
+       inkscape:label="Layer 1"
+       id="g4344"
+       transform="matrix(4.0219495,0,0,4.0219495,-64.702142,-3132.4515)">
+      <path
+         style="fill:#ff0000;fill-opacity:1;stroke:#000000;stroke-width:1.24317821;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         d="m 23.314299,1026.3673 c 0.941445,1.7617 2.220628,3.3746 3.507785,4.7422 2.574314,2.7352 5.180523,4.489 5.180523,4.489 l 0,-9.2312 z"
+         id="path4346"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="ccccc" />
+    </g>
+  </g>
+</svg>

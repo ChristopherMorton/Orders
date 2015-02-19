@@ -14,8 +14,8 @@
    id="svg2816"
    version="1.1"
    inkscape:version="0.91 r13725"
-   sodipodi:docname="OrderAttackBiggest.svg"
-   inkscape:export-filename="/home/cg/programming/orders/res/OrderAttackBiggest.png"
+   sodipodi:docname="OrderAttackMostArmored.svg"
+   inkscape:export-filename="/home/cg/programming/orders/res/OrderAttackMostArmored.png"
    inkscape:export-xdpi="90"
    inkscape:export-ydpi="90">
   <defs
@@ -35,9 +35,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.4142136"
-     inkscape:cx="56.853637"
-     inkscape:cy="118.40056"
+     inkscape:zoom="2"
+     inkscape:cx="78.237569"
+     inkscape:cy="41.785342"
      inkscape:current-layer="layer1"
      showgrid="true"
      inkscape:document-units="px"
@@ -65,7 +65,7 @@
      inkscape:groupmode="layer"
      transform="translate(0,64)">
     <rect
-       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;opacity:0"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:5.00028133;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;opacity:0"
        id="rect2826"
        width="122.99972"
        height="122.99973"
@@ -73,18 +73,12 @@
        y="-61.499874"
        ry="24.75115"
        rx="25.260769" />
-    <g
-       transform="matrix(3.4430278,0,0,3.4430278,-46.176636,-3527.0855)"
-       id="layer1-2"
-       inkscape:label="Layer 1"
-       style="fill:#ff00ff;stroke:#000000;stroke-width:1.45221017;stroke-miterlimit:4;stroke-dasharray:none">
-      <path
-         sodipodi:nodetypes="scccscs"
-         inkscape:connector-curvature="0"
-         id="path3816"
-         d="m 27.050925,1015.5529 c -2.872005,0 -5.217989,2.308 -5.217989,5.1796 -0.255167,7.8506 10.169671,14.866 10.169671,14.866 0,0 9.69159,-6.0558 10.169065,-14.866 0,-2.8717 -2.307907,-5.1796 -5.179904,-5.1796 -2.375223,0 -4.367197,1.5949 -4.989161,3.7707 -0.621963,-2.1758 -2.576465,-3.7707 -4.951682,-3.7707 z"
-         style="fill:#ff0000;fill-opacity:1;stroke:#000000;stroke-width:1.45221017;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
-    </g>
+    <path
+       style="fill:#666666;fill-rule:evenodd;stroke:#000000;stroke-width:5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 98.067922,-33.178435 c 0,0 1.929119,37.6419805 -5.270386,51.283658 C 85.59803,31.7469 64.000005,41.391481 64.000005,41.391481 c 0,0 -21.598026,-9.644581 -28.797532,-23.286258 -7.199507,-13.6416776 -5.270386,-51.283658 -5.270386,-51.283658 z"
+       id="path5867"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="czczcc" />
     <g
        id="g4235"
        style="stroke:#000000;stroke-width:4.38974548;stroke-miterlimit:4;stroke-dasharray:none"

@@ -20,6 +20,8 @@ namespace sum
 #define SELECT_FARTHEST 2
 #define SELECT_BIGGEST 3
 #define SELECT_SMALLEST 4
+#define SELECT_MOST_ARMORED 5
+#define SELECT_LEAST_ARMORED 6
    class Unit;
    Unit* getEnemy( int x, int y, float range, Direction dir, Unit *source, int selector, bool ally = false);
    Unit* getEnemyLine( int x, int y, float range, Direction dir, Unit *source, int selector, bool ally = false);
@@ -52,6 +54,7 @@ namespace sum
    extern int level_dim_x, level_dim_y;
    extern Unit **unit_grid;
    extern Terrain *terrain_grid;
+   extern TerrainMod *terrain_mod_grid;
 };
 
 #endif

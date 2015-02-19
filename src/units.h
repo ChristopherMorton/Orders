@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "orders.h"
+#include "effects.h"
 
 #include <string>
 #include <deque>
@@ -49,12 +50,13 @@ public:
    int aff_poison;
    int aff_confusion;
 
-   bool flying;
+   bool flying, invis;
 
    float health, max_health;
    float speed; // 0.0-1.0 = when do moves complete?
    float vision_range;
    float attack_range;
+   float armor;
 
    float radius;
 
@@ -71,7 +73,11 @@ public:
    int current_iteration;
    int active;
 
+   DamageDisplay *dmg_display;
+
    int turnTo( Direction face );
+
+   int displayDamage( int damage, DamageType type );
 
    int prepareBasicOrder( Order &o, bool cond );
    int startBasicOrder( );
@@ -88,7 +94,7 @@ public:
 
    virtual int doAttack( Order o ) = 0;
 
-   virtual int takeDamage( float damage, int flags = 0 );
+   virtual int takeDamage( float damage, DamageType type = DMG_NORMAL );
 
    virtual std::string descriptor();
 
@@ -158,7 +164,7 @@ public:
 
    virtual int doAttack( Order o );
 
-   virtual int takeDamage( float damage, int flags = 0 );
+   virtual int takeDamage( float damage, DamageType type = DMG_NORMAL );
 
    virtual std::string descriptor();
 
@@ -230,7 +236,7 @@ public:
    void doBurst();
    float setHardness( float hard );
 
-   virtual int takeDamage( float damage, int flags = 0 );
+   virtual int takeDamage( float damage, DamageType type = DMG_NORMAL );
 
    virtual int addOrder( Order o );
 
@@ -282,9 +288,11 @@ private:
    Worm(); // Disallowed 
 
 public:
-   bool invis, trail;
+   bool trail;
 
    Worm( int grid_x, int grid_y, Direction face );
+
+   virtual int takeDamage( float damage, DamageType type = DMG_NORMAL );
 
    virtual int addOrder( Order o );
 
@@ -292,8 +300,9 @@ public:
 
    virtual std::string descriptor();
 
+   virtual int prepareTurn();
    //virtual int startTurn();
-   //virtual int completeTurn();
+   virtual int completeTurn();
    //virtual int update( float dtf );
    virtual sf::Texture* getTexture();
    virtual int draw();

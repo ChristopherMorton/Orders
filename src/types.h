@@ -14,6 +14,14 @@ typedef enum
 } Direction;
 
 typedef enum {
+   DMG_NORMAL,
+   DMG_HEAVY,
+   DMG_LIGHT,
+   DMG_POISON,
+   DMG_HEAL
+} DamageType;
+
+typedef enum {
    BASE_TER_GRASS,
    BASE_TER_MOUNTAIN,
    BASE_TER_UNDERGROUND
@@ -108,6 +116,24 @@ typedef unsigned char Terrain;
 #define TER_ATELIER_CORNER_NW 254
 
 #define NUM_TERRAINS 255
+
+//////////////////////////////////////////////////////////////////////
+// Terrain Mod ---
+
+typedef enum {
+   TM_TRAIL_W_END,
+   TM_TRAIL_S_END,
+   TM_TRAIL_E_END,
+   TM_TRAIL_N_END,
+   TM_TRAIL_EW,
+   TM_TRAIL_NS,
+   TM_TRAIL_NE,
+   TM_TRAIL_SE,
+   TM_TRAIL_SW,
+   TM_TRAIL_NW,
+   TM_NONE,
+   NUM_TERRAIN_MODS
+} TerrainMod;
 
 typedef enum {
    VIS_NONE,

@@ -119,6 +119,9 @@ int applyAVOptions()
    } else if (av_selected_resolution == 1) {
       w = 1200;
       h = 900;
+   } else if (av_selected_resolution == 2) {
+      w = 1280;
+      h = 1024;
    }
 
    config::setWindow( w, h, f );
@@ -331,10 +334,12 @@ bool initAVOptionsMenu = false;
 IMButton* b_exit_av_options_menu = NULL;
 IMEdgeTextButton* b_800x600 = NULL;
 IMEdgeTextButton* b_1200x900 = NULL;
+IMEdgeTextButton* b_1280x1024 = NULL;
 IMEdgeTextButton* b_av_apply = NULL;
 
 string s_800x600 = "800 x 600";
 string s_1200x900 = "1200 x 900";
+string s_1280x1024 = "1280 x 1024";
 string s_apply_av = "Apply changes";
 
 // Selections are:
@@ -347,9 +352,15 @@ void selectResolution( int selection )
    if (av_selected_resolution == 0) {
       b_800x600->setAllTextures( texture_manager->getTexture( "UICenterGold.png" ) );
       b_1200x900->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
+      b_1280x1024->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
    } else if (av_selected_resolution == 1) {
       b_800x600->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
       b_1200x900->setAllTextures( texture_manager->getTexture( "UICenterGold.png" ) );
+      b_1280x1024->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
+   } else if (av_selected_resolution == 2) {
+      b_800x600->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
+      b_1200x900->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
+      b_1280x1024->setAllTextures( texture_manager->getTexture( "UICenterGold.png" ) );
    }
 }
 
@@ -377,7 +388,12 @@ void fitGui_AVOptions()
    b_1200x900->setTextSize( gui_text_size );
    b_1200x900->centerText();
 
-   b_av_apply->setPosition( 30 * gui_tick_x, 40 * gui_tick_y );
+   b_1280x1024->setPosition( 25 * gui_tick_x, 40 * gui_tick_y );
+   b_1280x1024->setSize( 30 * gui_tick_x, 4 * gui_tick_y );
+   b_1280x1024->setTextSize( gui_text_size );
+   b_1280x1024->centerText();
+
+   b_av_apply->setPosition( 30 * gui_tick_x, 45 * gui_tick_y );
    b_av_apply->setSize( 20 * gui_tick_x, 4 * gui_tick_y );
    b_av_apply->setTextSize( gui_text_size );
    b_av_apply->centerText();
@@ -409,6 +425,16 @@ int initAVOptionsMenuGui()
    b_1200x900->setTextColor( sf::Color::Black );
    gui_manager->registerWidget( "Resolution 1200 x 900", b_1200x900);
 
+   b_1280x1024 = new IMEdgeTextButton();
+   b_1280x1024->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
+   b_1280x1024->setCornerAllTextures( texture_manager->getTexture( "UICornerBrown3px.png" ) );
+   b_1280x1024->setEdgeAllTextures( texture_manager->getTexture( "UIEdgeBrown3px.png" ) );
+   b_1280x1024->setEdgeWidth( 3 );
+   b_1280x1024->setText( &s_1280x1024 );
+   b_1280x1024->setFont( menu_font );
+   b_1280x1024->setTextColor( sf::Color::Black );
+   gui_manager->registerWidget( "Resolution 1280 x 1024", b_1280x1024);
+
    b_av_apply = new IMEdgeTextButton();
    b_av_apply->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
    b_av_apply->setCornerAllTextures( texture_manager->getTexture( "UICornerBrown3px.png" ) );
@@ -421,6 +447,8 @@ int initAVOptionsMenuGui()
 
    if (config::width() == 1200 && config::height() == 900)
       selectResolution( 1 );
+   else if (config::width() == 1280 && config::height() == 1024)
+      selectResolution( 2 );
    else
       selectResolution( 0 );
 
@@ -446,6 +474,8 @@ void AVOptionsMenu()
          selectResolution( 0 );
       if (b_1200x900->doWidget())
          selectResolution( 1 );
+      if (b_1280x1024->doWidget())
+         selectResolution( 2 );
       if (b_av_apply->doWidget())
          applyAVOptions();
    }

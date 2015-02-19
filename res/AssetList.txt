@@ -49,6 +49,10 @@ IMAGE MonsterAnimMove.png
 IMAGE MonsterAnimAttackStart.png
 IMAGE MonsterAnimAttackEnd.png
 IMAGE MonsterAnimDeath.png
+IMAGE MonsterAnimBurstStart.png
+IMAGE MonsterAnimBurstEnd.png
+IMAGE MonsterAnimGuardStart.png
+IMAGE MonsterGuardBubble.png
 IMAGE SoldierAnimIdleAxe.png
 IMAGE SoldierAnimMoveAxe.png
 IMAGE SoldierAnimAttackStartAxe.png

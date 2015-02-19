@@ -17,12 +17,15 @@ namespace sum
 
 void Order::initOrder( Order_Action a, Order_Conditional c, int cnt )
 {
+   // 0 ignores groups on player actions, otherwise is nonsense
+   if (cnt == 0 && a < PL_ALERT_ALL ) cnt = 1;
+
    action = a;
 
    if (a == BUG_MEDITATE)
       cnt *= MEDITATE_DURATION;
 
-   if ((a == MONSTER_GUARD || a == BIRD_FLY) && cnt < 2)
+   if ((a == MONSTER_GUARD || a == BIRD_FLY) && cnt == 1)
       cnt = 2;
 
    condition = c;
@@ -102,6 +105,12 @@ void Order::logSelf()
       case ATTACK_SMALLEST:
          s << "ATTACK_SMALLEST";
          break;
+      case ATTACK_MOST_ARMORED:
+         s << "ATTACK_MOST_ARMORED";
+         break;
+      case ATTACK_LEAST_ARMORED:
+         s << "ATTACK_LEAST_ARMORED";
+         break;
       case START_BLOCK:
          s << "START_BLOCK";
          break;
@@ -135,8 +144,8 @@ void Order::logSelf()
       case SOLDIER_SWITCH_BOW:
          s << "SOLDIER_SWITCH_BOW";
          break;
-      case WORM_SPRINT:
-         s << "WORM_SPRINT";
+      case WORM_HIDE:
+         s << "WORM_HIDE";
          break;
       case WORM_TRAIL_START:
          s << "WORM_TRAIL_START";
@@ -279,6 +288,7 @@ void Order::logSelf()
       case ENEMY_NOT_IN_RANGE:
          s << "ENEMY_NOT_IN_RANGE";
          break;
+         /*
       case ALLY_ADJACENT:
          s << "ALLY_ADJACENT";
          break;
@@ -297,8 +307,30 @@ void Order::logSelf()
       case ALLY_NOT_IN_RANGE:
          s << "ALLY_NOT_IN_RANGE";
          break;
+         */
+      case HEALTH_OVER_50:
+         s << "HEALTH_OVER_50";
+         break;
+      case HEALTH_UNDER_50:
+         s << "HEALTH_UNDER_50";
+         break;
+      case HEALTH_OVER_20:
+         s << "HEALTH_OVER_20";
+         break;
+      case HEALTH_UNDER_20:
+         s << "HEALTH_UNDER_20";
+         break;
+      case BLOCKED_AHEAD:
+         s << "BLOCKED_AHEAD";
+         break;
+      case NOT_BLOCKED_AHEAD:
+         s << "NOT_BLOCKED_AHEAD";
+         break;
       case NUM_CONDITIONALS:
          s << "NUM_CONDITIONALS";
+         break;
+      default:
+         s << "default conditional";
          break;
    }
    s <<  " - " << count << "(" << iteration << ")";
@@ -334,6 +366,9 @@ Texture *getOrderTexture( Order o )
       case TURN_NEAREST_ENEMY:
          base_tex = t_manager.getTexture( "OrderTurnNearestEnemy.png" );
          break;
+      case FOLLOW_PATH:
+         base_tex = t_manager.getTexture( "OrderFollowPath.png" );
+         break;
 
       case ATTACK_CLOSEST:
          base_tex = t_manager.getTexture( "OrderAttackClosest.png" );
@@ -346,6 +381,12 @@ Texture *getOrderTexture( Order o )
          break;
       case ATTACK_SMALLEST:
          base_tex = t_manager.getTexture( "OrderAttackSmallest.png" );
+         break;
+      case ATTACK_MOST_ARMORED:
+         base_tex = t_manager.getTexture( "OrderAttackMostArmored.png" );
+         break;
+      case ATTACK_LEAST_ARMORED:
+         base_tex = t_manager.getTexture( "OrderAttackLeastArmored.png" );
          break;
 
       case START_BLOCK:
@@ -384,8 +425,8 @@ Texture *getOrderTexture( Order o )
       case WORM_TRAIL_END:
          base_tex = t_manager.getTexture( "WormOrderTrailOff.png" );
          break;
-      case WORM_SPRINT:
-         base_tex = t_manager.getTexture( "WormOrderSprint.png" );
+      case WORM_HIDE:
+         base_tex = t_manager.getTexture( "WormOrderHide.png" );
          break;
       case BIRD_FLY:
          base_tex = t_manager.getTexture( "BirdOrderFly.png" );
@@ -522,6 +563,8 @@ Texture *getOrderButtonTexture( Order o )
       case ATTACK_FARTHEST:
       case ATTACK_BIGGEST:
       case ATTACK_SMALLEST:
+      case ATTACK_MOST_ARMORED:
+      case ATTACK_LEAST_ARMORED:
       case WAIT:
          return t_manager.getTexture( "OrderButtonBase.png" );
 
@@ -542,7 +585,7 @@ Texture *getOrderButtonTexture( Order o )
          return t_manager.getTexture( "SoldierOrderButtonBase.png" );
 
       // Worm
-      case WORM_SPRINT:
+      case WORM_HIDE:
       case WORM_TRAIL_START:
       case WORM_TRAIL_END:
          return t_manager.getTexture( "WormOrderButtonBase.png" );
@@ -616,6 +659,9 @@ void drawCondition( Order_Conditional c, int x_b, int y_b, int size )
       case ALLY_ADJACENT:
       case ALLY_AHEAD:
       case ALLY_IN_RANGE:
+      case HEALTH_UNDER_50:
+      case HEALTH_UNDER_20:
+      case BLOCKED_AHEAD:
          sp_base->setTexture( *t_manager.getTexture( "ConditionalButtonBase.png" ) );
          break;
       case ENEMY_NOT_ADJACENT:
@@ -624,6 +670,9 @@ void drawCondition( Order_Conditional c, int x_b, int y_b, int size )
       case ALLY_NOT_ADJACENT:
       case ALLY_NOT_AHEAD:
       case ALLY_NOT_IN_RANGE:
+      case HEALTH_OVER_50:
+      case HEALTH_OVER_20:
+      case NOT_BLOCKED_AHEAD:
          sp_base->setTexture( *t_manager.getTexture( "ConditionalSelectedRed.png" ) );
          break;
       default:
@@ -657,12 +706,25 @@ void drawCondition( Order_Conditional c, int x_b, int y_b, int size )
       case ALLY_NOT_IN_RANGE:
          sp_cond->setTexture( *t_manager.getTexture( "ConditionalAllyInRange.png" ) );
          break;
+      case HEALTH_OVER_50:
+      case HEALTH_UNDER_50:
+         sp_cond->setTexture( *t_manager.getTexture( "ConditionalHalfHealth.png" ) );
+         break;
+      case HEALTH_OVER_20:
+      case HEALTH_UNDER_20:
+         sp_cond->setTexture( *t_manager.getTexture( "Conditional20Health.png" ) );
+         break;
+      case BLOCKED_AHEAD:
+      case NOT_BLOCKED_AHEAD:
+         sp_cond->setTexture( *t_manager.getTexture( "ConditionalBlockedAhead.png" ) );
+         break;
       default:
          delete sp_base;
          delete sp_cond;
          return;
    }
 
+   // If size is 1.0, goes from -.1 to .4 x and .6 to 1.1 y
    int x = x_b - (size / 10), y = y_b + (size * 6 / 10);
    int s = size / 2;
    normalizeTo1x1( sp_base );

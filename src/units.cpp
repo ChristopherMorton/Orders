@@ -24,38 +24,43 @@
 #define PLAYER_MAX_HEALTH 100
 #define PLAYER_MAX_ORDERS 500
 
-#define MONSTER_BASE_HEALTH 600
-#define MONSTER_BASE_MEMORY 10
+#define MONSTER_BASE_HEALTH 400
+#define MONSTER_BASE_MEMORY 15
 #define MONSTER_BASE_VISION 3.5
 #define MONSTER_BASE_SPEED 0.5
+#define MONSTER_BASE_ARMOR 5.0
 
 #define MONSTER_CLAW_DAMAGE 15
 #define MONSTER_BURST_DAMAGE 35
 #define MONSTER_HARDEN_TIME 0.2
 #define MONSTER_MAX_HARNESS_REDUCTION 0.9
 
-#define SOLDIER_BASE_HEALTH 40
-#define SOLDIER_BASE_MEMORY 16
+#define SOLDIER_BASE_HEALTH 220
+#define SOLDIER_BASE_MEMORY 15
 #define SOLDIER_BASE_VISION 6.5
 #define SOLDIER_BASE_SPEED 0.6
+#define SOLDIER_BASE_ARMOR 3.0
 
 #define SOLDIER_AXE_DAMAGE 50
 #define SOLDIER_SPEAR_DAMAGE 35
 
 #define WORM_BASE_HEALTH 40
-#define WORM_BASE_MEMORY 14
+#define WORM_BASE_MEMORY 15
 #define WORM_BASE_VISION 8.5
 #define WORM_BASE_SPEED 0.3
+#define WORM_BASE_ARMOR 1.0
 
-#define BIRD_BASE_HEALTH 200
-#define BIRD_BASE_MEMORY 16
+#define BIRD_BASE_HEALTH 180
+#define BIRD_BASE_MEMORY 24
 #define BIRD_BASE_VISION 6.5
 #define BIRD_BASE_SPEED 0.7
+#define BIRD_BASE_ARMOR 1.0
 
 #define BUG_BASE_HEALTH 100
-#define BUG_BASE_MEMORY 14
+#define BUG_BASE_MEMORY 15
 #define BUG_BASE_VISION 5.5
 #define BUG_BASE_SPEED 0.8
+#define BUG_BASE_ARMOR 1.0
 #define BUG_ORB_SPEED 3.0
 
 using namespace sf;
@@ -75,6 +80,7 @@ int Unit::prepareBasicOrder( Order &o, bool cond_result )
 {
    int nest;
    Terrain t;
+   TerrainMod tm;
    bool can_follow;
 
    if (o.action <= WAIT) {
@@ -86,9 +92,41 @@ int Unit::prepareBasicOrder( Order &o, bool cond_result )
 
             can_follow = false;
             t = GRID_AT(terrain_grid,x_grid,y_grid);
+            tm = GRID_AT(terrain_mod_grid,x_grid,y_grid);
 
             // Change direction based on the exits to the path
-            if (t == TER_PATH_N_END && facing == SOUTH) {
+            // Mod terrain checks first:
+            if (tm == TM_TRAIL_N_END && facing == SOUTH) {
+               can_follow = true;
+            } else if (tm == TM_TRAIL_S_END && facing == NORTH) {
+               can_follow = true;
+            } else if (tm == TM_TRAIL_E_END && facing == WEST) {
+               can_follow = true;
+            } else if (tm == TM_TRAIL_W_END && facing == EAST) {
+               can_follow = true;
+            } else if (tm == TM_TRAIL_EW && (facing == EAST || facing == WEST)) {
+               can_follow = true;
+            } else if (tm == TM_TRAIL_NS && (facing == NORTH || facing == SOUTH)) {
+               can_follow = true;
+            } else if (tm == TM_TRAIL_NE) {
+               can_follow = true;
+               if (facing == WEST) turnTo( NORTH );
+               if (facing == SOUTH) turnTo( EAST );
+            } else if (tm == TM_TRAIL_SE) {
+               can_follow = true;
+               if (facing == WEST) turnTo( SOUTH );
+               if (facing == NORTH) turnTo( EAST );
+            } else if (tm == TM_TRAIL_SW) {
+               can_follow = true;
+               if (facing == EAST) turnTo( SOUTH );
+               if (facing == NORTH) turnTo( WEST );
+            } else if (tm == TM_TRAIL_NW) {
+               can_follow = true;
+               if (facing == EAST) turnTo( NORTH );
+               if (facing == SOUTH) turnTo( WEST );
+            }
+            // Then normal terrain:
+            else if (t == TER_PATH_N_END && facing == SOUTH) {
                can_follow = true;
             } else if (t == TER_PATH_S_END && facing == NORTH) {
                can_follow = true;
@@ -175,6 +213,8 @@ int Unit::prepareBasicOrder( Order &o, bool cond_result )
          case ATTACK_FARTHEST:
          case ATTACK_SMALLEST:
          case ATTACK_BIGGEST:
+         case ATTACK_MOST_ARMORED:
+         case ATTACK_LEAST_ARMORED:
             if (cond_result == true) {
                done_attack = 0;
                return 1;
@@ -302,6 +342,8 @@ int Unit::updateBasicOrder( float dtf, Order o )
          case ATTACK_FARTHEST:
          case ATTACK_SMALLEST:
          case ATTACK_BIGGEST:
+         case ATTACK_MOST_ARMORED:
+         case ATTACK_LEAST_ARMORED:
             if (!done_attack) {
                if (progress >= speed) {
                   doAttack( o );
@@ -359,6 +401,7 @@ bool Unit::evaluateConditional( Order_Conditional oc )
          s = false;
       case ENEMY_IN_RANGE:
          return s != !(getEnemy( x_grid, y_grid, vision_range, facing, this, SELECT_CLOSEST, false ) != NULL);
+         /*
       case ALLY_NOT_ADJACENT:
          s = false;
       case ALLY_ADJACENT:
@@ -371,6 +414,19 @@ bool Unit::evaluateConditional( Order_Conditional oc )
          s = false;
       case ALLY_IN_RANGE:
          return s != !(getEnemy( x_grid, y_grid, vision_range, facing, this, SELECT_CLOSEST, true ) != NULL);
+         */
+      case HEALTH_UNDER_50:
+         return (health / max_health) < 50.0;
+      case HEALTH_OVER_50:
+         return (health / max_health) > 50.0;
+      case HEALTH_UNDER_20:
+         return (health / max_health) < 20.0;
+      case HEALTH_OVER_20:
+         return (health / max_health) > 20.0;
+      case NOT_BLOCKED_AHEAD:
+         return canMove( x_next, y_next, x_grid, y_grid );
+      case BLOCKED_AHEAD:
+         return !canMove( x_next, y_next, x_grid, y_grid );
       default:
          return true;
    }
@@ -461,7 +517,7 @@ int Unit::prepareTurn()
 
    if (aff_poison) {
       aff_poison--;
-      takeDamage( 10 );
+      takeDamage( 10, DMG_POISON );
    }
    if (aff_confusion) {
       aff_confusion--;
@@ -537,14 +593,27 @@ int Unit::completeTurn()
    return 0;
 }
 
-int Unit::takeDamage( float damage, int flags )
+int Unit::displayDamage( int damage, DamageType type )
 {
+   addEffectManual( new DamageDisplay( this, damage, type ) );
+}
+
+int Unit::takeDamage( float damage, DamageType type )
+{
+   if (type == DMG_LIGHT) damage -= (2 * armor);
+   else if (type == DMG_NORMAL) damage -= armor;
+
+   if (damage <= 0) return 0;
+
    health -= damage;
+
    if (health <= 0) {
       // Dead!
       alive = -( DEATH_TIME + DEATH_FADE_TIME );
       return -1;
    }
+
+   displayDamage( damage, type );
 
    return 0;
 }
@@ -574,6 +643,7 @@ AIUnit::AIUnit( UnitType t, int x, int y, Direction face, int my_team )
    aff_confusion = 0;
     
    flying = false;
+   invis = false;
 
    type = t;
    x_grid = x;
@@ -605,6 +675,7 @@ AIUnit::AIUnit( UnitType t, int x, int y, Direction face, int my_team )
          vision_range = 8.5;
          attack_range = 8.5;
          speed = 0.6;
+         armor = 1.0;
          break;
       case M_HUMAN_SWORDSMAN_T:
          radius = 0.3;
@@ -612,6 +683,7 @@ AIUnit::AIUnit( UnitType t, int x, int y, Direction face, int my_team )
          vision_range = 5.5;
          attack_range = 1.3;
          speed = 0.5;
+         armor = 5.0;
          break;
       default:
          break;
@@ -620,6 +692,8 @@ AIUnit::AIUnit( UnitType t, int x, int y, Direction face, int my_team )
    progress = 0;
    
    win_condition = false;
+
+   dmg_display = NULL;
 }
 
 int AIUnit::doAttack( Order o )
@@ -638,6 +712,12 @@ int AIUnit::doAttack( Order o )
          break;
       case ATTACK_BIGGEST:
          selector = SELECT_BIGGEST;
+         break;
+      case ATTACK_MOST_ARMORED:
+         selector = SELECT_MOST_ARMORED;
+         break;
+      case ATTACK_LEAST_ARMORED:
+         selector = SELECT_LEAST_ARMORED;
          break;
       default:
          log("ERROR: doAttack called on non-attack order");
@@ -670,8 +750,13 @@ int AIUnit::doAttack( Order o )
    return 0;
 }
 
-int AIUnit::takeDamage( float damage, int flags )
+int AIUnit::takeDamage( float damage, DamageType type )
 {
+   if (type == DMG_LIGHT) damage -= (2 * armor);
+   else if (type == DMG_NORMAL) damage -= armor;
+
+   if (damage <= 0) return 0;
+
    health -= damage;
    if (health <= 0) {
       // Dead!
@@ -681,6 +766,8 @@ int AIUnit::takeDamage( float damage, int flags )
 
    if (ai_aggro == AGR_DEFEND_SELF)
       aggroed = 1;
+
+   displayDamage( damage, type );
 
    return 0;
 }
@@ -1010,7 +1097,7 @@ int AIUnit::prepareTurn()
 
    if (aff_poison) {
       aff_poison--;
-      takeDamage( 10 );
+      takeDamage( 10, DMG_POISON );
    }
    if (aff_confusion) {
       aff_confusion--;
@@ -1135,6 +1222,7 @@ int Player::init( int x, int y, Direction face )
    aff_confusion = 0;
     
    flying = false;
+   invis = false;
 
    radius = 0.4;
 
@@ -1150,6 +1238,7 @@ int Player::init( int x, int y, Direction face )
    attack_range = 3.5;
 
    speed = 0.99;
+   armor = 0;
 
    max_orders = PLAYER_MAX_ORDERS;
    order_queue = new Order[max_orders];
@@ -1165,6 +1254,8 @@ int Player::init( int x, int y, Direction face )
    progress = 0;
    
    win_condition = false;
+
+   dmg_display = NULL;
 
    return 0;
 }
@@ -1356,6 +1447,7 @@ Monster::Monster( int x, int y, Direction face )
    aff_confusion = 0;
     
    flying = false;
+   invis = false;
 
    radius = 0.5;
 
@@ -1371,6 +1463,7 @@ Monster::Monster( int x, int y, Direction face )
    attack_range = 1.3;
 
    speed = MONSTER_BASE_SPEED * ( 1.0 - ( focus_speed * 0.02 ) );
+   armor = MONSTER_BASE_ARMOR + (focus_toughness * 0.2);
 
    max_orders = MONSTER_BASE_MEMORY * ( 1.0 + ( focus_memory * 0.08 ) );
    order_queue = new Order[max_orders];
@@ -1384,6 +1477,8 @@ Monster::Monster( int x, int y, Direction face )
    progress = 0;
 
    win_condition = false;
+
+   dmg_display = NULL;
 
    hardness = 0.0;
 }
@@ -1405,7 +1500,7 @@ void Monster::doBurst()
          if (y < 0 || y >= level_dim_y) continue;
          Unit *u = GRID_AT(unit_grid,x,y);
          if (u && u != this)
-            u->takeDamage( MONSTER_BURST_DAMAGE );
+            u->takeDamage( MONSTER_BURST_DAMAGE, DMG_LIGHT );
       }
    }
 
@@ -1422,18 +1517,26 @@ float Monster::setHardness( float hard )
 
 // Virtual methods
 
-int Monster::takeDamage( float damage, int flags )
+int Monster::takeDamage( float damage, DamageType type )
 {
    if (hardness > 0.01) {
       float multiplier = 1.0 - (hardness * MONSTER_MAX_HARNESS_REDUCTION); 
       damage *= multiplier;
    }
+
+   if (type == DMG_LIGHT) damage -= (2 * armor);
+   else if (type == DMG_NORMAL) damage -= armor;
+
+   if (damage <= 0) return 0;
+
    health -= damage;
    if (health <= 0) {
       // Dead!
       alive = -( DEATH_TIME + DEATH_FADE_TIME );
       return -1;
    }
+
+   displayDamage( damage, type );
 
    return 0;
 }
@@ -1481,7 +1584,7 @@ int Monster::prepareTurn()
 
    if (aff_poison) {
       aff_poison--;
-      takeDamage( MONSTER_CLAW_DAMAGE );
+      takeDamage( MONSTER_CLAW_DAMAGE, DMG_POISON );
    }
    if (aff_confusion) {
       aff_confusion--;
@@ -1620,7 +1723,7 @@ int Monster::draw()
       sp_monster = monster_anim_move.getSprite( (int)(progress * 1000) );
    } else if (this_turn_order.action == MOVE_BACK) {
       sp_monster = monster_anim_move.getSprite( 999 - (int)(progress * 1000) );
-   } else if (this_turn_order.action >= ATTACK_CLOSEST && this_turn_order.action <= ATTACK_SMALLEST) {
+   } else if (this_turn_order.action >= ATTACK_CLOSEST && this_turn_order.action <= ATTACK_LEAST_ARMORED) {
       if (done_attack) {
          int d_anim = (int)( ((progress - speed) / (1-speed)) * 1000);
          if (d_anim >= 1000) d_anim = 999;
@@ -1782,6 +1885,7 @@ Soldier::Soldier( int x, int y, Direction face )
    aff_confusion = 0;
     
    flying = false;
+   invis = false;
 
    radius = 0.2;
 
@@ -1799,6 +1903,7 @@ Soldier::Soldier( int x, int y, Direction face )
    attack_range = 1.3;
 
    speed = SOLDIER_BASE_SPEED * ( 1.0 - ( focus_speed * 0.02 ) );
+   armor = SOLDIER_BASE_ARMOR + (focus_toughness * 0.1);
 
    max_orders = SOLDIER_BASE_MEMORY * ( 1.0 + ( focus_memory * 0.08 ) );
    order_queue = new Order[max_orders];
@@ -1812,6 +1917,8 @@ Soldier::Soldier( int x, int y, Direction face )
    progress = 0;
 
    win_condition = false;
+
+   dmg_display = NULL;
 }
 
 Soldier::~Soldier()
@@ -1853,6 +1960,12 @@ int Soldier::doAttack( Order o )
       case ATTACK_BIGGEST:
          selector = SELECT_BIGGEST;
          break;
+      case ATTACK_MOST_ARMORED:
+         selector = SELECT_MOST_ARMORED;
+         break;
+      case ATTACK_LEAST_ARMORED:
+         selector = SELECT_LEAST_ARMORED;
+         break;
       default:
          log("ERROR: doAttack called on non-attack order");
          return -1;
@@ -1865,7 +1978,7 @@ int Soldier::doAttack( Order o )
 
       if (target) {
          log("Soldier axe attack");
-         target->takeDamage( SOLDIER_AXE_DAMAGE );
+         target->takeDamage( SOLDIER_AXE_DAMAGE, DMG_HEAVY );
          // TODO: Animate
       }
    }
@@ -1948,7 +2061,7 @@ int Soldier::prepareTurn()
 
    if (aff_poison) {
       aff_poison--;
-      takeDamage( MONSTER_CLAW_DAMAGE );
+      takeDamage( MONSTER_CLAW_DAMAGE, DMG_POISON );
    }
    if (aff_confusion) {
       aff_confusion--;
@@ -1966,7 +2079,9 @@ int Soldier::prepareTurn()
       int r = 1;
       if (this_turn_order.action <= SKIP)
          r = prepareBasicOrder(order_queue[current_order], decision);
-      else if (this_turn_order.action == SOLDIER_SWITCH_AXE) {
+      else if (decision == false) {
+         r = 0;
+      } else if (this_turn_order.action == SOLDIER_SWITCH_AXE) {
          r = 0;
          stance = 0;
          attack_range = 1.3;
@@ -2065,7 +2180,7 @@ int Soldier::draw()
       if (stance == 0) sp_soldier = soldier_anim_move_axe.getSprite( 999 - (int)(progress * 1000) );
       if (stance == 1) sp_soldier = soldier_anim_move_spear.getSprite( 999 - (int)(progress * 1000) );
       if (stance == 2) sp_soldier = soldier_anim_move_bow.getSprite( 999 - (int)(progress * 1000) );
-   } else if (this_turn_order.action >= ATTACK_CLOSEST && this_turn_order.action <= ATTACK_SMALLEST) {
+   } else if (this_turn_order.action >= ATTACK_CLOSEST && this_turn_order.action <= ATTACK_LEAST_ARMORED) {
       if (done_attack) {
          int d_anim = (int)( ((progress - speed) / (1-speed)) * 1000);
          if (d_anim >= 1000) d_anim = 999;
@@ -2150,6 +2265,7 @@ Worm::Worm( int x, int y, Direction face )
    aff_confusion = 0;
     
    flying = false;
+   invis = false;
 
    radius = 0.2;
 
@@ -2165,6 +2281,7 @@ Worm::Worm( int x, int y, Direction face )
    attack_range = 1.3;
 
    speed = WORM_BASE_SPEED * ( 1.0 - ( focus_speed * 0.02 ) );
+   armor = WORM_BASE_ARMOR + (focus_toughness * 0.1);
 
    max_orders = WORM_BASE_MEMORY * ( 1.0 + ( focus_memory * 0.08 ) );
    order_queue = new Order[max_orders];
@@ -2179,6 +2296,8 @@ Worm::Worm( int x, int y, Direction face )
    
    win_condition = false;
 
+   dmg_display = NULL;
+
    invis = false;
    trail = false;
 }
@@ -2191,9 +2310,119 @@ Worm::~Worm()
 
 // Virtual methods
 
+int Worm::prepareTurn()
+{
+   if (alive != 1) return 0;
+
+   if (active == 2) active = 1; // Start an active turn
+
+   this_turn_order = Order( WAIT );
+
+   if (aff_poison) {
+      aff_poison--;
+      takeDamage( MONSTER_CLAW_DAMAGE, DMG_POISON );
+   }
+   if (aff_confusion) {
+      aff_confusion--;
+      if (aff_confusion %= 2)
+         return 0;
+   }
+
+   set<int> visited_orders;
+   while (active == 1 && current_order != final_order 
+         && visited_orders.find( current_order ) == visited_orders.end()) {
+      this_turn_order = order_queue[current_order];
+      visited_orders.insert( current_order );
+      bool decision = evaluateConditional(this_turn_order.condition);
+      // WORM UNIQUE CODE
+      int r = 1;
+      if (this_turn_order.action <= SKIP)
+         r = prepareBasicOrder(order_queue[current_order], decision);
+      else if (decision == false)
+         r = 0;
+      else if (this_turn_order.action == WORM_TRAIL_START) {
+         r = 0;
+         trail = true;
+      } else if (this_turn_order.action == WORM_TRAIL_START) {
+         r = 0;
+         trail = false;
+      }
+      // END
+      // if prepareBasicOrder returns 0, it's a 0-length instruction (e.g. turn)
+      if (r == 0) {
+         current_order++;
+         continue;
+      }
+      else 
+         break;
+   }
+
+   if (current_order == final_order)
+      this_turn_order = Order( WAIT );
+
+   if (this_turn_order.action != WORM_HIDE)
+      invis = false;
+
+   progress = 0;
+   return 0;
+}
+
+int Worm::completeTurn()
+{
+   if (alive != 1) return 0;
+
+   if (active == 1 && current_order != final_order) {
+      int r = completeBasicOrder(this_turn_order);
+      if (this_turn_order.action == WORM_HIDE)
+         invis = true;
+      Order &o = order_queue[current_order];
+      o.iteration++;
+      if (o.iteration >= o.count && o.count != -1) { 
+         current_order++;
+         o.iteration = 0;
+      }
+      return r;
+   }
+
+   return 0;
+
+}
+
+int Worm::takeDamage( float damage, DamageType type )
+{
+   if (type == DMG_LIGHT) damage -= (2 * armor);
+   else if (type == DMG_NORMAL) damage -= armor;
+
+   if (damage <= 0) return 0;
+
+   if (type == DMG_HEAL)
+      health += damage;
+   else
+      health -= damage;
+
+   invis = false;
+   if (this_turn_order.action == WORM_HIDE)
+      this_turn_order.action = WAIT;
+
+   if (health <= 0) {
+      // Dead!
+      alive = -( DEATH_TIME + DEATH_FADE_TIME );
+      return -1;
+   }
+
+   if (health >= max_health) {
+      damage -= (health - max_health);
+      health = max_health;
+   }
+
+   displayDamage( damage, type );
+
+   return 0;
+}
+
 int Worm::addOrder( Order o )
 {
-   if ((o.action <= SKIP) || (o.action >= WORM_SPRINT && o.action <= WORM_TRAIL_END)) {
+   if ((o.action <= SKIP) || (o.action >= WORM_HIDE && o.action <= WORM_TRAIL_END)) {
       if (order_count >= max_orders) // No more memory
          return -2;
 
@@ -2249,7 +2478,7 @@ int Worm::draw()
    } else if (this_turn_order.action == MOVE_BACK) {
       // TODO: Worm should have different retreat animation
       sp_worm = worm_anim_move.getSprite( 999 - (int)(progress * 1000) );
-   } else if (this_turn_order.action >= ATTACK_CLOSEST && this_turn_order.action <= ATTACK_SMALLEST) {
+   } else if (this_turn_order.action >= ATTACK_CLOSEST && this_turn_order.action <= ATTACK_LEAST_ARMORED) {
       if (done_attack) {
          int d_anim = (int)( ((progress - speed) / (1-speed)) * 1000);
          if (d_anim >= 1000) d_anim = 999;
@@ -2259,8 +2488,19 @@ int Worm::draw()
          if (d_anim >= 1000) d_anim = 999;
          sp_worm = worm_anim_attack_start.getSprite( d_anim );
       }
-   } else
+   } else if (this_turn_order.action == WORM_HIDE) {
+      if (invis) {
+         sp_worm = worm_anim_idle.getSprite( (int)(progress * 1000) );
+         sp_worm->setColor( Color( 255, 255, 255, 127 ) );
+      } else {
+         int alpha = 255 - (progress * 128);
+         sp_worm = worm_anim_idle.getSprite( (int)(progress * 1000) );
+         sp_worm->setColor( Color( 255, 255, 255, alpha ) );
+      }
+   } else {
       sp_worm = worm_anim_idle.getSprite( (int)(progress * 1000) );
+      sp_worm->setColor( Color::White );
+   }
    if (NULL == sp_worm) return -1;
 
    // Move/scale sprite
@@ -2340,6 +2580,7 @@ Bird::Bird( int x, int y, Direction face )
    aff_confusion = 0;
 
    flying = true;
+   invis = false;
 
    radius = 0.2;
 
@@ -2355,6 +2596,7 @@ Bird::Bird( int x, int y, Direction face )
    attack_range = vision_range;
 
    speed = BIRD_BASE_SPEED * ( 1.0 - ( focus_speed * 0.02 ) );
+   armor = BIRD_BASE_ARMOR + (focus_toughness * 0.1);
 
    max_orders = BIRD_BASE_MEMORY * ( 1.0 + ( focus_memory * 0.08 ) );
    order_queue = new Order[max_orders];
@@ -2369,6 +2611,8 @@ Bird::Bird( int x, int y, Direction face )
    anim_data = 0;
    
    win_condition = false;
+
+   dmg_display = NULL;
 }
 
 Bird::~Bird()
@@ -2410,6 +2654,12 @@ int Bird::doAttack( Order o )
          break;
       case ATTACK_BIGGEST:
          selector = SELECT_BIGGEST;
+         break;
+      case ATTACK_MOST_ARMORED:
+         selector = SELECT_MOST_ARMORED;
+         break;
+      case ATTACK_LEAST_ARMORED:
+         selector = SELECT_LEAST_ARMORED;
          break;
       default:
          log("ERROR: doAttack called on non-attack order");
@@ -2547,7 +2797,7 @@ int Bird::draw()
       sp_bird = bird_anim_move.getSprite( (int)(progress * 1000) );
    } else if (this_turn_order.action == MOVE_BACK) {
       sp_bird = bird_anim_move.getSprite( 999 - (int)(progress * 1000) );
-   } else if (this_turn_order.action >= ATTACK_CLOSEST && this_turn_order.action <= ATTACK_SMALLEST) {
+   } else if (this_turn_order.action >= ATTACK_CLOSEST && this_turn_order.action <= ATTACK_LEAST_ARMORED) {
       if (done_attack) {
          int d_anim = (int)( ((progress - speed) / (1-speed)) * 1000);
          if (d_anim >= 1000) d_anim = 999;
@@ -2689,6 +2939,7 @@ Bug::Bug( int x, int y, Direction face )
    aff_confusion = 0;
     
    flying = false;
+   invis = false;
 
    radius = 0.4;
 
@@ -2706,6 +2957,7 @@ Bug::Bug( int x, int y, Direction face )
    orb_speed = BUG_ORB_SPEED * ( 1.0 + ( focus_speed * 0.01) );
 
    speed = BUG_BASE_SPEED * ( 1.0 - ( focus_speed * 0.02 ) );
+   armor = BUG_BASE_ARMOR + (focus_toughness * 0.1);
 
    max_orders = BUG_BASE_MEMORY * ( 1.0 + ( focus_memory * 0.08 ) );
    order_queue = new Order[max_orders];
@@ -2720,6 +2972,8 @@ Bug::Bug( int x, int y, Direction face )
    anim_data = 0;
 
    win_condition = false;
+
+   dmg_display = NULL;
 
    setStarCount( 4 );
 }
@@ -2771,6 +3025,12 @@ int Bug::doAttack( Order o )
          break;
       case ATTACK_BIGGEST:
          selector = SELECT_BIGGEST;
+         break;
+      case ATTACK_MOST_ARMORED:
+         selector = SELECT_MOST_ARMORED;
+         break;
+      case ATTACK_LEAST_ARMORED:
+         selector = SELECT_LEAST_ARMORED;
          break;
       default:
          log("ERROR: doAttack called on non-attack order");
@@ -2879,7 +3139,7 @@ int Bug::draw()
    } else if (this_turn_order.action == MOVE_BACK) {
       sp_bug = bug_anim_move.getSprite( 999 - (int)(progress * 1000) );
       sp_bug_stars = bug_anim_move_stars[star_count].getSprite( 999 - (int)(progress * 1000) );
-   } else if (this_turn_order.action >= ATTACK_CLOSEST && this_turn_order.action <= ATTACK_SMALLEST) {
+   } else if (this_turn_order.action >= ATTACK_CLOSEST && this_turn_order.action <= ATTACK_LEAST_ARMORED) {
       if (done_attack) {
          int d_anim = (int)( ((progress - speed) / (1-speed)) * 1000);
          if (d_anim >= 1000) d_anim = 999;
@@ -2950,6 +3210,7 @@ SummonMarker::SummonMarker( )
    aff_confusion = 0;
     
    flying = false;
+   invis = false;
 
    health = max_health = 0;
 
@@ -2972,6 +3233,8 @@ SummonMarker::SummonMarker( )
    progress = 0;
    
    win_condition = false;
+
+   dmg_display = NULL;
 }
 
 SummonMarker *theSummonMarker = NULL;
@@ -3112,6 +3375,7 @@ TargetPractice::TargetPractice( int x, int y, Direction face )
    aff_confusion = 0;
     
    flying = false;
+   invis = false;
 
    health = max_health = 100000;
 
@@ -3134,6 +3398,8 @@ TargetPractice::TargetPractice( int x, int y, Direction face )
    progress = 0;
    
    win_condition = false;
+
+   dmg_display = NULL;
 }
 
 int TargetPractice::addOrder( Order o )

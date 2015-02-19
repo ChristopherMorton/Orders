@@ -23,6 +23,8 @@ namespace sum
       ATTACK_FARTHEST,
       ATTACK_BIGGEST,
       ATTACK_SMALLEST,
+      ATTACK_MOST_ARMORED,
+      ATTACK_LEAST_ARMORED,
 
       // Basic Control Flow
       START_BLOCK,
@@ -32,8 +34,6 @@ namespace sum
       WAIT,
 
       BUMP,
-
-      SKIP,
 
       // Unit specific
 
@@ -47,7 +47,7 @@ namespace sum
       SOLDIER_SWITCH_BOW,
 
       // Worm
-      WORM_SPRINT,
+      WORM_HIDE,
       WORM_TRAIL_START,
       WORM_TRAIL_END,
 
@@ -100,6 +100,8 @@ namespace sum
       SUMMON_BIRD,
       SUMMON_BUG,
 
+      SKIP,
+
       FAILED_SUMMON,
 
       NUM_ACTIONS
@@ -114,12 +116,20 @@ namespace sum
       ENEMY_NOT_AHEAD,
       ENEMY_IN_RANGE,
       ENEMY_NOT_IN_RANGE,
+      // Remove these?
       ALLY_ADJACENT,
       ALLY_NOT_ADJACENT,
       ALLY_AHEAD,
       ALLY_NOT_AHEAD,
       ALLY_IN_RANGE,
       ALLY_NOT_IN_RANGE,
+      //
+      HEALTH_UNDER_50,
+      HEALTH_OVER_50,
+      HEALTH_UNDER_20,
+      HEALTH_OVER_20,
+      BLOCKED_AHEAD,
+      NOT_BLOCKED_AHEAD,
 
       NUM_CONDITIONALS
    };

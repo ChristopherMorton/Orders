@@ -1,7 +1,11 @@
 #ifndef EFFECTS_H__
 #define EFFECTS_H__
 
+#include "types.h"
+
 #include <SFML/System/Vector2.hpp>
+
+namespace sf { struct Text; };
 
 namespace sum
 {
@@ -21,6 +25,8 @@ enum Effect_Type
    // Combat Effects
    SE_SPEAR_ANIM,
    EF_MONSTER_BURST,
+   // Other Effects
+   EF_DAMAGE_DISPLAY,
 
    NUM_EFFECTS
 };
@@ -76,6 +82,24 @@ struct MonsterBurst : public Effect
 
    MonsterBurst( float x, float y );
    virtual ~MonsterBurst();
+};
+
+struct DamageDisplay : public Effect
+{
+   Unit *attached_unit;
+   DamageDisplay *next;
+   float offset_x, offset_y;
+   sf::Text *damage_text;
+   float duration;
+
+   int subtractOffset();
+
+   virtual int update( float dtf );
+   virtual int draw();
+
+   DamageDisplay( Unit *u, int damage, DamageType type );
+
+   virtual ~DamageDisplay();
 };
 
 Projectile *genProjectile( Effect_Type t, int team, float x, float y, float speed, float range, Unit* target, float homing = 0, float fastforward = 0 );

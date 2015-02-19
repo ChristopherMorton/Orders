@@ -4,8 +4,10 @@
 #include "units.h"
 #include "log.h"
 #include "animation.h"
+#include "menustate.h"
 
 #include <cmath>
+#include <sstream>
 
 #include "SFML_GlobalRenderWindow.hpp"
 #include "SFML_TextureManager.hpp"
@@ -274,6 +276,9 @@ StaticEffect::~StaticEffect()
 ///////////////////////////////////////////////////////////////////////////////
 // Unique Effects ---
 
+///////////////////////////////////////////////////////////////////////////////
+// Monster Burst ---
+
 Sprite *sp_burst_spike;
 bool init_monster_burst = false;
 
@@ -378,6 +383,103 @@ MonsterBurst::MonsterBurst( float x, float y )
 
 MonsterBurst::~MonsterBurst()
 { }
+
+///////////////////////////////////////////////////////////////////////////////
+// DamageDisplay ---
+
+const float c_dmg_display_height = 0.13;
+const float c_dmg_display_dur_half = 0.2;
+
+int DamageDisplay::subtractOffset()
+{
+   offset_y -= c_dmg_display_height;
+
+   if (next != NULL)
+      return next->subtractOffset();
+
+   return 0;
+}
+
+int DamageDisplay::update( float dtf )
+{
+   duration -= dtf;
+   if (duration <= 0) {
+      subtractOffset();
+      if (attached_unit != NULL)
+         attached_unit->dmg_display = next;
+
+      return 1;
+   }
+
+   return 0;
+}
+
+int DamageDisplay::draw()
+{
+   if (attached_unit == NULL)
+      return -1;
+
+   if (duration < c_dmg_display_dur_half) {
+      Color new_c = damage_text->getColor();
+      new_c.a = (int) (255 * (duration / c_dmg_display_dur_half) );
+      damage_text->setColor( new_c );
+   }
+
+   damage_text->setPosition( attached_unit->x_real - 0.5 + offset_x, attached_unit->y_real - 0.5 + offset_y );
+   SFML_GlobalRenderWindow::get()->draw( *damage_text );
+   return 0;
+}
+
+DamageDisplay::DamageDisplay( Unit *u, int damage, DamageType dmg_type )
+{
+   next = NULL;
+   type = EF_DAMAGE_DISPLAY;
+   duration = 2 * c_dmg_display_dur_half;
+
+   // Figure out unit stuff
+   attached_unit = u;
+   if (attached_unit) {
+      if (attached_unit->dmg_display != NULL) {
+         DamageDisplay *last = attached_unit->dmg_display;
+         while( last->next != NULL )
+            last = last->next;
+         last->next = this;
+         offset_x = 0;
+         offset_y = last->offset_y + c_dmg_display_height;
+      } else {
+         attached_unit->dmg_display = this;
+         offset_x = 0;
+         offset_y = 0;
+      }
+   }
+
+   // Setup Text
+   damage_text = new Text();
+   damage_text->setFont( *menu_font );
+   damage_text->setCharacterSize( 36 );
+
+   stringstream ss;
+   if (dmg_type == DMG_HEAL)
+      ss << "+";
+   else
+      ss << "-";
+   ss << damage;
+   damage_text->setString( String( ss.str() ) );
+
+   if (dmg_type == DMG_HEAL)
+      damage_text->setColor( Color( 0, 127, 0, 255 ) );
+   else
+      damage_text->setColor( Color( 127, 0, 0, 255 ) );
+
+   FloatRect dim = damage_text->getGlobalBounds();
+   damage_text->setScale( 0.2 / dim.height, 0.2 / dim.height );
+}
+
+DamageDisplay::~DamageDisplay()
+{ 
+   if (damage_text)
+      delete damage_text;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // General ---

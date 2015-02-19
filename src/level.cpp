@@ -71,6 +71,7 @@ int level_dim_y = -1;
 float level_fog_dim = 0;
 
 Sprite **terrain_sprites;
+Sprite **terrain_mod_sprites;
 
 BaseTerrain base_terrain;
 Sprite *base_grass_sprite;
@@ -78,6 +79,7 @@ Sprite *base_mountain_sprite;
 Sprite *base_underground_sprite;
 // Grids - row-major order, size = dim_x X dim_y
 Terrain* terrain_grid;
+TerrainMod* terrain_mod_grid;
 Unit** unit_grid;
 // Lists
 list<Unit*> unit_list;
@@ -511,14 +513,12 @@ int calculatePointVision( int start_x, int start_y, int end_x, int end_y, int fl
             calculator += 1.0;
          }
 
+         GRID_AT(v_grid,x,y) = VIS_VISIBLE;
          // Check if this square obstructs vision
-         if (y != start_y && blocksVision(x, y, previous_x, previous_y, dir1, dir2, flags)) {
-            GRID_AT(v_grid,x,y) = VIS_VISIBLE;
+         if (y != start_y && blocksVision(x, y, previous_x, previous_y, dir1, dir2, flags))
             return -1; // Vision obstructed beyond here
-         }
 
          // Otherwise, it's visible, move on
-         GRID_AT(v_grid,x,y) = VIS_VISIBLE;
          previous_x = x;
          previous_y = y;
       }
@@ -539,14 +539,12 @@ int calculatePointVision( int start_x, int start_y, int end_x, int end_y, int fl
             calculator += 1.0;
          }
 
+         GRID_AT(v_grid,x,y) = VIS_VISIBLE;
          // Check if this square obstructs vision
-         if (x != start_x && blocksVision(x, y, previous_x, previous_y, dir1, dir2, flags)) {
-            GRID_AT(v_grid,x,y) = VIS_VISIBLE;
+         if (x != start_x && blocksVision(x, y, previous_x, previous_y, dir1, dir2, flags))
             return -1; // Vision obstructed beyond here
-         }
 
          // Otherwise, it's visible, move on
-         GRID_AT(v_grid,x,y) = VIS_VISIBLE;
          previous_x = x;
          previous_y = y;
       }
@@ -564,14 +562,12 @@ int calculateVerticalLineVision( int x, int start_y, int end_y, int flags, Visio
    if (dy == -1) dir = NORTH;
 
    for ( int y = start_y + dy; y != end_y + dy; y += dy) {
+      GRID_AT(v_grid,x,y) = VIS_VISIBLE;
       // Check possible vision-obstructors
-      if (blocksVision(x, y, x, y - dy, ALL_DIR, dir, flags)) {
-         GRID_AT(v_grid,x,y) = VIS_VISIBLE;
+      if (blocksVision(x, y, x, y - dy, ALL_DIR, dir, flags))
          return -1; // Vision obstructed beyond here
-      }
 
       // Otherwise, it's visible, move on
-      GRID_AT(v_grid,x,y) = VIS_VISIBLE;
    }
    return 0;
 }
@@ -585,14 +581,12 @@ int calculateHorizintalLineVision( int start_x, int end_x, int y, int flags, Vis
    if (dx == -1) dir = WEST;
 
    for ( int x = start_x + dx; x != end_x + dx; x += dx) {
+      GRID_AT(v_grid,x,y) = VIS_VISIBLE;
       // Check possible vision-obstructors
-      if (blocksVision(x, y, x - dx, y, dir, ALL_DIR, flags)) {
-         GRID_AT(v_grid,x,y) = VIS_VISIBLE;
+      if (blocksVision(x, y, x - dx, y, dir, ALL_DIR, flags))
          return -1; // Vision obstructed beyond here
-      }
 
       // Otherwise, it's visible, move on
-      GRID_AT(v_grid,x,y) = VIS_VISIBLE;
    }
    return 0;
 }
@@ -772,6 +766,16 @@ Unit* enemySelector( int selector, Unit* u_cur, Unit* u_new, float cur_r_squared
          return u_new;
       else
          return u_cur;
+   } else if (selector == SELECT_MOST_ARMORED) {
+      if (u_new->armor > u_cur->armor)
+         return u_new;
+      else
+         return u_cur;
+   } else if (selector == SELECT_LEAST_ARMORED) {
+      if (u_new->armor < u_cur->armor)
+         return u_new;
+      else
+         return u_cur;
    }
 
    return NULL;
@@ -811,31 +815,6 @@ Unit* getEnemyBox( int x, int y, int min_x, int max_x, int min_y, int max_y, flo
                      result = u;
                      result_r_squared = u_squared;
                   }
-                  /*if (NULL == result) {
-                     result = u;
-                     result_r_squared = u_squared;
-                  } else if (selector == SELECT_CLOSEST) {
-                     if (u_squared < result_r_squared) {
-                        result = u;
-                        result_r_squared = u_squared;
-                     }
-                  } else if (selector == SELECT_FARTHEST) {
-                     if (u_squared > result_r_squared) {
-                        result = u;
-                        result_r_squared = u_squared;
-                     }
-                  } else if (selector == SELECT_SMALLEST) {
-                     if (u->health < result->health) {
-                        result = u;
-                        result_r_squared = u_squared;
-                     }
-                  } else if (selector == SELECT_BIGGEST) {
-                     if (u->health > result->health) {
-                        result = u;
-                        result_r_squared = u_squared;
-                     }
-                  }
-                  */
                }
             }
          }
@@ -1064,7 +1043,7 @@ bool canMoveUnit( int x, int y, int from_x, int from_y, Unit *u )
 
 // Choosing player orders
 
-int order_prep_count = 1;
+int order_prep_count = 0;
 Order_Conditional order_prep_cond = TRUE;
 
 #define ORDER_PREP_LAST_COUNT 0x1
@@ -1109,6 +1088,9 @@ int playerAddConditional( Order_Conditional c )
       case ALLY_ADJACENT:
       case ALLY_AHEAD:
       case ALLY_IN_RANGE:
+      case HEALTH_UNDER_50:
+      case HEALTH_UNDER_20:
+      case BLOCKED_AHEAD:
          if (order_prep_cond == c) order_prep_cond = (Order_Conditional)((int)c + 1);
          else if (order_prep_cond == (Order_Conditional)((int)c + 1)) order_prep_cond = TRUE;
          else order_prep_cond = c;
@@ -1129,7 +1111,7 @@ int playerAddOrder( Order_Action a )
 
    player->addOrder( o );
 
-   order_prep_count = 1;
+   order_prep_count = 0;
    order_prep_cond = TRUE;
    order_prep_last_input = ORDER_PREP_LAST_ORDER;
    selectConditionButton( TRUE );
@@ -1229,7 +1211,7 @@ int alertUnits( Order o )
 
             if (u && u->team == 0) { // On my team
 
-               if (o.count != 1 && u->group != o.count)
+               if (o.count != 0 && u->group != o.count)
                   continue;
 
                if (o.action == PL_ALERT_ALL) {
@@ -1264,7 +1246,7 @@ int activateUnits( Order o )
 
             if (u && u->team == 0) { // On my team
 
-               if (o.count != 1 && u->group != o.count)
+               if (o.count != 0 && u->group != o.count)
                   continue;
 
                if (o.action == PL_CMD_GO_ALL) {
@@ -1299,7 +1281,7 @@ int activateAlert( Order o )
    {
       Unit* unit = (*it);
       if (unit) {
-         if (o.count != 1 && unit->group != o.count)
+         if (o.count != 0 && unit->group != o.count)
             continue;
 
          unit->activate();
@@ -1414,6 +1396,9 @@ void initTextures()
 {
    int i;
    SFML_TextureManager &t_manager = SFML_TextureManager::getSingleton();
+
+   // TERRAIN SPRITES --
+
    // Setup terrain
    terrain_sprites = new Sprite*[NUM_TERRAINS];
    for (i = 0; i < NUM_TERRAINS; ++i)
@@ -1645,6 +1630,16 @@ void initTextures()
    terrain_sprites[TER_ATELIER_CORNER_SE]->setRotation( 270 );
    terrain_sprites[TER_ATELIER_CORNER_SE]->setOrigin( dim.x, 0 );
 
+   
+   // TERRAIN MOD SPRITES --
+
+   // Setup array
+   terrain_mod_sprites = new Sprite*[NUM_TERRAIN_MODS];
+   for (i = 0; i < NUM_TERRAIN_MODS; ++i)
+      terrain_mod_sprites[i] = NULL;
+
+
+   // Base Terrain
    base_grass_sprite = new Sprite( *(t_manager.getTexture( "GreenGrass.png" )));
    base_mountain_sprite = new Sprite( *(t_manager.getTexture( "GrayRock.png" )));
    base_underground_sprite = new Sprite( *(t_manager.getTexture( "BrownRock.png" )));
@@ -1667,6 +1662,8 @@ void clearGrids()
 {
    if (terrain_grid)
       delete[] terrain_grid;
+   if (terrain_mod_grid)
+      delete[] terrain_mod_grid;
    if (unit_grid)
       delete[] unit_grid;
    if (vision_grid)
@@ -1701,6 +1698,9 @@ int initGrids(int x, int y)
    terrain_grid = new Terrain[dim];
    for (int i = 0; i < dim; ++i) terrain_grid[i] = TER_NONE;
 
+   terrain_mod_grid = new TerrainMod[dim];
+   for (int i = 0; i < dim; ++i) terrain_mod_grid[i] = TM_NONE;
+
    unit_grid = new Unit*[dim];
    for (int i = 0; i < dim; ++i) unit_grid[i] = NULL;
 
@@ -1729,6 +1729,10 @@ int changeLevelDimensions( int new_x_dim, int new_y_dim )
    for (i = 0; i < level_dim_x * level_dim_y; ++i)
       old_terrain_grid[i] = terrain_grid[i];
 
+   TerrainMod* old_terrain_mod_grid = new TerrainMod[level_dim_x * level_dim_y];
+   for (i = 0; i < level_dim_x * level_dim_y; ++i)
+      old_terrain_mod_grid[i] = terrain_mod_grid[i];
+
    Unit** old_unit_grid = new Unit*[level_dim_x * level_dim_y];
    for (i = 0; i < level_dim_x * level_dim_y; ++i)
       old_unit_grid[i] = unit_grid[i];
@@ -1747,6 +1751,7 @@ int changeLevelDimensions( int new_x_dim, int new_y_dim )
          } else {
             // Copy everything over
             GRID_AT(terrain_grid,x,y) = old_terrain_grid[x + (y * old_x_dim)];
+            GRID_AT(terrain_mod_grid,x,y) = old_terrain_mod_grid[x + (y * old_x_dim)];
             GRID_AT(unit_grid,x,y) = old_unit_grid[x + (y * old_x_dim)];
          }
       }
@@ -2557,9 +2562,12 @@ bool init_level_gui = false;
 IMImageButton *b_con_enemy_adjacent,
               *b_con_enemy_ahead,
               *b_con_enemy_in_range,
-              *b_con_ally_adjacent,
-              *b_con_ally_ahead,
-              *b_con_ally_in_range,
+              //*b_con_ally_adjacent,
+              //*b_con_ally_ahead,
+              //*b_con_ally_in_range,
+              *b_con_half_health,
+              *b_con_20_health,
+              *b_con_blocked_ahead,
               *b_con_clear,
               *b_o_move_forward,
               *b_o_move_backward,
@@ -2573,6 +2581,8 @@ IMImageButton *b_con_enemy_adjacent,
               *b_o_attack_biggest,
               *b_o_attack_closest,
               *b_o_attack_farthest,
+              *b_o_attack_least_armor,
+              *b_o_attack_most_armor,
               *b_o_start_block,
               *b_o_end_block,
               *b_o_repeat,
@@ -2593,7 +2603,7 @@ IMImageButton *b_con_enemy_adjacent,
               *b_o_soldier_switch_bow,
               *b_pl_alert_worm,
               *b_pl_cmd_go_worm,
-              *b_o_worm_sprint,
+              *b_o_worm_hide,
               *b_o_worm_trail_on,
               *b_o_worm_trail_off,
               *b_pl_alert_bird,
@@ -2613,7 +2623,8 @@ IMImageButton *b_con_enemy_adjacent,
               *b_soldier_image,
               *b_worm_image,
               *b_bird_image,
-              *b_bug_image;
+              *b_bug_image,
+              *b_count_infinite;
 IMTextButton *b_count_1,
              *b_count_2,
              *b_count_3,
@@ -2624,7 +2635,6 @@ IMTextButton *b_count_1,
              *b_count_8,
              *b_count_9,
              *b_count_0,
-             *b_count_infinite,
              *b_count_reset;
 Text *count_text;
 string s_1 = "1", s_2 = "2", s_3 = "3", s_4 = "4", s_5 = "5", s_6 = "6", s_7 = "7", s_8 = "8", s_9 = "9", s_0 = "0", s_infinite = "inf", s_reset = "X";
@@ -2686,7 +2696,7 @@ void fitGui_Level()
    button_size = (int) button_size_f;
    float adjustment = 0, adjust_ratio = (button_size_f - button_size);
 
-   int text_size = floor( button_size / 2);
+   int text_size = floor( button_size / 2) + 2;
 
    int sec_start_numpad = 0,
        sec_start_conditionals = sec_start_numpad + border + (spacer * 4) + (button_size * 3),
@@ -2788,8 +2798,7 @@ void fitGui_Level()
    b_count_infinite->setSize( button_size, button_size );
    b_count_infinite->setPosition( sec_start_numpad + (spacer * 3) + (button_size * 2),
                                   height - (spacer + button_size) );
-   b_count_infinite->setTextSize( text_size );
-   b_count_infinite->centerText();
+   b_count_infinite->setImageSize( button_size, button_size );
 
    b_count_reset->setSize( button_size, button_size );
    b_count_reset->setPosition( sec_start_numpad + spacer,
@@ -2797,8 +2806,8 @@ void fitGui_Level()
    b_count_reset->setTextSize( text_size );
    b_count_reset->centerText();
 
-   count_text->setPosition( sec_start_conditionals + spacer,
-                            height - (border + (button_size * 4) + (spacer * 6) + text_size));
+   count_text->setPosition( (spacer * 2),
+                            height - ((border * 2) + (button_size * 5) + (spacer * 9) + text_size));
    count_text->setCharacterSize( text_size );
 
    // Player commands
@@ -2851,6 +2860,7 @@ void fitGui_Level()
    b_con_enemy_in_range->setPosition( sec_start_conditionals + spacer,
                                       height - ((spacer * 1) + (button_size * 1)));
 
+   /*
    b_con_ally_adjacent->setSize( button_size, button_size );
    b_con_ally_adjacent->setImageSize( button_size, button_size );
    b_con_ally_adjacent->setPosition( sec_start_conditionals + (spacer * 2) + button_size,
@@ -2864,6 +2874,22 @@ void fitGui_Level()
    b_con_ally_in_range->setSize( button_size, button_size );
    b_con_ally_in_range->setImageSize( button_size, button_size );
    b_con_ally_in_range->setPosition( sec_start_conditionals + (spacer * 2) + button_size,
+                                      height - ((spacer * 1) + (button_size * 1)));
+                                      */
+
+   b_con_blocked_ahead->setSize( button_size, button_size );
+   b_con_blocked_ahead->setImageSize( button_size, button_size );
+   b_con_blocked_ahead->setPosition( sec_start_conditionals + (spacer * 2) + button_size,
+                                      height - ((spacer * 3) + (button_size * 3)));
+
+   b_con_half_health->setSize( button_size, button_size );
+   b_con_half_health->setImageSize( button_size, button_size );
+   b_con_half_health->setPosition( sec_start_conditionals + (spacer * 2) + button_size,
+                                      height - ((spacer * 2) + (button_size * 2)));
+
+   b_con_20_health->setSize( button_size, button_size );
+   b_con_20_health->setImageSize( button_size, button_size );
+   b_con_20_health->setPosition( sec_start_conditionals + (spacer * 2) + button_size,
                                       height - ((spacer * 1) + (button_size * 1)));
 
    b_con_clear->setSize( button_size, button_size );
@@ -2961,22 +2987,32 @@ void fitGui_Level()
    b_o_attack_smallest->setSize( button_size, button_size );
    b_o_attack_smallest->setImageSize( button_size, button_size );
    b_o_attack_smallest->setPosition( sec_start_attack + spacer,
-                                     height - ((spacer * 2) + (button_size * 2)));
+                                     height - ((spacer * 3) + (button_size * 3)));
 
    b_o_attack_biggest->setSize( button_size, button_size );
    b_o_attack_biggest->setImageSize( button_size, button_size );
    b_o_attack_biggest->setPosition( sec_start_attack + (spacer * 2) + button_size,
-                                    height - ((spacer * 2) + (button_size * 2)));
+                                    height - ((spacer * 3) + (button_size * 3)));
 
    b_o_attack_closest->setSize( button_size, button_size );
    b_o_attack_closest->setImageSize( button_size, button_size );
    b_o_attack_closest->setPosition( sec_start_attack + spacer,
-                                    height - (spacer + (button_size * 1)));
+                                    height - ((spacer * 2) + (button_size * 2)));
 
    b_o_attack_farthest->setSize( button_size, button_size );
    b_o_attack_farthest->setImageSize( button_size, button_size );
    b_o_attack_farthest->setPosition( sec_start_attack + (spacer * 2) + button_size,
-                                     height - (spacer + (button_size * 1)));
+                                     height - ((spacer * 2) + (button_size * 2)));
+
+   b_o_attack_least_armor->setSize( button_size, button_size );
+   b_o_attack_least_armor->setImageSize( button_size, button_size );
+   b_o_attack_least_armor->setPosition( sec_start_attack + spacer,
+                                        height - (spacer + (button_size * 1)));
+
+   b_o_attack_most_armor->setSize( button_size, button_size );
+   b_o_attack_most_armor->setImageSize( button_size, button_size );
+   b_o_attack_most_armor->setPosition( sec_start_attack + (spacer * 2) + button_size,
+                                       height - (spacer + (button_size * 1)));
 
    // Units
 
@@ -3079,9 +3115,9 @@ void fitGui_Level()
                                      height - ((spacer * 2) + (button_size * 2)) );
    b_o_worm_trail_off->setPosition( b_trail_off_count_pos.x, b_trail_off_count_pos.y );
 
-   b_o_worm_sprint->setSize( button_size, button_size );
-   b_o_worm_sprint->setImageSize( button_size, button_size );
-   b_o_worm_sprint->setPosition( sec_start_worm + spacer,
+   b_o_worm_hide->setSize( button_size, button_size );
+   b_o_worm_hide->setImageSize( button_size, button_size );
+   b_o_worm_hide->setPosition( sec_start_worm + spacer,
                                  height - (spacer + button_size ) );
 
    b_worm_image->setSize( button_size, button_size );
@@ -3208,7 +3244,7 @@ int initLevelGui()
    b_con_enemy_in_range->setImage( t_manager.getTexture( "ConditionalEnemyInRange.png" ) );
    b_con_enemy_in_range->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Condition: enemy in range", b_con_enemy_in_range);
-
+/*
    b_con_ally_adjacent = new IMImageButton();
    b_con_ally_adjacent->setNormalTexture( t_manager.getTexture( "ConditionalButtonBase.png" ) );
    b_con_ally_adjacent->setHoverTexture( t_manager.getTexture( "ConditionalButtonHover.png" ) );
@@ -3232,12 +3268,37 @@ int initLevelGui()
    b_con_ally_in_range->setImage( t_manager.getTexture( "ConditionalAllyInRange.png" ) );
    b_con_ally_in_range->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Condition: ally in range", b_con_ally_in_range);
+   */
+
+   b_con_half_health = new IMImageButton();
+   b_con_half_health->setNormalTexture( t_manager.getTexture( "ConditionalButtonBase.png" ) );
+   b_con_half_health->setHoverTexture( t_manager.getTexture( "ConditionalButtonHover.png" ) );
+   b_con_half_health->setPressedTexture( t_manager.getTexture( "ConditionalButtonPressed.png" ) );
+   b_con_half_health->setImage( t_manager.getTexture( "ConditionalHalfHealth.png" ) );
+   b_con_half_health->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Condition: half health", b_con_half_health);
+
+   b_con_20_health = new IMImageButton();
+   b_con_20_health->setNormalTexture( t_manager.getTexture( "ConditionalButtonBase.png" ) );
+   b_con_20_health->setHoverTexture( t_manager.getTexture( "ConditionalButtonHover.png" ) );
+   b_con_20_health->setPressedTexture( t_manager.getTexture( "ConditionalButtonPressed.png" ) );
+   b_con_20_health->setImage( t_manager.getTexture( "Conditional20Health.png" ) );
+   b_con_20_health->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Condition: 20 percent health", b_con_20_health);
+
+   b_con_blocked_ahead = new IMImageButton();
+   b_con_blocked_ahead->setNormalTexture( t_manager.getTexture( "ConditionalButtonBase.png" ) );
+   b_con_blocked_ahead->setHoverTexture( t_manager.getTexture( "ConditionalButtonHover.png" ) );
+   b_con_blocked_ahead->setPressedTexture( t_manager.getTexture( "ConditionalButtonPressed.png" ) );
+   b_con_blocked_ahead->setImage( t_manager.getTexture( "ConditionalBlockedAhead.png" ) );
+   b_con_blocked_ahead->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Condition: blocked ahead", b_con_blocked_ahead);
 
    b_con_clear = new IMImageButton();
    b_con_clear->setNormalTexture( t_manager.getTexture( "ConditionalButtonBase.png" ) );
    b_con_clear->setHoverTexture( t_manager.getTexture( "ConditionalButtonHover.png" ) );
    b_con_clear->setPressedTexture( t_manager.getTexture( "ConditionalButtonPressed.png" ) );
-   b_con_clear->setImage( NULL );
+   b_con_clear->setImage( t_manager.getTexture( "ConditionalClear.png" ) );
    b_con_clear->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Clear conditionals", b_con_clear);
 
@@ -3333,7 +3394,7 @@ int initLevelGui()
    b_o_follow_path->setNormalTexture( t_manager.getTexture( "OrderButtonBase.png" ) );
    b_o_follow_path->setPressedTexture( t_manager.getTexture( "OrderButtonPressed.png" ) );
    b_o_follow_path->setHoverTexture( t_manager.getTexture( "OrderButtonHover.png" ) );
-   b_o_follow_path->setImage(  t_manager.getTexture( "OrderTurnNearestEnemy.png" ) );
+   b_o_follow_path->setImage(  t_manager.getTexture( "OrderFollowPath.png" ) );
    b_o_follow_path->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Order: turn nearest enemy", b_o_follow_path);
 
@@ -3369,6 +3430,22 @@ int initLevelGui()
    b_o_attack_farthest->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Order: attack farthest", b_o_attack_farthest);
 
+   b_o_attack_most_armor = new IMImageButton();
+   b_o_attack_most_armor->setNormalTexture( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_o_attack_most_armor->setPressedTexture( t_manager.getTexture( "OrderButtonPressed.png" ) );
+   b_o_attack_most_armor->setHoverTexture( t_manager.getTexture( "OrderButtonHover.png" ) );
+   b_o_attack_most_armor->setImage(  t_manager.getTexture( "OrderAttackMostArmored.png" ) );
+   b_o_attack_most_armor->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Order: attack most armored", b_o_attack_most_armor);
+
+   b_o_attack_least_armor = new IMImageButton();
+   b_o_attack_least_armor->setNormalTexture( t_manager.getTexture( "OrderButtonBase.png" ) );
+   b_o_attack_least_armor->setPressedTexture( t_manager.getTexture( "OrderButtonPressed.png" ) );
+   b_o_attack_least_armor->setHoverTexture( t_manager.getTexture( "OrderButtonHover.png" ) );
+   b_o_attack_least_armor->setImage(  t_manager.getTexture( "OrderAttackLeastArmored.png" ) );
+   b_o_attack_least_armor->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Order: attack least armored", b_o_attack_least_armor);
+
    b_pl_alert_all = new IMImageButton();
    b_pl_alert_all->setAllTextures( t_manager.getTexture( "PlayerAlert.png" ) );
    b_pl_alert_all->setImage( NULL );
@@ -3388,7 +3465,7 @@ int initLevelGui()
    gui_manager.registerWidget( "Player: command go all", b_pl_cmd_go_all);
 
    b_pl_set_group = new IMImageButton();
-   b_pl_set_group->setAllTextures( t_manager.getTexture( "StarFull.png" ) );
+   b_pl_set_group->setAllTextures( t_manager.getTexture( "SetGroup.png" ) );
    b_pl_set_group->setImage( NULL );
    b_pl_set_group->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Player: set team", b_pl_set_group);
@@ -3476,13 +3553,13 @@ int initLevelGui()
    b_pl_cmd_go_worm->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Go Worm", b_pl_cmd_go_worm);
 
-   b_o_worm_sprint = new IMImageButton();
-   b_o_worm_sprint->setNormalTexture( t_manager.getTexture( "WormOrderButtonBase.png" ) );
-   b_o_worm_sprint->setPressedTexture( t_manager.getTexture( "WormButtonPressed.png" ) );
-   b_o_worm_sprint->setHoverTexture( t_manager.getTexture( "WormButtonHover.png" ) );
-   b_o_worm_sprint->setImage( t_manager.getTexture( "WormOrderSprint.png" ) );
-   b_o_worm_sprint->setImageOffset( 0, 0 );
-   gui_manager.registerWidget( "Worm: Sprint", b_o_worm_sprint);
+   b_o_worm_hide = new IMImageButton();
+   b_o_worm_hide->setNormalTexture( t_manager.getTexture( "WormOrderButtonBase.png" ) );
+   b_o_worm_hide->setPressedTexture( t_manager.getTexture( "WormButtonPressed.png" ) );
+   b_o_worm_hide->setHoverTexture( t_manager.getTexture( "WormButtonHover.png" ) );
+   b_o_worm_hide->setImage( t_manager.getTexture( "WormOrderHide.png" ) );
+   b_o_worm_hide->setImageOffset( 0, 0 );
+   gui_manager.registerWidget( "Worm: Hide", b_o_worm_hide);
 
    b_o_worm_trail_on = new IMImageButton();
    b_o_worm_trail_on->setNormalTexture( t_manager.getTexture( "WormOrderButtonBase.png" ) );
@@ -3716,13 +3793,12 @@ int initLevelGui()
    b_count_0->setFont( menu_font );
    gui_manager.registerWidget( "Count: 0", b_count_0);
 
-   b_count_infinite = new IMTextButton();
+   b_count_infinite = new IMImageButton();
    b_count_infinite->setNormalTexture( t_manager.getTexture( "CountButtonBase.png" ) );
    b_count_infinite->setPressedTexture( t_manager.getTexture( "CountButtonPressed.png" ) );
    b_count_infinite->setHoverTexture( t_manager.getTexture( "CountButtonHover.png" ) );
-   b_count_infinite->setText( &s_infinite );
-   b_count_infinite->setTextColor( Color::Black );
-   b_count_infinite->setFont( menu_font );
+   b_count_infinite->setImage( t_manager.getTexture( "CountButtonInfinite.png" ) );
+   b_count_infinite->setImageOffset( 0, 0 );
    gui_manager.registerWidget( "Count: infinite", b_count_infinite);
 
    b_count_reset = new IMTextButton();
@@ -3736,7 +3812,7 @@ int initLevelGui()
 
    count_text = new Text();
    count_text->setFont( *menu_font );
-   count_text->setColor( Color::Black );
+   count_text->setColor( Color::White );
 
    b_numpad_area = new IMEdgeButton();
    b_numpad_area->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
@@ -3836,6 +3912,7 @@ int selectConditionButton( Order_Conditional c )
    b_con_enemy_in_range->setHoverTexture( t_manager.getTexture( "ConditionalButtonHover.png" ) );
    b_con_enemy_in_range->setPressedTexture( t_manager.getTexture( "ConditionalButtonPressed.png" ) );
 
+   /*
    b_con_ally_adjacent->setNormalTexture( t_manager.getTexture( "ConditionalButtonBase.png" ) );
    b_con_ally_adjacent->setHoverTexture( t_manager.getTexture( "ConditionalButtonHover.png" ) );
    b_con_ally_adjacent->setPressedTexture( t_manager.getTexture( "ConditionalButtonPressed.png" ) );
@@ -3847,6 +3924,19 @@ int selectConditionButton( Order_Conditional c )
    b_con_ally_in_range->setNormalTexture( t_manager.getTexture( "ConditionalButtonBase.png" ) );
    b_con_ally_in_range->setHoverTexture( t_manager.getTexture( "ConditionalButtonHover.png" ) );
    b_con_ally_in_range->setPressedTexture( t_manager.getTexture( "ConditionalButtonPressed.png" ) );
+   */
+
+   b_con_half_health->setNormalTexture( t_manager.getTexture( "ConditionalButtonBase.png" ) );
+   b_con_half_health->setHoverTexture( t_manager.getTexture( "ConditionalButtonHover.png" ) );
+   b_con_half_health->setPressedTexture( t_manager.getTexture( "ConditionalButtonPressed.png" ) );
+
+   b_con_20_health->setNormalTexture( t_manager.getTexture( "ConditionalButtonBase.png" ) );
+   b_con_20_health->setHoverTexture( t_manager.getTexture( "ConditionalButtonHover.png" ) );
+   b_con_20_health->setPressedTexture( t_manager.getTexture( "ConditionalButtonPressed.png" ) );
+
+   b_con_blocked_ahead->setNormalTexture( t_manager.getTexture( "ConditionalButtonBase.png" ) );
+   b_con_blocked_ahead->setHoverTexture( t_manager.getTexture( "ConditionalButtonHover.png" ) );
+   b_con_blocked_ahead->setPressedTexture( t_manager.getTexture( "ConditionalButtonPressed.png" ) );
 
    b_con_clear->setNormalTexture( t_manager.getTexture( "ConditionalButtonBase.png" ) );
    b_con_clear->setHoverTexture( t_manager.getTexture( "ConditionalButtonHover.png" ) );
@@ -3872,6 +3962,7 @@ int selectConditionButton( Order_Conditional c )
       case ENEMY_NOT_IN_RANGE:
          b_con_enemy_in_range->setAllTextures(t_manager.getTexture("ConditionalSelectedRed.png"));
          break;
+         /*
       case ALLY_ADJACENT:
          b_con_ally_adjacent->setAllTextures(t_manager.getTexture("ConditionalSelectedGreen.png"));
          break;
@@ -3889,6 +3980,25 @@ int selectConditionButton( Order_Conditional c )
          break;
       case ALLY_NOT_IN_RANGE:
          b_con_ally_in_range->setAllTextures(t_manager.getTexture("ConditionalSelectedRed.png"));
+         break;
+         */
+      case HEALTH_UNDER_50:
+         b_con_half_health->setAllTextures(t_manager.getTexture("ConditionalSelectedGreen.png"));
+         break;
+      case HEALTH_OVER_50:
+         b_con_half_health->setAllTextures(t_manager.getTexture("ConditionalSelectedRed.png"));
+         break;
+      case HEALTH_UNDER_20:
+         b_con_20_health->setAllTextures(t_manager.getTexture("ConditionalSelectedGreen.png"));
+         break;
+      case HEALTH_OVER_20:
+         b_con_20_health->setAllTextures(t_manager.getTexture("ConditionalSelectedRed.png"));
+         break;
+      case BLOCKED_AHEAD:
+         b_con_blocked_ahead->setAllTextures(t_manager.getTexture("ConditionalSelectedGreen.png"));
+         break;
+      case NOT_BLOCKED_AHEAD:
+         b_con_blocked_ahead->setAllTextures(t_manager.getTexture("ConditionalSelectedRed.png"));
          break;
       default:
          break;
@@ -3930,6 +4040,7 @@ int drawOrderButtons()
    if (b_con_enemy_in_range->doWidget())
       playerAddConditional( ENEMY_IN_RANGE );
 
+   /*
    if (b_con_ally_adjacent->doWidget())
       playerAddConditional( ALLY_ADJACENT );
 
@@ -3938,6 +4049,15 @@ int drawOrderButtons()
 
    if (b_con_ally_in_range->doWidget())
       playerAddConditional( ALLY_IN_RANGE );
+      */
+   if (b_con_half_health->doWidget())
+      playerAddConditional( HEALTH_UNDER_50 );
+
+   if (b_con_20_health->doWidget())
+      playerAddConditional( HEALTH_UNDER_20 );
+
+   if (b_con_blocked_ahead->doWidget())
+      playerAddConditional( BLOCKED_AHEAD );
 
    if (b_con_clear->doWidget())
       playerAddConditional( TRUE );
@@ -3977,6 +4097,12 @@ int drawOrderButtons()
       
    if (b_o_attack_farthest->doWidget())
       playerAddOrder( ATTACK_FARTHEST );
+      
+   if (b_o_attack_most_armor->doWidget())
+      playerAddOrder( ATTACK_MOST_ARMORED );
+      
+   if (b_o_attack_least_armor->doWidget())
+      playerAddOrder( ATTACK_LEAST_ARMORED );
       
    if (b_o_start_block->doWidget())
       playerAddOrder( START_BLOCK );
@@ -4038,8 +4164,8 @@ int drawOrderButtons()
    if (b_pl_cmd_go_worm->doWidget())
       playerAddOrder( PL_CMD_GO_WORMS );
 
-   if (b_o_worm_sprint->doWidget())
-      playerAddOrder( WORM_SPRINT );
+   if (b_o_worm_hide->doWidget())
+      playerAddOrder( WORM_HIDE );
 
    if (b_o_worm_trail_on->doWidget())
       playerAddOrder( WORM_TRAIL_START );
@@ -4121,7 +4247,7 @@ int drawOrderButtons()
       playerSetCount( -1 );
 
    if (b_count_reset->doWidget())
-      playerSetCount( 1 );
+      playerSetCount( 0 );
 
    b_monster_image->doWidget();
    b_soldier_image->doWidget();
@@ -4142,7 +4268,7 @@ int drawOrderButtons()
    b_bug_area->doWidget();
 
    // Draw current count
-   if (order_prep_count != 1) {
+   if (order_prep_count != 0) {
       stringstream ss;
       if (order_prep_count == -1)
          ss << "indefinitely";
@@ -5009,6 +5135,13 @@ void drawTerrain()
          if (NULL != s_ter) {
             s_ter->setPosition( x, y );
             r_window->draw( *s_ter );
+         }
+
+         Sprite *s_ter_mod = terrain_mod_sprites[GRID_AT(terrain_mod_grid,x,y)];
+      
+         if (NULL != s_ter_mod) {
+            s_ter_mod->setPosition( x, y );
+            r_window->draw( *s_ter_mod );
          }
 
       }
