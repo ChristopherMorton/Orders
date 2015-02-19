@@ -49,6 +49,7 @@ struct Projectile : public Effect
    int team;
    Unit *target;
    float homing; // distance during which the attack will home in
+   float alt_data;
 
    virtual int update( float dtf );
    virtual int draw();
@@ -87,17 +88,15 @@ struct MonsterBurst : public Effect
 struct DamageDisplay : public Effect
 {
    Unit *attached_unit;
-   DamageDisplay *next;
+   int attached_slot;
    float offset_x, offset_y;
    sf::Text *damage_text;
    float duration;
 
-   int subtractOffset();
-
    virtual int update( float dtf );
    virtual int draw();
 
-   DamageDisplay( Unit *u, int damage, DamageType type );
+   DamageDisplay( int damage, DamageType type, Unit *unit, int slot );
 
    virtual ~DamageDisplay();
 };

@@ -73,7 +73,7 @@ public:
    int current_iteration;
    int active;
 
-   DamageDisplay *dmg_display;
+   DamageDisplay *dmg_display[12]; // 6 vertical x 2 horizontal
 
    int turnTo( Direction face );
 

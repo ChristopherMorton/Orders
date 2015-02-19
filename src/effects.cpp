@@ -63,7 +63,11 @@ int Projectile::update( float dtf )
       float sum_radius = (radius + nearest->radius);
       if (dist_sq <= (sum_radius * sum_radius)) {
          if (type == PR_WIND_SLASH) {
-            nearest->takeDamage( damage * dtf );
+            alt_data -= dtf;
+            while (alt_data < 0) {
+               alt_data += 0.1;
+               nearest->takeDamage( damage * 0.1, DMG_HEAVY );
+            }
             return 0;
          } else {
             nearest->takeDamage( damage );
@@ -169,6 +173,7 @@ Projectile::Projectile( Effect_Type t, int tm, float x, float y, float sp, float
       case PR_WIND_SLASH:
          radius = 0.3;
          damage = 25.0; // dps
+         alt_data = 0.0;
       default:
          break;
    }
@@ -387,29 +392,15 @@ MonsterBurst::~MonsterBurst()
 ///////////////////////////////////////////////////////////////////////////////
 // DamageDisplay ---
 
-const float c_dmg_display_height = 0.13;
+const float c_dmg_display_height = 0.12;
+const float c_dmg_display_height_spacer = 0.04;
 const float c_dmg_display_dur_half = 0.2;
-
-int DamageDisplay::subtractOffset()
-{
-   offset_y -= c_dmg_display_height;
-
-   if (next != NULL)
-      return next->subtractOffset();
-
-   return 0;
-}
 
 int DamageDisplay::update( float dtf )
 {
    duration -= dtf;
-   if (duration <= 0) {
-      subtractOffset();
-      if (attached_unit != NULL)
-         attached_unit->dmg_display = next;
-
+   if (duration <= 0)
       return 1;
-   }
 
    return 0;
 }
@@ -425,33 +416,23 @@ int DamageDisplay::draw()
       damage_text->setColor( new_c );
    }
 
-   damage_text->setPosition( attached_unit->x_real - 0.5 + offset_x, attached_unit->y_real - 0.5 + offset_y );
+   damage_text->setPosition( attached_unit->x_real + offset_x, attached_unit->y_real + offset_y );
    SFML_GlobalRenderWindow::get()->draw( *damage_text );
    return 0;
 }
 
-DamageDisplay::DamageDisplay( Unit *u, int damage, DamageType dmg_type )
+DamageDisplay::DamageDisplay( int damage, DamageType dmg_type, Unit *unit, int slot )
 {
-   next = NULL;
    type = EF_DAMAGE_DISPLAY;
    duration = 2 * c_dmg_display_dur_half;
 
-   // Figure out unit stuff
-   attached_unit = u;
-   if (attached_unit) {
-      if (attached_unit->dmg_display != NULL) {
-         DamageDisplay *last = attached_unit->dmg_display;
-         while( last->next != NULL )
-            last = last->next;
-         last->next = this;
-         offset_x = 0;
-         offset_y = last->offset_y + c_dmg_display_height;
-      } else {
-         attached_unit->dmg_display = this;
-         offset_x = 0;
-         offset_y = 0;
-      }
-   }
+   // Setup offset
+   attached_unit = unit;
+   attached_slot = slot;
+
+   offset_y = ((slot % 6) * (c_dmg_display_height + c_dmg_display_height_spacer)) 
+                              - (0.5 + c_dmg_display_height_spacer);
+   offset_x = ((slot / 6) * 0.5) - 0.5;
 
    // Setup Text
    damage_text = new Text();
@@ -472,13 +453,16 @@ DamageDisplay::DamageDisplay( Unit *u, int damage, DamageType dmg_type )
       damage_text->setColor( Color( 127, 0, 0, 255 ) );
 
    FloatRect dim = damage_text->getGlobalBounds();
-   damage_text->setScale( 0.2 / dim.height, 0.2 / dim.height );
+   damage_text->setScale( c_dmg_display_height / dim.height, c_dmg_display_height / dim.height );
 }
 
 DamageDisplay::~DamageDisplay()
 { 
    if (damage_text)
       delete damage_text;
+
+   if (attached_unit != NULL && (attached_slot >= 0 && attached_slot < 12))
+      attached_unit->dmg_display[attached_slot] = NULL;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

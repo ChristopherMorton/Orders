@@ -595,7 +595,25 @@ int Unit::completeTurn()
 
 int Unit::displayDamage( int damage, DamageType type )
 {
-   addEffectManual( new DamageDisplay( this, damage, type ) );
+   // Find empty slot
+   int i;
+   bool space = false;
+   for ( i = 0; i < 12; ++i) {
+      if (dmg_display[i] == NULL) {
+         space = true;
+         break;
+      }
+   }
+
+   if (!space)
+      return -1;
+
+   DamageDisplay *dmg = new DamageDisplay( damage, type, this, i );
+
+   dmg_display[i] = dmg;
+   addEffectManual( dmg );
+
+   return 0;
 }
 
 int Unit::takeDamage( float damage, DamageType type )
@@ -693,7 +711,8 @@ AIUnit::AIUnit( UnitType t, int x, int y, Direction face, int my_team )
    
    win_condition = false;
 
-   dmg_display = NULL;
+   for (int i = 0; i < 12; ++i)
+      dmg_display[i] = NULL;
 }
 
 int AIUnit::doAttack( Order o )
@@ -1255,7 +1274,8 @@ int Player::init( int x, int y, Direction face )
    
    win_condition = false;
 
-   dmg_display = NULL;
+   for (int i = 0; i < 12; ++i)
+      dmg_display[i] = NULL;
 
    return 0;
 }
@@ -1478,7 +1498,8 @@ Monster::Monster( int x, int y, Direction face )
 
    win_condition = false;
 
-   dmg_display = NULL;
+   for (int i = 0; i < 12; ++i)
+      dmg_display[i] = NULL;
 
    hardness = 0.0;
 }
@@ -1918,7 +1939,8 @@ Soldier::Soldier( int x, int y, Direction face )
 
    win_condition = false;
 
-   dmg_display = NULL;
+   for (int i = 0; i < 12; ++i)
+      dmg_display[i] = NULL;
 }
 
 Soldier::~Soldier()
@@ -2296,7 +2318,8 @@ Worm::Worm( int x, int y, Direction face )
    
    win_condition = false;
 
-   dmg_display = NULL;
+   for (int i = 0; i < 12; ++i)
+      dmg_display[i] = NULL;
 
    invis = false;
    trail = false;
@@ -2612,7 +2635,8 @@ Bird::Bird( int x, int y, Direction face )
    
    win_condition = false;
 
-   dmg_display = NULL;
+   for (int i = 0; i < 12; ++i)
+      dmg_display[i] = NULL;
 }
 
 Bird::~Bird()
@@ -2973,7 +2997,8 @@ Bug::Bug( int x, int y, Direction face )
 
    win_condition = false;
 
-   dmg_display = NULL;
+   for (int i = 0; i < 12; ++i)
+      dmg_display[i] = NULL;
 
    setStarCount( 4 );
 }
@@ -3234,7 +3259,8 @@ SummonMarker::SummonMarker( )
    
    win_condition = false;
 
-   dmg_display = NULL;
+   for (int i = 0; i < 12; ++i)
+      dmg_display[i] = NULL;
 }
 
 SummonMarker *theSummonMarker = NULL;
@@ -3399,7 +3425,8 @@ TargetPractice::TargetPractice( int x, int y, Direction face )
    
    win_condition = false;
 
-   dmg_display = NULL;
+   for (int i = 0; i < 12; ++i)
+      dmg_display[i] = NULL;
 }
 
 int TargetPractice::addOrder( Order o )
