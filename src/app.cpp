@@ -491,6 +491,7 @@ void AVOptionsMenu()
 bool initInputOptionsMenu = false;
 int inputOptionsMenuFontSize = 30;
 IMEdgeTextButton* b_input_options_bind_key = NULL;
+IMButton* b_overlay = NULL;
 
 string s_input_options_bind_key = "Bind Key";
 
@@ -510,6 +511,9 @@ void fitGui_InputOptions()
    b_input_options_bind_key->setTextSize( gui_text_size );
    b_input_options_bind_key->centerText();
 
+   b_overlay->setSize( width, height );
+   b_overlay->setPosition( 0, 0 );
+
    inputOptionsMenuFontSize = gui_text_size;
 }
 
@@ -525,6 +529,17 @@ int initInputOptionsMenuGui()
    b_input_options_bind_key->setTextColor( sf::Color::Black );
    gui_manager->registerWidget( "Bind Key", b_input_options_bind_key);
 
+   Image gray_image;
+   gray_image.create( 1, 1, Color( 85, 85, 85, 115 ) );
+   Texture *gray_overlay = new Texture();
+   gray_overlay->create( 1, 1 );
+   gray_overlay->update( gray_image );
+   texture_manager->addTexture( "gray_overlay", gray_overlay );
+
+   b_overlay = new IMButton();
+   b_overlay->setAllTextures( gray_overlay );
+   gui_manager->registerWidget( "Gray Overlay", b_overlay);
+
    initInputOptionsMenu = true;
    fitGui_InputOptions();
 
@@ -532,11 +547,6 @@ int initInputOptionsMenuGui()
 }
 
 bool inputOptionsBindNextKey = false;
-
-void inputOptionsBindKey()
-{
-   inputOptionsBindNextKey = true;
-}
 
 void inputOptionsMenu()
 {
@@ -548,11 +558,14 @@ void inputOptionsMenu()
       RenderWindow* r_wind = SFML_GlobalRenderWindow::get();
       r_wind->clear( Color( 165, 165, 165, 255 ) );
 
+      if (b_input_options_bind_key->doWidget())
+         inputOptionsBindNextKey = !inputOptionsBindNextKey;
+
+      if (inputOptionsBindNextKey)
+         b_overlay->doWidget();
+
       if (b_exit_av_options_menu->doWidget() && inputOptionsBindNextKey == false)
          closeInputOptions();
-
-      if (b_input_options_bind_key->doWidget() && inputOptionsBindNextKey == false)
-         inputOptionsBindKey();
 
       KeybindTarget kb = drawKeybindButtons();
       if (kb != KB_NOTHING && inputOptionsBindNextKey == false)
@@ -589,7 +602,6 @@ void inputOptionsMenu()
       rect.setPosition( 294, 194 );
       r_wind->draw( rect );
       r_wind->draw( txt );
-
    }
 
 }
