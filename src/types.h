@@ -31,6 +31,131 @@ typedef enum {
 #define FLAG_VIS_FLYING 0x10
 
 //////////////////////////////////////////////////////////////////////
+// Keybind targets ---
+
+typedef enum
+{
+   KB_NOTHING,
+
+   KB_FORCE_QUIT,
+
+   KB_PAUSE,
+
+   // Camera
+   KB_MOVE_CAMERA_LEFT,
+   KB_MOVE_CAMERA_UP,
+   KB_MOVE_CAMERA_RIGHT,
+   KB_MOVE_CAMERA_DOWN,
+   KB_ZOOM_OUT_CAMERA,
+   KB_ZOOM_IN_CAMERA,
+
+   KB_TOGGLE_OPTIONS_MENU,
+
+   KB_SHOW_KEYBINDINGS,
+
+   // Debug
+   KB_DEBUG_TOGGLE_FOG,
+   KB_DEBUG_TOGGLE_FRAMERATE,
+
+   // COUNT BUTTONS
+   KB_BTN_COUNT_0,
+   KB_BTN_COUNT_1,
+   KB_BTN_COUNT_2,
+   KB_BTN_COUNT_3,
+   KB_BTN_COUNT_4,
+   KB_BTN_COUNT_5,
+   KB_BTN_COUNT_6,
+   KB_BTN_COUNT_7,
+   KB_BTN_COUNT_8,
+   KB_BTN_COUNT_9,
+   KB_BTN_COUNT_CLEAR,
+   KB_BTN_COUNT_INFINITE,
+
+   // Condition Buttons
+   KB_BTN_COND_ENEMY_ADJACENT,
+   KB_BTN_COND_ENEMY_AHEAD,
+   KB_BTN_COND_ENEMY_IN_RANGE,
+   KB_BTN_COND_HEALTH_UNDER_50,
+   KB_BTN_COND_HEALTH_UNDER_20,
+   KB_BTN_COND_BLOCKED_AHEAD,
+   KB_BTN_COND_CLEAR,
+
+   // ORDER BUTTONS
+   // Movement Buttons
+   KB_BTN_MOVE_FORWARD,
+   KB_BTN_MOVE_BACK,
+   KB_BTN_TURN_NORTH,
+   KB_BTN_TURN_EAST,
+   KB_BTN_TURN_SOUTH,
+   KB_BTN_TURN_WEST,
+   KB_BTN_TURN_NEAREST_ENEMY,
+   KB_BTN_FOLLOW_PATH,
+   KB_BTN_WAIT,
+
+   // Basic Fighting Buttons
+   KB_BTN_ATTACK_CLOSEST,
+   KB_BTN_ATTACK_FARTHEST,
+   KB_BTN_ATTACK_BIGGEST,
+   KB_BTN_ATTACK_SMALLEST,
+   KB_BTN_ATTACK_MOST_ARMORED,
+   KB_BTN_ATTACK_LEAST_ARMORED,
+
+   // Basic Control Flow Buttons
+   KB_BTN_START_BLOCK,
+   KB_BTN_END_BLOCK,
+   KB_BTN_REPEAT,
+
+   // Monster Buttons
+   KB_BTN_MONSTER_GUARD,
+   KB_BTN_MONSTER_BURST,
+
+   // Soldier Buttons
+   KB_BTN_SOLDIER_SWITCH_AXE,
+   KB_BTN_SOLDIER_SWITCH_SPEAR,
+   KB_BTN_SOLDIER_SWITCH_BOW,
+
+   // Worm Buttons
+   KB_BTN_WORM_HIDE,
+   KB_BTN_WORM_TRAIL_START,
+   KB_BTN_WORM_TRAIL_END,
+
+   // Bird Buttons
+   KB_BTN_BIRD_CMD_SHOUT,
+   KB_BTN_BIRD_CMD_QUIET,
+   KB_BTN_BIRD_FLY,
+
+   // Bug Buttons
+   KB_BTN_BUG_CAST_FIREBALL,
+   KB_BTN_BUG_CAST_SUNDER,
+   KB_BTN_BUG_CAST_HEAL,
+   KB_BTN_BUG_OPEN_WORMHOLE,
+   KB_BTN_BUG_CLOSE_WORMHOLE,
+   KB_BTN_BUG_MEDITATE,
+
+   // Player Buttons
+   // Alert
+   KB_BTN_PL_ALERT_ALL,
+   KB_BTN_PL_ALERT_MONSTERS,
+   KB_BTN_PL_ALERT_SOLDIERS,
+   KB_BTN_PL_ALERT_WORMS,
+   KB_BTN_PL_ALERT_BIRDS,
+   KB_BTN_PL_ALERT_BUGS,
+   // Activate
+   KB_BTN_PL_GO,
+   KB_BTN_PL_GO_ALL,
+   KB_BTN_PL_GO_MONSTERS,
+   KB_BTN_PL_GO_SOLDIERS,
+   KB_BTN_PL_GO_WORMS,
+   KB_BTN_PL_GO_BIRDS,
+   KB_BTN_PL_GO_BUGS,
+
+   KB_BTN_PL_SET_GROUP,
+   KB_BTN_PL_DELAY,
+
+   KB_COUNT
+} KeybindTarget;
+
+//////////////////////////////////////////////////////////////////////
 // Terrain ---
 
 typedef unsigned char Terrain;

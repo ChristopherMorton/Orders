@@ -1261,7 +1261,7 @@ int activateUnits( Order o )
                   u->activate();
                } else if (o.action == PL_CMD_GO_BUGS && u->type == BUG_T) {
                   u->activate();
-               } else if (o.action == PL_CMD_GO_TEAM && u->team == o.count) {
+               } else if (o.action == PL_CMD_GO && u->team == o.count) {
                   u->activate();
                }
             
@@ -1370,7 +1370,6 @@ int completePlayerCommand( Order o )
       case PL_CMD_GO_WORMS:
       case PL_CMD_GO_BIRDS:
       case PL_CMD_GO_BUGS:
-      case PL_CMD_GO_TEAM:
          activateUnits( o );
          break;
       case PL_CMD_GO:
@@ -2650,20 +2649,75 @@ IMEdgeButton *b_numpad_area,
              *b_worm_area,
              *b_bird_area,
              *b_bug_area;
-
-Vector2f b_turn_north_count_pos,
-         b_turn_east_count_pos,
-         b_turn_south_count_pos,
-         b_turn_west_count_pos,
-         b_turn_nearest_enemy_count_pos,
-         b_guard_count_pos,
-         b_switch_axe_count_pos,
-         b_switch_spear_count_pos,
-         b_switch_bow_count_pos,
-         b_trail_on_count_pos,
-         b_trail_off_count_pos,
-         b_fly_count_pos,
-         b_meditate_count_pos;
+Vector2f b_con_enemy_adjacent_pos,
+         b_con_enemy_ahead_pos,
+         b_con_enemy_in_range_pos,
+         b_con_half_health_pos,
+         b_con_20_health_pos,
+         b_con_blocked_ahead_pos,
+         b_con_clear_pos,
+         b_o_move_forward_pos,
+         b_o_move_backward_pos,
+         b_o_follow_path_pos,
+         b_o_turn_north_pos,
+         b_o_turn_east_pos,
+         b_o_turn_south_pos,
+         b_o_turn_west_pos,
+         b_o_turn_nearest_enemy_pos,
+         b_o_attack_smallest_pos,
+         b_o_attack_biggest_pos,
+         b_o_attack_closest_pos,
+         b_o_attack_farthest_pos,
+         b_o_attack_least_armor_pos,
+         b_o_attack_most_armor_pos,
+         b_o_start_block_pos,
+         b_o_end_block_pos,
+         b_o_repeat_pos,
+         b_o_wait_pos,
+         b_pl_alert_all_pos,
+         b_pl_cmd_go_pos,
+         b_pl_cmd_go_all_pos,
+         b_pl_set_group_pos,
+         b_pl_delay_pos,
+         b_pl_alert_monster_pos,
+         b_pl_cmd_go_monster_pos,
+         b_o_monster_guard_pos,
+         b_o_monster_burst_pos,
+         b_pl_alert_soldier_pos,
+         b_pl_cmd_go_soldier_pos,
+         b_o_soldier_switch_axe_pos,
+         b_o_soldier_switch_spear_pos,
+         b_o_soldier_switch_bow_pos,
+         b_pl_alert_worm_pos,
+         b_pl_cmd_go_worm_pos,
+         b_o_worm_hide_pos,
+         b_o_worm_trail_on_pos,
+         b_o_worm_trail_off_pos,
+         b_pl_alert_bird_pos,
+         b_pl_cmd_go_bird_pos,
+         b_o_bird_fly_pos,
+         b_cmd_bird_shout_pos,
+         b_cmd_bird_quiet_pos,
+         b_pl_alert_bug_pos,
+         b_pl_cmd_go_bug_pos,
+         b_o_bug_meditate_pos,
+         b_o_bug_fireball_pos,
+         b_o_bug_sunder_pos,
+         b_o_bug_heal_pos,
+         b_o_bug_open_wormhole_pos,
+         b_o_bug_close_wormhole_pos,
+         b_count_infinite_pos,
+         b_count_1_pos,
+         b_count_2_pos,
+         b_count_3_pos,
+         b_count_4_pos,
+         b_count_5_pos,
+         b_count_6_pos,
+         b_count_7_pos,
+         b_count_8_pos,
+         b_count_9_pos,
+         b_count_0_pos,
+         b_count_reset_pos;
 
 const int border = 3;
 const int spacer = 2;
@@ -2736,73 +2790,85 @@ void fitGui_Level()
                                height - (border + (spacer * 5) + (button_size * 4)) );
    
    b_count_0->setSize( button_size, button_size );
-   b_count_0->setPosition( sec_start_numpad + (spacer * 2) + button_size,
+   b_count_0_pos = Vector2f( sec_start_numpad + (spacer * 2) + button_size,
                            height - (spacer + button_size));
+   b_count_0->setPosition( b_count_0_pos.x, b_count_0_pos.y );
    b_count_0->setTextSize( text_size );
    b_count_0->centerText();
    
    b_count_1->setSize( button_size, button_size );
-   b_count_1->setPosition( sec_start_numpad + spacer,
+   b_count_1_pos = Vector2f( sec_start_numpad + spacer,
                            height - ((spacer * 4) + (button_size * 4)) );
+   b_count_1->setPosition( b_count_1_pos.x, b_count_1_pos.y );
    b_count_1->setTextSize( text_size );
    b_count_1->centerText();
 
    b_count_2->setSize( button_size, button_size );
-   b_count_2->setPosition( sec_start_numpad + (spacer * 2) + button_size,
+   b_count_2_pos = Vector2f( sec_start_numpad + (spacer * 2) + button_size,
                            height - ((spacer * 4) + (button_size * 4)) );
+   b_count_2->setPosition( b_count_2_pos.x, b_count_2_pos.y );
    b_count_2->setTextSize( text_size );
    b_count_2->centerText();
 
    b_count_3->setSize( button_size, button_size );
-   b_count_3->setPosition( sec_start_numpad + (spacer * 3) + (button_size * 2),
+   b_count_3_pos = Vector2f( sec_start_numpad + (spacer * 3) + (button_size * 2),
                            height - ((spacer * 4) + (button_size * 4)) );
+   b_count_3->setPosition( b_count_3_pos.x, b_count_3_pos.y );
    b_count_3->setTextSize( text_size );
    b_count_3->centerText();
 
    b_count_4->setSize( button_size, button_size );
-   b_count_4->setPosition( sec_start_numpad + spacer,
+   b_count_4_pos = Vector2f( sec_start_numpad + spacer,
                            height - ((spacer * 3) + (button_size * 3)) );
+   b_count_4->setPosition( b_count_4_pos.x, b_count_4_pos.y );
    b_count_4->setTextSize( text_size );
    b_count_4->centerText();
 
    b_count_5->setSize( button_size, button_size );
-   b_count_5->setPosition( sec_start_numpad + (spacer * 2) + button_size,
+   b_count_5_pos = Vector2f( sec_start_numpad + (spacer * 2) + button_size,
                            height - ((spacer * 3) + (button_size * 3)) );
+   b_count_5->setPosition( b_count_5_pos.x, b_count_5_pos.y );
    b_count_5->setTextSize( text_size );
    b_count_5->centerText();
 
    b_count_6->setSize( button_size, button_size );
-   b_count_6->setPosition( sec_start_numpad + (spacer * 3) + (button_size * 2),
+   b_count_6_pos = Vector2f( sec_start_numpad + (spacer * 3) + (button_size * 2),
                            height - ((spacer * 3) + (button_size * 3)) );
+   b_count_6->setPosition( b_count_6_pos.x, b_count_6_pos.y );
    b_count_6->setTextSize( text_size );
    b_count_6->centerText();
 
    b_count_7->setSize( button_size, button_size );
-   b_count_7->setPosition( sec_start_numpad + spacer,
+   b_count_7_pos = Vector2f( sec_start_numpad + spacer,
                            height - ((spacer * 2) + (button_size * 2)) );
+   b_count_7->setPosition( b_count_7_pos.x, b_count_7_pos.y );
    b_count_7->setTextSize( text_size );
    b_count_7->centerText();
 
    b_count_8->setSize( button_size, button_size );
-   b_count_8->setPosition( sec_start_numpad + (spacer * 2) + button_size,
+   b_count_8_pos = Vector2f( sec_start_numpad + (spacer * 2) + button_size,
                            height - ((spacer * 2) + (button_size * 2)) );
+   b_count_8->setPosition( b_count_8_pos.x, b_count_8_pos.y );
    b_count_8->setTextSize( text_size );
    b_count_8->centerText();
 
    b_count_9->setSize( button_size, button_size );
-   b_count_9->setPosition( sec_start_numpad + (spacer * 3) + (button_size * 2),
+   b_count_9_pos = Vector2f( sec_start_numpad + (spacer * 3) + (button_size * 2),
                            height - ((spacer * 2) + (button_size * 2)) );
+   b_count_9->setPosition( b_count_9_pos.x, b_count_9_pos.y );
    b_count_9->setTextSize( text_size );
    b_count_9->centerText();
 
    b_count_infinite->setSize( button_size, button_size );
-   b_count_infinite->setPosition( sec_start_numpad + (spacer * 3) + (button_size * 2),
+   b_count_infinite_pos = Vector2f( sec_start_numpad + (spacer * 3) + (button_size * 2),
                                   height - (spacer + button_size) );
+   b_count_infinite->setPosition( b_count_infinite_pos.x, b_count_infinite_pos.y );
    b_count_infinite->setImageSize( button_size, button_size );
 
    b_count_reset->setSize( button_size, button_size );
-   b_count_reset->setPosition( sec_start_numpad + spacer,
+   b_count_reset_pos = Vector2f( sec_start_numpad + spacer,
                                height - (spacer + button_size) );
+   b_count_reset->setPosition( b_count_reset_pos.x, b_count_reset_pos.y );
    b_count_reset->setTextSize( text_size );
    b_count_reset->centerText();
 
@@ -2818,24 +2884,29 @@ void fitGui_Level()
                                height - ((border * 2) + (spacer * 7) + (button_size * 5)));
 
    b_pl_alert_all->setSize( button_size, button_size );
-   b_pl_alert_all->setPosition( sec_start_numpad + spacer,
+   b_pl_alert_all_pos = Vector2f( sec_start_numpad + spacer,
                                 height - ((border * 1) + (spacer * 6) + (button_size * 5)));
+   b_pl_alert_all->setPosition( b_pl_alert_all_pos.x, b_pl_alert_all_pos.y );
 
    b_pl_cmd_go->setSize( button_size, button_size );
-   b_pl_cmd_go->setPosition( sec_start_numpad + (spacer * 2) + button_size,
+   b_pl_cmd_go_pos = Vector2f( sec_start_numpad + (spacer * 2) + button_size,
                              height - ((border * 1) + (spacer * 6) + (button_size * 5)));
+   b_pl_cmd_go->setPosition( b_pl_cmd_go_pos.x, b_pl_cmd_go_pos.y );
 
    b_pl_cmd_go_all->setSize( button_size, button_size );
-   b_pl_cmd_go_all->setPosition( sec_start_numpad + (spacer * 3) + (button_size * 2),
+   b_pl_cmd_go_all_pos = Vector2f( sec_start_numpad + (spacer * 3) + (button_size * 2),
                                  height - ((border * 1) + (spacer * 6) + (button_size * 5)));
+   b_pl_cmd_go_all->setPosition( b_pl_cmd_go_all_pos.x, b_pl_cmd_go_all_pos.y );
 
    b_pl_set_group->setSize( button_size, button_size );
-   b_pl_set_group->setPosition( sec_start_numpad + (spacer * 4) + (button_size * 3),
+   b_pl_set_group_pos = Vector2f( sec_start_numpad + (spacer * 4) + (button_size * 3),
                                height - ((border * 1) + (spacer * 6) + (button_size * 5)));
+   b_pl_set_group->setPosition( b_pl_set_group_pos.x, b_pl_set_group_pos.y );
 
    b_pl_delay->setSize( button_size, button_size );
-   b_pl_delay->setPosition( sec_start_numpad + (spacer * 5) + (button_size * 4),
+   b_pl_delay_pos = Vector2f( sec_start_numpad + (spacer * 5) + (button_size * 4),
                             height - ((border * 1) + (spacer * 6) + (button_size * 5)));
+   b_pl_delay->setPosition( b_pl_delay_pos.x, b_pl_delay_pos.y );
 
 
    // Conditionals
@@ -2847,55 +2918,65 @@ void fitGui_Level()
 
    b_con_enemy_adjacent->setSize( button_size, button_size );
    b_con_enemy_adjacent->setImageSize( button_size, button_size );
-   b_con_enemy_adjacent->setPosition( sec_start_conditionals + spacer,
+   b_con_enemy_adjacent_pos = Vector2f( sec_start_conditionals + spacer,
                                       height - ((spacer * 3) + (button_size * 3)));
+   b_con_enemy_adjacent->setPosition( b_con_enemy_adjacent_pos.x, b_con_enemy_adjacent_pos.y );
 
    b_con_enemy_ahead->setSize( button_size, button_size );
    b_con_enemy_ahead->setImageSize( button_size, button_size );
-   b_con_enemy_ahead->setPosition( sec_start_conditionals + spacer,
+   b_con_enemy_ahead_pos = Vector2f( sec_start_conditionals + spacer,
                                       height - ((spacer * 2) + (button_size * 2)));
+   b_con_enemy_ahead->setPosition( b_con_enemy_ahead_pos.x, b_con_enemy_ahead_pos.y );
 
    b_con_enemy_in_range->setSize( button_size, button_size );
    b_con_enemy_in_range->setImageSize( button_size, button_size );
-   b_con_enemy_in_range->setPosition( sec_start_conditionals + spacer,
+   b_con_enemy_in_range_pos = Vector2f( sec_start_conditionals + spacer,
                                       height - ((spacer * 1) + (button_size * 1)));
+   b_con_enemy_in_range->setPosition( b_con_enemy_in_range_pos.x, b_con_enemy_in_range_pos.y );
 
    /*
    b_con_ally_adjacent->setSize( button_size, button_size );
    b_con_ally_adjacent->setImageSize( button_size, button_size );
-   b_con_ally_adjacent->setPosition( sec_start_conditionals + (spacer * 2) + button_size,
+   b_con_ally_adjacent_pos = Vector2f( sec_start_conditionals + (spacer * 2) + button_size,
                                       height - ((spacer * 3) + (button_size * 3)));
+   b_con_ally_adjacent->setPosition( b_con_ally_adjacent_pos.x, b_con_ally_adjacent_pos.y );
 
    b_con_ally_ahead->setSize( button_size, button_size );
    b_con_ally_ahead->setImageSize( button_size, button_size );
-   b_con_ally_ahead->setPosition( sec_start_conditionals + (spacer * 2) + button_size,
+   b_con_ally_ahead_pos = Vector2f( sec_start_conditionals + (spacer * 2) + button_size,
                                       height - ((spacer * 2) + (button_size * 2)));
+   b_con_ally_ahead->setPosition( b_con_ally_ahead_pos.x, b_con_ally_ahead_pos.y );
 
    b_con_ally_in_range->setSize( button_size, button_size );
    b_con_ally_in_range->setImageSize( button_size, button_size );
-   b_con_ally_in_range->setPosition( sec_start_conditionals + (spacer * 2) + button_size,
+   b_con_ally_in_range_pos = Vector2f( sec_start_conditionals + (spacer * 2) + button_size,
                                       height - ((spacer * 1) + (button_size * 1)));
+   b_con_ally_in_range->setPosition( b_con_ally_in_range_pos.x, b_con_ally_in_range_pos.y );
                                       */
 
    b_con_blocked_ahead->setSize( button_size, button_size );
    b_con_blocked_ahead->setImageSize( button_size, button_size );
-   b_con_blocked_ahead->setPosition( sec_start_conditionals + (spacer * 2) + button_size,
+   b_con_blocked_ahead_pos = Vector2f( sec_start_conditionals + (spacer * 2) + button_size,
                                       height - ((spacer * 3) + (button_size * 3)));
+   b_con_blocked_ahead->setPosition( b_con_blocked_ahead_pos.x, b_con_blocked_ahead_pos.y );
 
    b_con_half_health->setSize( button_size, button_size );
    b_con_half_health->setImageSize( button_size, button_size );
-   b_con_half_health->setPosition( sec_start_conditionals + (spacer * 2) + button_size,
+   b_con_half_health_pos = Vector2f( sec_start_conditionals + (spacer * 2) + button_size,
                                       height - ((spacer * 2) + (button_size * 2)));
+   b_con_half_health->setPosition( b_con_half_health_pos.x, b_con_half_health_pos.y );
 
    b_con_20_health->setSize( button_size, button_size );
    b_con_20_health->setImageSize( button_size, button_size );
-   b_con_20_health->setPosition( sec_start_conditionals + (spacer * 2) + button_size,
+   b_con_20_health_pos = Vector2f( sec_start_conditionals + (spacer * 2) + button_size,
                                       height - ((spacer * 1) + (button_size * 1)));
+   b_con_20_health->setPosition( b_con_20_health_pos.x, b_con_20_health_pos.y );
 
    b_con_clear->setSize( button_size, button_size );
    b_con_clear->setImageSize( button_size, button_size );
-   b_con_clear->setPosition( sec_start_conditionals + spacer,
+   b_con_clear_pos = Vector2f( sec_start_conditionals + spacer,
                                       height - ((spacer * 4) + (button_size * 4)));
+   b_con_clear->setPosition( b_con_clear_pos.x, b_con_clear_pos.y );
 
    // Control
 
@@ -2906,18 +2987,21 @@ void fitGui_Level()
 
    b_o_start_block->setSize( button_size, button_size );
    b_o_start_block->setImageSize( button_size, button_size );
-   b_o_start_block->setPosition( sec_start_control + spacer,
+   b_o_start_block_pos = Vector2f( sec_start_control + spacer,
                                  height - ((spacer * 3) + (button_size * 3)));
+   b_o_start_block->setPosition( b_o_start_block_pos.x, b_o_start_block_pos.y );
 
    b_o_end_block->setSize( button_size, button_size );
    b_o_end_block->setImageSize( button_size, button_size );
-   b_o_end_block->setPosition( sec_start_control + spacer,
+   b_o_end_block_pos = Vector2f( sec_start_control + spacer,
                                height - ((spacer * 2) + (button_size * 2)));
+   b_o_end_block->setPosition( b_o_end_block_pos.x, b_o_end_block_pos.y );
 
    b_o_repeat->setSize( button_size, button_size );
    b_o_repeat->setImageSize( button_size, button_size );
-   b_o_repeat->setPosition( sec_start_control + spacer,
+   b_o_repeat_pos = Vector2f( sec_start_control + spacer,
                             height - ((spacer * 1) + (button_size * 1)));
+   b_o_repeat->setPosition( b_o_repeat_pos.x, b_o_repeat_pos.y );
 
    // Movement
 
@@ -2928,53 +3012,57 @@ void fitGui_Level()
 
    b_o_move_forward->setSize( button_size, button_size );
    b_o_move_forward->setImageSize( button_size, button_size );
-   b_o_move_forward->setPosition( sec_start_movement + (spacer * 3) + (button_size * 2),
+   b_o_move_forward_pos = Vector2f( sec_start_movement + (spacer * 3) + (button_size * 2),
                                   height - ((spacer * 3) + (button_size * 3)));
+   b_o_move_forward->setPosition( b_o_move_forward_pos.x, b_o_move_forward_pos.y );
 
    b_o_move_backward->setSize( button_size, button_size );
    b_o_move_backward->setImageSize( button_size, button_size );
-   b_o_move_backward->setPosition( sec_start_movement + spacer,
+   b_o_move_backward_pos = Vector2f( sec_start_movement + spacer,
                                    height - ((spacer * 3) + (button_size * 3)));
+   b_o_move_backward->setPosition( b_o_move_backward_pos.x, b_o_move_backward_pos.y );
 
    b_o_wait->setSize( button_size, button_size );
    b_o_wait->setImageSize( button_size, button_size );
-   b_o_wait->setPosition( sec_start_movement + (spacer * 2) + button_size,
+   b_o_wait_pos = Vector2f( sec_start_movement + (spacer * 2) + button_size,
                           height - ((spacer * 3) + (button_size * 3)));
+   b_o_wait->setPosition( b_o_wait_pos.x, b_o_wait_pos.y );
 
    b_o_turn_north->setSize( button_size, button_size );
    b_o_turn_north->setImageSize( button_size, button_size );
-   b_turn_north_count_pos = Vector2f( sec_start_movement + (spacer * 2) + button_size,
+   b_o_turn_north_pos = Vector2f( sec_start_movement + (spacer * 2) + button_size,
                                       height - ((spacer * 2) + (button_size * 2)));
-   b_o_turn_north->setPosition( b_turn_north_count_pos.x, b_turn_north_count_pos.y );
+   b_o_turn_north->setPosition( b_o_turn_north_pos.x, b_o_turn_north_pos.y );
 
    b_o_turn_east->setSize( button_size, button_size );
    b_o_turn_east->setImageSize( button_size, button_size );
-   b_turn_east_count_pos = Vector2f( sec_start_movement + (spacer * 3) + (button_size * 2),
+   b_o_turn_east_pos = Vector2f( sec_start_movement + (spacer * 3) + (button_size * 2),
                                      height - (spacer + (button_size * 1)));
-   b_o_turn_east->setPosition( b_turn_east_count_pos.x, b_turn_east_count_pos.y );
+   b_o_turn_east->setPosition( b_o_turn_east_pos.x, b_o_turn_east_pos.y );
 
    b_o_turn_south->setSize( button_size, button_size );
    b_o_turn_south->setImageSize( button_size, button_size );
-   b_turn_south_count_pos = Vector2f( sec_start_movement + (spacer * 2) + button_size,
+   b_o_turn_south_pos = Vector2f( sec_start_movement + (spacer * 2) + button_size,
                                       height - (spacer + (button_size * 1)));
-   b_o_turn_south->setPosition( b_turn_south_count_pos.x, b_turn_south_count_pos. y );
+   b_o_turn_south->setPosition( b_o_turn_south_pos.x, b_o_turn_south_pos. y );
 
    b_o_turn_west->setSize( button_size, button_size );
    b_o_turn_west->setImageSize( button_size, button_size );
-   b_turn_west_count_pos = Vector2f( sec_start_movement + spacer,
+   b_o_turn_west_pos = Vector2f( sec_start_movement + spacer,
                                      height - (spacer + (button_size * 1)));
-   b_o_turn_west->setPosition( b_turn_west_count_pos.x, b_turn_west_count_pos.y );
+   b_o_turn_west->setPosition( b_o_turn_west_pos.x, b_o_turn_west_pos.y );
 
    b_o_turn_nearest_enemy->setSize( button_size, button_size );
    b_o_turn_nearest_enemy->setImageSize( button_size, button_size );
-   b_turn_nearest_enemy_count_pos = Vector2f( sec_start_movement + spacer,
+   b_o_turn_nearest_enemy_pos = Vector2f( sec_start_movement + spacer,
                                      height - ((spacer * 2) + (button_size * 2)));
-   b_o_turn_nearest_enemy->setPosition( b_turn_nearest_enemy_count_pos.x, b_turn_nearest_enemy_count_pos.y );
+   b_o_turn_nearest_enemy->setPosition( b_o_turn_nearest_enemy_pos.x, b_o_turn_nearest_enemy_pos.y );
 
    b_o_follow_path->setSize( button_size, button_size );
    b_o_follow_path->setImageSize( button_size, button_size );
-   b_o_follow_path->setPosition( sec_start_movement + (spacer * 3) + (button_size * 2),
+   b_o_follow_path_pos = Vector2f( sec_start_movement + (spacer * 3) + (button_size * 2),
                                  height - ((spacer * 2) + (button_size * 2)));
+   b_o_follow_path->setPosition( b_o_follow_path_pos.x, b_o_follow_path_pos.y );
 
 
    // Attack
@@ -2986,33 +3074,39 @@ void fitGui_Level()
 
    b_o_attack_smallest->setSize( button_size, button_size );
    b_o_attack_smallest->setImageSize( button_size, button_size );
-   b_o_attack_smallest->setPosition( sec_start_attack + spacer,
+   b_o_attack_smallest_pos = Vector2f( sec_start_attack + spacer,
                                      height - ((spacer * 3) + (button_size * 3)));
+   b_o_attack_smallest->setPosition( b_o_attack_smallest_pos.x, b_o_attack_smallest_pos.y );
 
    b_o_attack_biggest->setSize( button_size, button_size );
    b_o_attack_biggest->setImageSize( button_size, button_size );
-   b_o_attack_biggest->setPosition( sec_start_attack + (spacer * 2) + button_size,
+   b_o_attack_biggest_pos = Vector2f( sec_start_attack + (spacer * 2) + button_size,
                                     height - ((spacer * 3) + (button_size * 3)));
+   b_o_attack_biggest->setPosition( b_o_attack_biggest_pos.x, b_o_attack_biggest_pos.y );
 
    b_o_attack_closest->setSize( button_size, button_size );
    b_o_attack_closest->setImageSize( button_size, button_size );
-   b_o_attack_closest->setPosition( sec_start_attack + spacer,
+   b_o_attack_closest_pos = Vector2f( sec_start_attack + spacer,
                                     height - ((spacer * 2) + (button_size * 2)));
+   b_o_attack_closest->setPosition( b_o_attack_closest_pos.x, b_o_attack_closest_pos.y );
 
    b_o_attack_farthest->setSize( button_size, button_size );
    b_o_attack_farthest->setImageSize( button_size, button_size );
-   b_o_attack_farthest->setPosition( sec_start_attack + (spacer * 2) + button_size,
+   b_o_attack_farthest_pos = Vector2f( sec_start_attack + (spacer * 2) + button_size,
                                      height - ((spacer * 2) + (button_size * 2)));
+   b_o_attack_farthest->setPosition( b_o_attack_farthest_pos.x, b_o_attack_farthest_pos.y );
 
    b_o_attack_least_armor->setSize( button_size, button_size );
    b_o_attack_least_armor->setImageSize( button_size, button_size );
-   b_o_attack_least_armor->setPosition( sec_start_attack + spacer,
+   b_o_attack_least_armor_pos = Vector2f( sec_start_attack + spacer,
                                         height - (spacer + (button_size * 1)));
+   b_o_attack_least_armor->setPosition( b_o_attack_least_armor_pos.x, b_o_attack_least_armor_pos.y );
 
    b_o_attack_most_armor->setSize( button_size, button_size );
    b_o_attack_most_armor->setImageSize( button_size, button_size );
-   b_o_attack_most_armor->setPosition( sec_start_attack + (spacer * 2) + button_size,
+   b_o_attack_most_armor_pos = Vector2f( sec_start_attack + (spacer * 2) + button_size,
                                        height - (spacer + (button_size * 1)));
+   b_o_attack_most_armor->setPosition( b_o_attack_most_armor_pos.x, b_o_attack_most_armor_pos.y );
 
    // Units
 
@@ -3024,24 +3118,27 @@ void fitGui_Level()
 
    b_pl_alert_monster->setSize( button_size, button_size );
    b_pl_alert_monster->setImageSize( button_size, button_size );
-   b_pl_alert_monster->setPosition( sec_start_monster + spacer,
+   b_pl_alert_monster_pos = Vector2f( sec_start_monster + spacer,
                                     height - ((spacer * 3) + (button_size * 3)) );
+   b_pl_alert_monster->setPosition( b_pl_alert_monster_pos.x, b_pl_alert_monster_pos.y );
 
    b_pl_cmd_go_monster->setSize( button_size, button_size );
    b_pl_cmd_go_monster->setImageSize( button_size, button_size );
-   b_pl_cmd_go_monster->setPosition( sec_start_monster + (spacer * 2) + button_size,
+   b_pl_cmd_go_monster_pos = Vector2f( sec_start_monster + (spacer * 2) + button_size,
                                      height - ((spacer * 3) + (button_size * 3)) );
+   b_pl_cmd_go_monster->setPosition( b_pl_cmd_go_monster_pos.x, b_pl_cmd_go_monster_pos.y );
 
    b_o_monster_guard->setSize( button_size, button_size );
    b_o_monster_guard->setImageSize( button_size, button_size );
-   b_guard_count_pos = Vector2f( sec_start_monster + spacer,
+   b_o_monster_guard_pos = Vector2f( sec_start_monster + spacer,
                                  height - ((spacer * 2) + (button_size * 2)) );
-   b_o_monster_guard->setPosition( b_guard_count_pos.x, b_guard_count_pos.y );
+   b_o_monster_guard->setPosition( b_o_monster_guard_pos.x, b_o_monster_guard_pos.y );
 
    b_o_monster_burst->setSize( button_size, button_size );
    b_o_monster_burst->setImageSize( button_size, button_size );
-   b_o_monster_burst->setPosition( sec_start_monster + spacer,
+   b_o_monster_burst_pos = Vector2f( sec_start_monster + spacer,
                                    height - (spacer + button_size) );
+   b_o_monster_burst->setPosition( b_o_monster_burst_pos.x, b_o_monster_burst_pos.y );
 
    b_monster_image->setSize( button_size, button_size );
    b_monster_image->setImageSize( button_size, button_size );
@@ -3056,31 +3153,33 @@ void fitGui_Level()
 
    b_pl_alert_soldier->setSize( button_size, button_size );
    b_pl_alert_soldier->setImageSize( button_size, button_size );
-   b_pl_alert_soldier->setPosition( sec_start_soldier + spacer,
+   b_pl_alert_soldier_pos = Vector2f( sec_start_soldier + spacer,
                                     height - ((spacer * 3) + (button_size * 3)) );
+   b_pl_alert_soldier->setPosition( b_pl_alert_soldier_pos.x, b_pl_alert_soldier_pos.y );
 
    b_pl_cmd_go_soldier->setSize( button_size, button_size );
    b_pl_cmd_go_soldier->setImageSize( button_size, button_size );
-   b_pl_cmd_go_soldier->setPosition( sec_start_soldier + (spacer * 2) + button_size,
+   b_pl_cmd_go_soldier_pos = Vector2f( sec_start_soldier + (spacer * 2) + button_size,
                                      height - ((spacer * 3) + (button_size * 3)) );
+   b_pl_cmd_go_soldier->setPosition( b_pl_cmd_go_soldier_pos.x, b_pl_cmd_go_soldier_pos.y );
 
    b_o_soldier_switch_axe->setSize( button_size, button_size );
    b_o_soldier_switch_axe->setImageSize( button_size, button_size );
-   b_switch_axe_count_pos = Vector2f( sec_start_soldier + spacer,
+   b_o_soldier_switch_axe_pos = Vector2f( sec_start_soldier + spacer,
                                       height - ((spacer * 2) + (button_size * 2)) );
-   b_o_soldier_switch_axe->setPosition( b_switch_axe_count_pos.x, b_switch_axe_count_pos.y );
+   b_o_soldier_switch_axe->setPosition( b_o_soldier_switch_axe_pos.x, b_o_soldier_switch_axe_pos.y );
 
    b_o_soldier_switch_spear->setSize( button_size, button_size );
    b_o_soldier_switch_spear->setImageSize( button_size, button_size );
-   b_switch_spear_count_pos = Vector2f( sec_start_soldier + (spacer * 2) + button_size,
+   b_o_soldier_switch_spear_pos = Vector2f( sec_start_soldier + (spacer * 2) + button_size,
                                         height - ((spacer * 2) + (button_size * 2)) );
-   b_o_soldier_switch_spear->setPosition( b_switch_spear_count_pos.x, b_switch_spear_count_pos.y );
+   b_o_soldier_switch_spear->setPosition( b_o_soldier_switch_spear_pos.x, b_o_soldier_switch_spear_pos.y );
    
    b_o_soldier_switch_bow->setSize( button_size, button_size );
    b_o_soldier_switch_bow->setImageSize( button_size, button_size );
-   b_switch_bow_count_pos = Vector2f( sec_start_soldier + spacer,
+   b_o_soldier_switch_bow_pos = Vector2f( sec_start_soldier + spacer,
                                       height - (spacer + button_size ) );
-   b_o_soldier_switch_bow->setPosition( b_switch_bow_count_pos.x, b_switch_bow_count_pos.y );
+   b_o_soldier_switch_bow->setPosition( b_o_soldier_switch_bow_pos.x, b_o_soldier_switch_bow_pos.y );
 
    b_soldier_image->setSize( button_size, button_size );
    b_soldier_image->setImageSize( button_size, button_size );
@@ -3095,30 +3194,33 @@ void fitGui_Level()
 
    b_pl_alert_worm->setSize( button_size, button_size );
    b_pl_alert_worm->setImageSize( button_size, button_size );
-   b_pl_alert_worm->setPosition( sec_start_worm + spacer,
+   b_pl_alert_worm_pos = Vector2f( sec_start_worm + spacer,
                                  height - ((spacer * 3) + (button_size * 3)) );
+   b_pl_alert_worm->setPosition( b_pl_alert_worm_pos.x, b_pl_alert_worm_pos.y );
 
    b_pl_cmd_go_worm->setSize( button_size, button_size );
    b_pl_cmd_go_worm->setImageSize( button_size, button_size );
-   b_pl_cmd_go_worm->setPosition( sec_start_worm + (spacer * 2) + button_size,
+   b_pl_cmd_go_worm_pos = Vector2f( sec_start_worm + (spacer * 2) + button_size,
                                   height - ((spacer * 3) + (button_size * 3)) );
+   b_pl_cmd_go_worm->setPosition( b_pl_cmd_go_worm_pos.x, b_pl_cmd_go_worm_pos.y );
 
    b_o_worm_trail_on->setSize( button_size, button_size );
    b_o_worm_trail_on->setImageSize( button_size, button_size );
-   b_trail_on_count_pos = Vector2f( sec_start_worm + spacer,
+   b_o_worm_trail_on_pos = Vector2f( sec_start_worm + spacer,
                                     height - ((spacer * 2) + (button_size * 2)) );
-   b_o_worm_trail_on->setPosition( b_trail_on_count_pos.x, b_trail_on_count_pos.y );
+   b_o_worm_trail_on->setPosition( b_o_worm_trail_on_pos.x, b_o_worm_trail_on_pos.y );
 
    b_o_worm_trail_off->setSize( button_size, button_size );
    b_o_worm_trail_off->setImageSize( button_size, button_size );
-   b_trail_off_count_pos = Vector2f( sec_start_worm + (spacer * 2) + button_size,
+   b_o_worm_trail_off_pos = Vector2f( sec_start_worm + (spacer * 2) + button_size,
                                      height - ((spacer * 2) + (button_size * 2)) );
-   b_o_worm_trail_off->setPosition( b_trail_off_count_pos.x, b_trail_off_count_pos.y );
+   b_o_worm_trail_off->setPosition( b_o_worm_trail_off_pos.x, b_o_worm_trail_off_pos.y );
 
    b_o_worm_hide->setSize( button_size, button_size );
    b_o_worm_hide->setImageSize( button_size, button_size );
-   b_o_worm_hide->setPosition( sec_start_worm + spacer,
+   b_o_worm_hide_pos = Vector2f( sec_start_worm + spacer,
                                  height - (spacer + button_size ) );
+   b_o_worm_hide->setPosition( b_o_worm_hide_pos.x, b_o_worm_hide_pos.y );
 
    b_worm_image->setSize( button_size, button_size );
    b_worm_image->setImageSize( button_size, button_size );
@@ -3133,29 +3235,33 @@ void fitGui_Level()
 
    b_pl_alert_bird->setSize( button_size, button_size );
    b_pl_alert_bird->setImageSize( button_size, button_size );
-   b_pl_alert_bird->setPosition( sec_start_bird + spacer,
+   b_pl_alert_bird_pos = Vector2f( sec_start_bird + spacer,
                                  height - ((spacer * 3) + (button_size * 3)) );
+   b_pl_alert_bird->setPosition( b_pl_alert_bird_pos.x, b_pl_alert_bird_pos.y );
 
    b_pl_cmd_go_bird->setSize( button_size, button_size );
    b_pl_cmd_go_bird->setImageSize( button_size, button_size );
-   b_pl_cmd_go_bird->setPosition( sec_start_bird + (spacer * 2) + button_size,
+   b_pl_cmd_go_bird_pos = Vector2f( sec_start_bird + (spacer * 2) + button_size,
                                   height - ((spacer * 3) + (button_size * 3)) );
+   b_pl_cmd_go_bird->setPosition( b_pl_cmd_go_bird_pos.x, b_pl_cmd_go_bird_pos.y );
 
    b_cmd_bird_shout->setSize( button_size, button_size );
    b_cmd_bird_shout->setImageSize( button_size, button_size );
-   b_cmd_bird_shout->setPosition( sec_start_bird + spacer,
+   b_cmd_bird_shout_pos = Vector2f( sec_start_bird + spacer,
                                 height - ((spacer * 2) + (button_size * 2)) );
+   b_cmd_bird_shout->setPosition( b_cmd_bird_shout_pos.x, b_cmd_bird_shout_pos.y );
 
    b_cmd_bird_quiet->setSize( button_size, button_size );
    b_cmd_bird_quiet->setImageSize( button_size, button_size );
-   b_cmd_bird_quiet->setPosition( sec_start_bird + (spacer * 2) + button_size,
+   b_cmd_bird_quiet_pos = Vector2f( sec_start_bird + (spacer * 2) + button_size,
                                 height - ((spacer * 2) + (button_size * 2)) );
+   b_cmd_bird_quiet->setPosition( b_cmd_bird_quiet_pos.x, b_cmd_bird_quiet_pos.y );
 
    b_o_bird_fly->setSize( button_size, button_size );
    b_o_bird_fly->setImageSize( button_size, button_size );
-   b_fly_count_pos = Vector2f( sec_start_bird + spacer,
+   b_o_bird_fly_pos = Vector2f( sec_start_bird + spacer,
                                height - (spacer + button_size) );
-   b_o_bird_fly->setPosition( b_fly_count_pos.x, b_fly_count_pos.y );
+   b_o_bird_fly->setPosition( b_o_bird_fly_pos.x, b_o_bird_fly_pos.y );
 
    b_bird_image->setSize( button_size, button_size );
    b_bird_image->setImageSize( button_size, button_size );
@@ -3170,44 +3276,51 @@ void fitGui_Level()
 
    b_pl_alert_bug->setSize( button_size, button_size );
    b_pl_alert_bug->setImageSize( button_size, button_size );
-   b_pl_alert_bug->setPosition( sec_start_bug + spacer,
+   b_pl_alert_bug_pos = Vector2f( sec_start_bug + spacer,
                                 height - ((spacer * 3) + (button_size * 3)) );
+   b_pl_alert_bug->setPosition( b_pl_alert_bug_pos.x, b_pl_alert_bug_pos.y );
 
    b_pl_cmd_go_bug->setSize( button_size, button_size );
    b_pl_cmd_go_bug->setImageSize( button_size, button_size );
-   b_pl_cmd_go_bug->setPosition( sec_start_bug + (spacer * 2) + button_size,
+   b_pl_cmd_go_bug_pos = Vector2f( sec_start_bug + (spacer * 2) + button_size,
                                  height - ((spacer * 3) + (button_size * 3)) );
+   b_pl_cmd_go_bug->setPosition( b_pl_cmd_go_bug_pos.x, b_pl_cmd_go_bug_pos.y );
 
    b_o_bug_fireball->setSize( button_size, button_size );
    b_o_bug_fireball->setImageSize( button_size, button_size );
-   b_o_bug_fireball->setPosition( sec_start_bug + spacer,
+   b_o_bug_fireball_pos = Vector2f( sec_start_bug + spacer,
                                   height - ((spacer * 2) + (button_size * 2)) );
+   b_o_bug_fireball->setPosition( b_o_bug_fireball_pos.x, b_o_bug_fireball_pos.y );
 
    b_o_bug_sunder->setSize( button_size, button_size );
    b_o_bug_sunder->setImageSize( button_size, button_size );
-   b_o_bug_sunder->setPosition( sec_start_bug + (spacer * 2) + button_size,
+   b_o_bug_sunder_pos = Vector2f( sec_start_bug + (spacer * 2) + button_size,
                                 height - ((spacer * 2) + (button_size * 2)) );
+   b_o_bug_sunder->setPosition( b_o_bug_sunder_pos.x, b_o_bug_sunder_pos.y );
 
    b_o_bug_heal->setSize( button_size, button_size );
    b_o_bug_heal->setImageSize( button_size, button_size );
-   b_o_bug_heal->setPosition( sec_start_bug + (spacer * 3) + (button_size * 2),
+   b_o_bug_heal_pos = Vector2f( sec_start_bug + (spacer * 3) + (button_size * 2),
                               height - ((spacer * 2) + (button_size * 2)) );
+   b_o_bug_heal->setPosition( b_o_bug_heal_pos.x, b_o_bug_heal_pos.y );
 
    b_o_bug_open_wormhole->setSize( button_size, button_size );
    b_o_bug_open_wormhole->setImageSize( button_size, button_size );
-   b_o_bug_open_wormhole->setPosition( sec_start_bug + spacer,
+   b_o_bug_open_wormhole_pos = Vector2f( sec_start_bug + spacer,
                                         height - (spacer + button_size ) );
+   b_o_bug_open_wormhole->setPosition( b_o_bug_open_wormhole_pos.x, b_o_bug_open_wormhole_pos.y );
 
    b_o_bug_close_wormhole->setSize( button_size, button_size );
    b_o_bug_close_wormhole->setImageSize( button_size, button_size );
-   b_o_bug_close_wormhole->setPosition( sec_start_bug + (spacer * 2) + button_size,
+   b_o_bug_close_wormhole_pos = Vector2f( sec_start_bug + (spacer * 2) + button_size,
                                         height - (spacer + button_size ) );
+   b_o_bug_close_wormhole->setPosition( b_o_bug_close_wormhole_pos.x, b_o_bug_close_wormhole_pos.y );
 
    b_o_bug_meditate->setSize( button_size, button_size );
    b_o_bug_meditate->setImageSize( button_size, button_size );
-   b_meditate_count_pos = Vector2f( sec_start_bug + (spacer * 3) + (button_size * 2),
+   b_o_bug_meditate_pos = Vector2f( sec_start_bug + (spacer * 3) + (button_size * 2),
                                     height - ((spacer * 3) + (button_size * 3) ) );
-   b_o_bug_meditate->setPosition( b_meditate_count_pos.x, b_meditate_count_pos.y );
+   b_o_bug_meditate->setPosition( b_o_bug_meditate_pos.x, b_o_bug_meditate_pos.y );
 
    b_bug_image->setSize( button_size, button_size );
    b_bug_image->setImageSize( button_size, button_size );
@@ -4007,29 +4120,110 @@ int selectConditionButton( Order_Conditional c )
    return true;
 }
 
+void drawGuiButtonCounts()
+{
+   // Count boxes
+   int count_text_size = 12;
+   if (button_size < 40) count_text_size = 10;
+   drawCount( 0, b_o_turn_north_pos.x, b_o_turn_north_pos.y, button_size, false, count_text_size );
+   drawCount( 0, b_o_turn_east_pos.x, b_o_turn_east_pos.y, button_size, false, count_text_size );
+   drawCount( 0, b_o_turn_south_pos.x, b_o_turn_south_pos.y, button_size, false, count_text_size );
+   drawCount( 0, b_o_turn_west_pos.x, b_o_turn_west_pos.y, button_size, false, count_text_size );
+   drawCount( 0, b_o_turn_nearest_enemy_pos.x, b_o_turn_nearest_enemy_pos.y, button_size, false, count_text_size );
+   drawCount( 2, b_o_monster_guard_pos.x, b_o_monster_guard_pos.y, button_size, true, count_text_size );
+   drawCount( 0, b_o_soldier_switch_axe_pos.x, b_o_soldier_switch_axe_pos.y, button_size, false, count_text_size );
+   drawCount( 0, b_o_soldier_switch_spear_pos.x, b_o_soldier_switch_spear_pos.y, button_size, false, count_text_size );
+   drawCount( 0, b_o_soldier_switch_bow_pos.x, b_o_soldier_switch_bow_pos.y, button_size, false, count_text_size );
+   drawCount( 0, b_o_worm_trail_on_pos.x, b_o_worm_trail_on_pos.y, button_size, false, count_text_size );
+   drawCount( 0, b_o_worm_trail_off_pos.x, b_o_worm_trail_off_pos.y, button_size, false, count_text_size );
+   drawCount( 2, b_o_bird_fly_pos.x, b_o_bird_fly_pos.y, button_size, true, count_text_size );
+   drawCount( 10, b_o_bug_meditate_pos.x, b_o_bug_meditate_pos.y, button_size, false, count_text_size );
+}
+
+void drawGuiButtonKeybinds()
+{
+   int txt_size = 12;
+   if (button_size < 40) txt_size = 10;
+   drawKeybind( KB_BTN_COND_ENEMY_ADJACENT, b_con_enemy_adjacent_pos.x, b_con_enemy_adjacent_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_COND_ENEMY_AHEAD, b_con_enemy_ahead_pos.x, b_con_enemy_ahead_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_COND_ENEMY_IN_RANGE, b_con_enemy_in_range_pos.x, b_con_enemy_in_range_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_COND_HEALTH_UNDER_50, b_con_half_health_pos.x, b_con_half_health_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_COND_HEALTH_UNDER_20, b_con_20_health_pos.x, b_con_20_health_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_COND_BLOCKED_AHEAD, b_con_blocked_ahead_pos.x, b_con_blocked_ahead_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_COND_CLEAR, b_con_clear_pos.x, b_con_clear_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_MOVE_FORWARD, b_o_move_forward_pos.x, b_o_move_forward_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_MOVE_BACK, b_o_move_backward_pos.x, b_o_move_backward_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_FOLLOW_PATH, b_o_follow_path_pos.x, b_o_follow_path_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_TURN_NORTH, b_o_turn_north_pos.x, b_o_turn_north_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_TURN_EAST, b_o_turn_east_pos.x, b_o_turn_east_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_TURN_SOUTH, b_o_turn_south_pos.x, b_o_turn_south_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_TURN_WEST, b_o_turn_west_pos.x, b_o_turn_west_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_TURN_NEAREST_ENEMY, b_o_turn_nearest_enemy_pos.x, b_o_turn_nearest_enemy_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_ATTACK_SMALLEST, b_o_attack_smallest_pos.x, b_o_attack_smallest_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_ATTACK_BIGGEST, b_o_attack_biggest_pos.x, b_o_attack_biggest_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_ATTACK_CLOSEST, b_o_attack_closest_pos.x, b_o_attack_closest_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_ATTACK_FARTHEST, b_o_attack_farthest_pos.x, b_o_attack_farthest_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_ATTACK_MOST_ARMORED, b_o_attack_least_armor_pos.x, b_o_attack_least_armor_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_ATTACK_LEAST_ARMORED, b_o_attack_most_armor_pos.x, b_o_attack_most_armor_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_START_BLOCK, b_o_start_block_pos.x, b_o_start_block_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_END_BLOCK, b_o_end_block_pos.x, b_o_end_block_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_REPEAT, b_o_repeat_pos.x, b_o_repeat_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_WAIT, b_o_wait_pos.x, b_o_wait_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_PL_ALERT_ALL, b_pl_alert_all_pos.x, b_pl_alert_all_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_PL_GO, b_pl_cmd_go_pos.x, b_pl_cmd_go_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_PL_GO_ALL, b_pl_cmd_go_all_pos.x, b_pl_cmd_go_all_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_PL_SET_GROUP, b_pl_set_group_pos.x, b_pl_set_group_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_PL_DELAY, b_pl_delay_pos.x, b_pl_delay_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_PL_ALERT_MONSTERS, b_pl_alert_monster_pos.x, b_pl_alert_monster_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_PL_GO_MONSTERS, b_pl_cmd_go_monster_pos.x, b_pl_cmd_go_monster_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_MONSTER_GUARD, b_o_monster_guard_pos.x, b_o_monster_guard_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_MONSTER_BURST, b_o_monster_burst_pos.x, b_o_monster_burst_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_PL_ALERT_SOLDIERS, b_pl_alert_soldier_pos.x, b_pl_alert_soldier_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_PL_GO_SOLDIERS, b_pl_cmd_go_soldier_pos.x, b_pl_cmd_go_soldier_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_SOLDIER_SWITCH_AXE, b_o_soldier_switch_axe_pos.x, b_o_soldier_switch_axe_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_SOLDIER_SWITCH_SPEAR, b_o_soldier_switch_spear_pos.x, b_o_soldier_switch_spear_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_SOLDIER_SWITCH_BOW, b_o_soldier_switch_bow_pos.x, b_o_soldier_switch_bow_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_PL_ALERT_WORMS, b_pl_alert_worm_pos.x, b_pl_alert_worm_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_PL_GO_WORMS, b_pl_cmd_go_worm_pos.x, b_pl_cmd_go_worm_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_WORM_HIDE, b_o_worm_hide_pos.x, b_o_worm_hide_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_WORM_TRAIL_START, b_o_worm_trail_on_pos.x, b_o_worm_trail_on_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_WORM_TRAIL_END, b_o_worm_trail_off_pos.x, b_o_worm_trail_off_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_PL_ALERT_BIRDS, b_pl_alert_bird_pos.x, b_pl_alert_bird_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_PL_GO_BIRDS, b_pl_cmd_go_bird_pos.x, b_pl_cmd_go_bird_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_BIRD_FLY, b_o_bird_fly_pos.x, b_o_bird_fly_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_BIRD_CMD_SHOUT, b_cmd_bird_shout_pos.x, b_cmd_bird_shout_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_BIRD_CMD_QUIET, b_cmd_bird_quiet_pos.x, b_cmd_bird_quiet_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_PL_ALERT_BUGS, b_pl_alert_bug_pos.x, b_pl_alert_bug_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_PL_GO_BUGS, b_pl_cmd_go_bug_pos.x, b_pl_cmd_go_bug_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_BUG_MEDITATE, b_o_bug_meditate_pos.x, b_o_bug_meditate_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_BUG_CAST_FIREBALL, b_o_bug_fireball_pos.x, b_o_bug_fireball_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_BUG_CAST_SUNDER, b_o_bug_sunder_pos.x, b_o_bug_sunder_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_BUG_CAST_HEAL, b_o_bug_heal_pos.x, b_o_bug_heal_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_BUG_OPEN_WORMHOLE, b_o_bug_open_wormhole_pos.x, b_o_bug_open_wormhole_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_BUG_CLOSE_WORMHOLE, b_o_bug_close_wormhole_pos.x, b_o_bug_close_wormhole_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_COUNT_INFINITE, b_count_infinite_pos.x, b_count_infinite_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_COUNT_1, b_count_1_pos.x, b_count_1_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_COUNT_2, b_count_2_pos.x, b_count_2_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_COUNT_3, b_count_3_pos.x, b_count_3_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_COUNT_4, b_count_4_pos.x, b_count_4_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_COUNT_5, b_count_5_pos.x, b_count_5_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_COUNT_6, b_count_6_pos.x, b_count_6_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_COUNT_7, b_count_7_pos.x, b_count_7_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_COUNT_8, b_count_8_pos.x, b_count_8_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_COUNT_9, b_count_9_pos.x, b_count_9_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_COUNT_0, b_count_0_pos.x, b_count_0_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_COUNT_CLEAR, b_count_reset_pos.x, b_count_reset_pos.y, button_size, txt_size );
+}
+
 int drawOrderButtons()
 {
    if (init_level_gui == false)
       initLevelGui();
 
-   // TODO Keybinding markers
+   drawGuiButtonCounts();
 
-   // Count boxes
-   int count_text_size = 12;
-   if (button_size < 40) count_text_size = 10;
-   drawCount( 0, b_turn_north_count_pos.x, b_turn_north_count_pos.y, button_size, false, count_text_size );
-   drawCount( 0, b_turn_east_count_pos.x, b_turn_east_count_pos.y, button_size, false, count_text_size );
-   drawCount( 0, b_turn_south_count_pos.x, b_turn_south_count_pos.y, button_size, false, count_text_size );
-   drawCount( 0, b_turn_west_count_pos.x, b_turn_west_count_pos.y, button_size, false, count_text_size );
-   drawCount( 0, b_turn_nearest_enemy_count_pos.x, b_turn_nearest_enemy_count_pos.y, button_size, false, count_text_size );
-   drawCount( 2, b_guard_count_pos.x, b_guard_count_pos.y, button_size, true, count_text_size );
-   drawCount( 0, b_switch_axe_count_pos.x, b_switch_axe_count_pos.y, button_size, false, count_text_size );
-   drawCount( 0, b_switch_spear_count_pos.x, b_switch_spear_count_pos.y, button_size, false, count_text_size );
-   drawCount( 0, b_switch_bow_count_pos.x, b_switch_bow_count_pos.y, button_size, false, count_text_size );
-   drawCount( 0, b_trail_on_count_pos.x, b_trail_on_count_pos.y, button_size, false, count_text_size );
-   drawCount( 0, b_trail_off_count_pos.x, b_trail_off_count_pos.y, button_size, false, count_text_size );
-   drawCount( 2, b_fly_count_pos.x, b_fly_count_pos.y, button_size, true, count_text_size );
-   drawCount( 10, b_meditate_count_pos.x, b_meditate_count_pos.y, button_size, false, count_text_size );
+   if (config::show_keybindings)
+      drawGuiButtonKeybinds();
 
    if (b_con_enemy_adjacent->doWidget())
       playerAddConditional( ENEMY_ADJACENT );
@@ -4280,6 +4474,256 @@ int drawOrderButtons()
    }
 
    return 0;
+}
+
+KeybindTarget drawKeybindButtons()
+{
+   KeybindTarget kb = KB_NOTHING;
+
+   if (init_level_gui == false)
+      initLevelGui();
+
+   drawGuiButtonCounts();
+
+   drawGuiButtonKeybinds();
+
+   if (b_con_enemy_adjacent->doWidget())
+      kb = KB_BTN_COND_ENEMY_ADJACENT;
+
+   if (b_con_enemy_ahead->doWidget())
+      kb = KB_BTN_COND_ENEMY_AHEAD;
+
+   if (b_con_enemy_in_range->doWidget())
+      kb = KB_BTN_COND_ENEMY_IN_RANGE;
+
+   /*
+   if (b_con_ally_adjacent->doWidget())
+      playerAddConditional( ALLY_ADJACENT );
+
+   if (b_con_ally_ahead->doWidget())
+      playerAddConditional( ALLY_AHEAD );
+
+   if (b_con_ally_in_range->doWidget())
+      playerAddConditional( ALLY_IN_RANGE );
+      */
+   if (b_con_half_health->doWidget())
+      kb = KB_BTN_COND_HEALTH_UNDER_50;
+
+   if (b_con_20_health->doWidget())
+      kb = KB_BTN_COND_HEALTH_UNDER_20;
+
+   if (b_con_blocked_ahead->doWidget())
+      kb = KB_BTN_COND_BLOCKED_AHEAD;
+
+   if (b_con_clear->doWidget())
+      kb = KB_BTN_COND_CLEAR;
+
+   if (b_o_move_forward->doWidget())
+      kb = KB_BTN_MOVE_FORWARD;
+
+   if (b_o_move_backward->doWidget())
+      kb = KB_BTN_MOVE_BACK;
+      
+   if (b_o_turn_north->doWidget())
+      kb = KB_BTN_TURN_NORTH;
+      
+   if (b_o_turn_east->doWidget())
+      kb = KB_BTN_TURN_EAST;
+      
+   if (b_o_turn_south->doWidget())
+      kb = KB_BTN_TURN_SOUTH;
+      
+   if (b_o_turn_west->doWidget())
+      kb = KB_BTN_TURN_WEST;
+      
+   if (b_o_turn_nearest_enemy->doWidget())
+      kb = KB_BTN_TURN_NEAREST_ENEMY;
+      
+   if (b_o_follow_path->doWidget())
+      kb = KB_BTN_FOLLOW_PATH;
+      
+   if (b_o_attack_smallest->doWidget())
+      kb = KB_BTN_ATTACK_SMALLEST;
+      
+   if (b_o_attack_biggest->doWidget())
+      kb = KB_BTN_ATTACK_BIGGEST;
+      
+   if (b_o_attack_closest->doWidget())
+      kb = KB_BTN_ATTACK_CLOSEST;
+      
+   if (b_o_attack_farthest->doWidget())
+      kb = KB_BTN_ATTACK_FARTHEST;
+      
+   if (b_o_attack_most_armor->doWidget())
+      kb = KB_BTN_ATTACK_MOST_ARMORED;
+      
+   if (b_o_attack_least_armor->doWidget())
+      kb = KB_BTN_ATTACK_LEAST_ARMORED;
+      
+   if (b_o_start_block->doWidget())
+      kb = KB_BTN_START_BLOCK;
+      
+   if (b_o_end_block->doWidget())
+      kb = KB_BTN_END_BLOCK;
+      
+   if (b_o_repeat->doWidget())
+      kb = KB_BTN_REPEAT;
+
+   if (b_o_wait->doWidget())
+      kb = KB_BTN_WAIT;
+
+   if (b_pl_alert_all->doWidget())
+      kb = KB_BTN_PL_ALERT_ALL;
+
+   if (b_pl_cmd_go->doWidget())
+      kb = KB_BTN_PL_GO;
+
+   if (b_pl_cmd_go_all->doWidget())
+      kb = KB_BTN_PL_GO_ALL;
+
+   if (b_pl_set_group->doWidget())
+      kb = KB_BTN_PL_SET_GROUP;
+
+   if (b_pl_delay->doWidget())
+      kb = KB_BTN_PL_DELAY;
+
+   if (b_pl_alert_monster->doWidget())
+      kb = KB_BTN_PL_ALERT_MONSTERS;
+
+   if (b_pl_cmd_go_monster->doWidget())
+      kb = KB_BTN_PL_GO_MONSTERS;
+
+   if (b_o_monster_guard->doWidget())
+      kb = KB_BTN_MONSTER_GUARD;
+
+   if (b_o_monster_burst->doWidget())
+      kb = KB_BTN_MONSTER_BURST;
+
+   if (b_pl_alert_soldier->doWidget())
+      kb = KB_BTN_PL_ALERT_SOLDIERS;
+
+   if (b_pl_cmd_go_soldier->doWidget())
+      kb = KB_BTN_PL_GO_SOLDIERS;
+
+   if (b_o_soldier_switch_axe->doWidget())
+      kb = KB_BTN_SOLDIER_SWITCH_AXE;
+
+   if (b_o_soldier_switch_spear->doWidget())
+      kb = KB_BTN_SOLDIER_SWITCH_SPEAR;
+
+   if (b_o_soldier_switch_bow->doWidget())
+      kb = KB_BTN_SOLDIER_SWITCH_BOW;
+
+   if (b_pl_alert_worm->doWidget())
+      kb = KB_BTN_PL_ALERT_WORMS;
+
+   if (b_pl_cmd_go_worm->doWidget())
+      kb = KB_BTN_PL_GO_WORMS;
+
+   if (b_o_worm_hide->doWidget())
+      kb = KB_BTN_WORM_HIDE;
+
+   if (b_o_worm_trail_on->doWidget())
+      kb = KB_BTN_WORM_TRAIL_START;
+
+   if (b_o_worm_trail_off->doWidget())
+      kb = KB_BTN_WORM_TRAIL_END;
+
+   if (b_pl_alert_bird->doWidget())
+      kb = KB_BTN_PL_ALERT_BIRDS;
+
+   if (b_pl_cmd_go_bird->doWidget())
+      kb = KB_BTN_PL_GO_BIRDS;
+
+   if (b_o_bird_fly->doWidget())
+      kb = KB_BTN_BIRD_FLY;
+
+   if (b_cmd_bird_shout->doWidget())
+      kb = KB_BTN_BIRD_CMD_SHOUT;
+
+   if (b_cmd_bird_quiet->doWidget())
+      kb = KB_BTN_BIRD_CMD_QUIET;
+
+   if (b_pl_alert_bug->doWidget())
+      kb = KB_BTN_PL_ALERT_BUGS;
+
+   if (b_pl_cmd_go_bug->doWidget())
+      kb = KB_BTN_PL_GO_BUGS;
+
+   if (b_o_bug_meditate->doWidget())
+      kb = KB_BTN_BUG_MEDITATE;
+
+   if (b_o_bug_fireball->doWidget())
+      kb = KB_BTN_BUG_CAST_FIREBALL;
+
+   if (b_o_bug_sunder->doWidget())
+      kb = KB_BTN_BUG_CAST_SUNDER;
+
+   if (b_o_bug_heal->doWidget())
+      kb = KB_BTN_BUG_CAST_HEAL;
+
+   if (b_o_bug_open_wormhole->doWidget())
+      kb = KB_BTN_BUG_OPEN_WORMHOLE;
+
+   if (b_o_bug_close_wormhole->doWidget())
+      kb = KB_BTN_BUG_CLOSE_WORMHOLE;
+
+
+   if (b_count_0->doWidget())
+      kb = KB_BTN_COUNT_0;
+
+   if (b_count_1->doWidget())
+      kb = KB_BTN_COUNT_1;
+
+   if (b_count_2->doWidget())
+      kb = KB_BTN_COUNT_2;
+
+   if (b_count_3->doWidget())
+      kb = KB_BTN_COUNT_3;
+
+   if (b_count_4->doWidget())
+      kb = KB_BTN_COUNT_4;
+
+   if (b_count_5->doWidget())
+      kb = KB_BTN_COUNT_5;
+
+   if (b_count_6->doWidget())
+      kb = KB_BTN_COUNT_6;
+
+   if (b_count_7->doWidget())
+      kb = KB_BTN_COUNT_7;
+
+   if (b_count_8->doWidget())
+      kb = KB_BTN_COUNT_8;
+
+   if (b_count_9->doWidget())
+      kb = KB_BTN_COUNT_9;
+
+   if (b_count_infinite->doWidget())
+      kb = KB_BTN_COUNT_INFINITE;
+
+   if (b_count_reset->doWidget())
+      kb = KB_BTN_COUNT_CLEAR;
+
+   b_monster_image->doWidget();
+   b_soldier_image->doWidget();
+   b_worm_image->doWidget();
+   b_bird_image->doWidget();
+   b_bug_image->doWidget();
+
+   b_numpad_area->doWidget();
+   b_conditional_area->doWidget();
+   b_pl_cmd_area->doWidget();
+   b_control_area->doWidget();
+   b_movement_area->doWidget();
+   b_attack_area->doWidget();
+   b_monster_area->doWidget();
+   b_soldier_area->doWidget();
+   b_worm_area->doWidget();
+   b_bird_area->doWidget();
+   b_bug_area->doWidget();
+
+   return kb;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -5295,60 +5739,200 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
 {
    virtual bool keyPressed( const Event::KeyEvent &key_press )
    {
-      if (key_press.code == Keyboard::Q)
-         shutdown(1,1);
-
       if (key_press.code == Keyboard::LShift || key_press.code == Keyboard::RShift)
          key_shift_down = 1;
 
+      KeybindTarget kb = config::getBoundTarget( key_press.code );
+
+      if (kb == KB_FORCE_QUIT)
+         shutdown(1,1);
+
       // View movement
-      if (key_press.code == Keyboard::Right)
+      else if (kb == KB_MOVE_CAMERA_RIGHT)
          shiftView( 2, 0 );
-      if (key_press.code == Keyboard::Left)
+      else if (kb == KB_MOVE_CAMERA_LEFT)
          shiftView( -2, 0 );
-      if (key_press.code == Keyboard::Down)
+      else if (kb == KB_MOVE_CAMERA_DOWN)
          shiftView( 0, 2 );
-      if (key_press.code == Keyboard::Up)
+      else if (kb == KB_MOVE_CAMERA_UP)
          shiftView( 0, -2 );
-      if (key_press.code == Keyboard::Add)
+      else if (kb == KB_ZOOM_IN_CAMERA)
          zoomView( 1 , level_view->getCenter());
-      if (key_press.code == Keyboard::Subtract)
+      else if (kb == KB_ZOOM_OUT_CAMERA)
          zoomView( -1 , level_view->getCenter());
 
       // Pause
-      if (key_press.code == Keyboard::Space)
+      else if (kb == KB_PAUSE)
          togglePause();
 
-      // TODO: Give orders via the keyboard
-      if (key_press.code == Keyboard::Num0)
+      // Counts
+      else if (kb == KB_BTN_COUNT_0)
          playerAddCount( 0 );
-      if (key_press.code == Keyboard::Num1)
+      else if (kb == KB_BTN_COUNT_1)
          playerAddCount( 1 );
-      if (key_press.code == Keyboard::Num2)
+      else if (kb == KB_BTN_COUNT_2)
          playerAddCount( 2 );
-      if (key_press.code == Keyboard::Num3)
+      else if (kb == KB_BTN_COUNT_3)
          playerAddCount( 3 );
-      if (key_press.code == Keyboard::Num4)
+      else if (kb == KB_BTN_COUNT_4)
          playerAddCount( 4 );
-      if (key_press.code == Keyboard::Num5)
+      else if (kb == KB_BTN_COUNT_5)
          playerAddCount( 5 );
-      if (key_press.code == Keyboard::Num6)
+      else if (kb == KB_BTN_COUNT_6)
          playerAddCount( 6 );
-      if (key_press.code == Keyboard::Num7)
+      else if (kb == KB_BTN_COUNT_7)
          playerAddCount( 7 );
-      if (key_press.code == Keyboard::Num8)
+      else if (kb == KB_BTN_COUNT_8)
          playerAddCount( 8 );
-      if (key_press.code == Keyboard::Num9)
+      else if (kb == KB_BTN_COUNT_9)
          playerAddCount( 9 );
+      else if (kb == KB_BTN_COUNT_CLEAR)
+         playerSetCount( 0 );
+      else if (kb == KB_BTN_COUNT_INFINITE)
+         playerSetCount( -1 );
 
+      // Conditions
+      else if (kb == KB_BTN_COND_ENEMY_ADJACENT)
+         playerAddConditional( ENEMY_ADJACENT );
+      else if (kb == KB_BTN_COND_ENEMY_AHEAD)
+         playerAddConditional( ENEMY_AHEAD ); 
+      else if (kb == KB_BTN_COND_ENEMY_IN_RANGE)
+         playerAddConditional( ENEMY_IN_RANGE );
+      else if (kb == KB_BTN_COND_HEALTH_UNDER_50)
+         playerAddConditional( HEALTH_UNDER_50 );
+      else if (kb == KB_BTN_COND_HEALTH_UNDER_20)
+         playerAddConditional( HEALTH_UNDER_20 );
+      else if (kb == KB_BTN_COND_BLOCKED_AHEAD)
+         playerAddConditional( BLOCKED_AHEAD );
+      else if (kb == KB_BTN_COND_CLEAR)
+         playerAddConditional( TRUE );
+
+      // Control
+      else if (kb == KB_BTN_START_BLOCK)
+         playerAddOrder( START_BLOCK );
+      else if (kb == KB_BTN_END_BLOCK)
+         playerAddOrder( END_BLOCK );
+      else if (kb == KB_BTN_REPEAT)
+         playerAddOrder( REPEAT );
+
+      // Movement
+      else if (kb == KB_BTN_MOVE_FORWARD)
+         playerAddOrder( MOVE_FORWARD );
+      else if (kb == KB_BTN_MOVE_BACK)
+         playerAddOrder( MOVE_BACK );
+      else if (kb == KB_BTN_TURN_NORTH)
+         playerAddOrder( TURN_NORTH );
+      else if (kb == KB_BTN_TURN_EAST)
+         playerAddOrder( TURN_EAST );
+      else if (kb == KB_BTN_TURN_SOUTH)
+         playerAddOrder( TURN_SOUTH );
+      else if (kb == KB_BTN_TURN_WEST)
+         playerAddOrder( TURN_WEST );
+      else if (kb == KB_BTN_TURN_NEAREST_ENEMY)
+         playerAddOrder( TURN_NEAREST_ENEMY );
+      else if (kb == KB_BTN_FOLLOW_PATH)
+         playerAddOrder( FOLLOW_PATH );
+      else if (kb == KB_BTN_WAIT)
+         playerAddOrder( WAIT );
+
+      // Attack
+      else if (kb == KB_BTN_ATTACK_SMALLEST)
+         playerAddOrder( ATTACK_SMALLEST );
+      else if (kb == KB_BTN_ATTACK_BIGGEST)
+         playerAddOrder( ATTACK_BIGGEST );
+      else if (kb == KB_BTN_ATTACK_CLOSEST)
+         playerAddOrder( ATTACK_CLOSEST );
+      else if (kb == KB_BTN_ATTACK_FARTHEST)
+         playerAddOrder( ATTACK_FARTHEST );
+      else if (kb == KB_BTN_ATTACK_MOST_ARMORED)
+         playerAddOrder( ATTACK_MOST_ARMORED );
+      else if (kb == KB_BTN_ATTACK_LEAST_ARMORED)
+         playerAddOrder( ATTACK_LEAST_ARMORED );
+
+      // Player cmd box
+      else if (kb == KB_BTN_PL_ALERT_ALL)
+         playerAddOrder( PL_ALERT_ALL );
+      else if (kb == KB_BTN_PL_GO)
+         playerAddOrder( PL_CMD_GO );
+      else if (kb == KB_BTN_PL_GO_ALL)
+         playerAddOrder( PL_CMD_GO_ALL );
+      else if (kb == KB_BTN_PL_SET_GROUP)
+         playerAddOrder( PL_SET_GROUP );
+      else if (kb == KB_BTN_PL_DELAY)
+         playerAddOrder( PL_DELAY );
+
+      // Monster
+      else if (kb == KB_BTN_PL_ALERT_MONSTERS)
+         playerAddOrder( PL_ALERT_MONSTERS );
+      else if (kb == KB_BTN_PL_GO_MONSTERS)
+         playerAddOrder( PL_CMD_GO_MONSTERS );
+      else if (kb == KB_BTN_MONSTER_GUARD)
+         playerAddOrder( MONSTER_GUARD );
+      else if (kb == KB_BTN_MONSTER_BURST)
+         playerAddOrder( MONSTER_BURST );
+
+      // Soldier
+      else if (kb == KB_BTN_PL_ALERT_SOLDIERS)
+         playerAddOrder( PL_ALERT_SOLDIERS );
+      else if (kb == KB_BTN_PL_GO_SOLDIERS)
+         playerAddOrder( PL_CMD_GO_SOLDIERS );
+      else if (kb == KB_BTN_SOLDIER_SWITCH_AXE)
+         playerAddOrder( SOLDIER_SWITCH_AXE );
+      else if (kb == KB_BTN_SOLDIER_SWITCH_SPEAR)
+         playerAddOrder( SOLDIER_SWITCH_SPEAR );
+      else if (kb == KB_BTN_SOLDIER_SWITCH_BOW)
+         playerAddOrder( SOLDIER_SWITCH_BOW );
+
+      // Worm
+      else if (kb == KB_BTN_PL_ALERT_WORMS)
+         playerAddOrder( PL_ALERT_WORMS );
+      else if (kb == KB_BTN_PL_GO_WORMS)
+         playerAddOrder( PL_CMD_GO_WORMS );
+      else if (kb == KB_BTN_WORM_HIDE)
+         playerAddOrder( WORM_HIDE );
+      else if (kb == KB_BTN_WORM_TRAIL_START)
+         playerAddOrder( WORM_TRAIL_START );
+      else if (kb == KB_BTN_WORM_TRAIL_END)
+         playerAddOrder( WORM_TRAIL_END );
+
+      // Bird
+      else if (kb == KB_BTN_PL_ALERT_BIRDS)
+         playerAddOrder( PL_ALERT_BIRDS );
+      else if (kb == KB_BTN_PL_GO_BIRDS)
+         playerAddOrder( PL_CMD_GO_BIRDS );
+      else if (kb == KB_BTN_BIRD_FLY)
+         playerAddOrder( BIRD_FLY );
+      else if (kb == KB_BTN_BIRD_CMD_SHOUT)
+         playerAddOrder( BIRD_CMD_SHOUT );
+      else if (kb == KB_BTN_BIRD_CMD_QUIET)
+         playerAddOrder( BIRD_CMD_QUIET );
+
+      // Bug
+      else if (kb == KB_BTN_PL_ALERT_BUGS)
+         playerAddOrder( PL_ALERT_BUGS );
+      else if (kb == KB_BTN_PL_GO_BUGS)
+         playerAddOrder( PL_CMD_GO_BUGS );
+      else if (kb == KB_BTN_BUG_MEDITATE)
+         playerAddOrder( BUG_MEDITATE );
+      else if (kb == KB_BTN_BUG_CAST_FIREBALL)
+         playerAddOrder( BUG_CAST_FIREBALL );
+      else if (kb == KB_BTN_BUG_CAST_SUNDER)
+         playerAddOrder( BUG_CAST_SUNDER );
+      else if (kb == KB_BTN_BUG_CAST_HEAL)
+         playerAddOrder( BUG_CAST_HEAL );
+      else if (kb == KB_BTN_BUG_OPEN_WORMHOLE)
+         playerAddOrder( BUG_OPEN_WORMHOLE );
+      else if (kb == KB_BTN_BUG_CLOSE_WORMHOLE)
+         playerAddOrder( BUG_CLOSE_WORMHOLE );
+
+      else if (kb == KB_SHOW_KEYBINDINGS)
+         config::show_keybindings = true;
 
       // Debugging
-      if (key_press.code == Keyboard::V)
+      else if (kb == KB_DEBUG_TOGGLE_FOG)
          vision_enabled = !vision_enabled;
-      if (key_press.code == Keyboard::F)
+      else if (kb == KB_DEBUG_TOGGLE_FRAMERATE)
          show_framerate = !show_framerate;
-
-      // TODO: Make key-bindings something you can change/save
 
       return true;
    }
@@ -5357,6 +5941,11 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
    {
       if (key_release.code == Keyboard::LShift || key_release.code == Keyboard::RShift)
          key_shift_down = 0;
+
+      KeybindTarget kb = config::getBoundTarget( key_release.code );
+
+      if (kb == KB_SHOW_KEYBINDINGS)
+         config::show_keybindings = false;
 
       return true;
    }

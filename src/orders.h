@@ -1,6 +1,8 @@
 #ifndef ORDERS_H__
 #define ORDERS_H__
 
+#include "types.h"
+
 namespace sf { class Texture; };
 
 namespace sum
@@ -75,7 +77,6 @@ namespace sum
       // Activate
       PL_CMD_GO, // Currently alert units
       PL_CMD_GO_ALL,
-      PL_CMD_GO_TEAM,
       PL_CMD_GO_MONSTERS,
       PL_CMD_GO_SOLDIERS,
       PL_CMD_GO_WORMS,
@@ -158,6 +159,8 @@ namespace sum
    sf::Texture *getOrderTexture( Order o );
    void drawOrder( Order o, int x, int y, int size );
    void drawCount( int count, int x, int y , int size, bool plus = false, int char_size = 10 );
+   KeybindTarget orderToKeybindTarget( Order o );
+   void drawKeybind( KeybindTarget kb, int x, int y, int size, int char_size = 10 );
 };
 
 #endif 

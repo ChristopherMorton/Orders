@@ -51,6 +51,8 @@ namespace sum
    int initLevelGui();
    int initLevelEditorGui();
 
+   KeybindTarget drawKeybindButtons();
+
    extern int level_dim_x, level_dim_y;
    extern Unit **unit_grid;
    extern Terrain *terrain_grid;

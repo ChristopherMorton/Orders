@@ -2,6 +2,8 @@
 #include "orders.h"
 #include "log.h"
 #include "util.h"
+#include "types.h"
+#include "config.h"
 
 #include "SFML_GlobalRenderWindow.hpp"
 #include "SFML_TextureManager.hpp"
@@ -206,9 +208,6 @@ void Order::logSelf()
          break;
       case PL_CMD_GO_ALL:
          s << "PL_CMD_GO_ALL";
-         break;
-      case PL_CMD_GO_TEAM:
-         s << "PL_CMD_GO_TEAM";
          break;
       case PL_CMD_GO_MONSTERS:
          s << "PL_CMD_GO_MONSTERS";
@@ -619,6 +618,73 @@ Texture *getOrderButtonTexture( Order o )
    };
 }
 
+void drawKeybind( KeybindTarget kb, int x, int y, int size, int char_size )
+{
+   if (kb == KB_NOTHING)
+      return;
+
+   Keyboard::Key key = config::getBoundKey( kb );
+
+   if (key == Keyboard::Unknown)
+      return;
+
+   Text *key_text = new Text();
+   key_text->setString( keyToString( key ) );
+   key_text->setFont( *menu_font );
+   key_text->setColor( Color::Black );
+   key_text->setCharacterSize( char_size );
+   float text_x = x + 1,
+         text_y = y - 1;
+   key_text->setPosition( text_x, text_y );
+
+   FloatRect text_size = key_text->getGlobalBounds();
+   if (text_size.width < 5) text_size.width = 5;
+
+   // TODO: Make this look right
+   RectangleShape *inner_rect = new RectangleShape();
+   inner_rect->setSize( Vector2f((text_size.width + 2), char_size + 1 ));
+   inner_rect->setPosition( text_x - 1, text_y + 1 );
+   inner_rect->setFillColor( Color( 245, 245, 245, 255 ) );
+   inner_rect->setOutlineColor( Color::Black );
+   inner_rect->setOutlineThickness( 1.0 );
+
+   ConvexShape *outer_top = new ConvexShape(3);
+   outer_top->setPoint( 0, Vector2f (text_x - 3, text_y - 2 ));
+   outer_top->setPoint( 1, Vector2f (text_x + text_size.width + 3, text_y - 2 ));
+   outer_top->setPoint( 2, Vector2f (text_x + (text_size.width / 2) , text_y + (char_size / 2) + 2 ));
+   outer_top->setFillColor( Color( 215, 215, 215, 255 ) );
+   outer_top->setOutlineColor( Color::Black );
+   outer_top->setOutlineThickness( 1.0 );
+   ConvexShape *outer_bottom = new ConvexShape(3);
+   outer_bottom->setPoint( 0, Vector2f (text_x - 3, text_y + char_size + 5 ));
+   outer_bottom->setPoint( 2, Vector2f (text_x + text_size.width + 3, text_y + char_size + 5 ));
+   outer_bottom->setPoint( 1, Vector2f (text_x + (text_size.width / 2) , text_y + (char_size / 2) + 2 ));
+   outer_bottom->setFillColor( Color( 135, 135, 135, 255 ) );
+   outer_bottom->setOutlineColor( Color::Black );
+   outer_bottom->setOutlineThickness( 1.0 );
+   ConvexShape *outer_left = new ConvexShape(3);
+   outer_left->setPoint( 0, Vector2f (text_x - 4, text_y + char_size + 3 ));
+   outer_left->setPoint( 1, Vector2f (text_x - 4, text_y ));
+   outer_left->setPoint( 2, Vector2f (text_x + (text_size.width / 2) , text_y + (char_size / 2) + 2 ));
+   outer_left->setFillColor( Color( 135, 135, 135, 255 ) );
+   outer_left->setOutlineColor( Color::Black );
+   outer_left->setOutlineThickness( 1.0 );
+   ConvexShape *outer_right = new ConvexShape(3);
+   outer_right->setPoint( 0, Vector2f (text_x + text_size.width + 4, text_y + char_size + 3 ));
+   outer_right->setPoint( 2, Vector2f (text_x + text_size.width + 4, text_y ));
+   outer_right->setPoint( 1, Vector2f (text_x + (text_size.width / 2) , text_y + (char_size / 2) + 2 ));
+   outer_right->setFillColor( Color( 215, 215, 215, 255 ) );
+   outer_right->setOutlineColor( Color::Black );
+   outer_right->setOutlineThickness( 1.0 );
+
+   IMGuiManager::getSingleton().pushSprite( key_text, true );
+   IMGuiManager::getSingleton().pushSprite( inner_rect, true );
+   IMGuiManager::getSingleton().pushSprite( outer_top, true );
+   IMGuiManager::getSingleton().pushSprite( outer_bottom, true );
+   IMGuiManager::getSingleton().pushSprite( outer_left, true );
+   IMGuiManager::getSingleton().pushSprite( outer_right, true );
+}
+
 void drawCount( int count, int x, int y, int size, bool plus, int char_size )
 {
    Text *count_text = new Text();
@@ -768,6 +834,115 @@ void drawOrder( Order o, int x, int y, int size )
    // Condition
    if (o.condition != TRUE && o.action < PL_ALERT_ALL)
       drawCondition( o.condition, x, y, size );
+}
+
+sum::KeybindTarget orderToKeybindTarget( Order o )
+{
+   switch(o.action)
+   {
+      case MOVE_FORWARD:
+         return KB_BTN_MOVE_FORWARD;
+      case MOVE_BACK:
+         return KB_BTN_MOVE_BACK;
+      case TURN_NORTH:
+         return KB_BTN_TURN_NORTH;
+      case TURN_EAST:
+         return KB_BTN_TURN_EAST;
+      case TURN_SOUTH:
+         return KB_BTN_TURN_SOUTH;
+      case TURN_WEST:
+         return KB_BTN_TURN_WEST;
+      case TURN_NEAREST_ENEMY:
+         return KB_BTN_TURN_NEAREST_ENEMY;
+      case FOLLOW_PATH:
+         return KB_BTN_FOLLOW_PATH;
+      case ATTACK_CLOSEST:
+         return KB_BTN_ATTACK_CLOSEST;
+      case ATTACK_FARTHEST:
+         return KB_BTN_ATTACK_FARTHEST;
+      case ATTACK_BIGGEST:
+         return KB_BTN_ATTACK_BIGGEST;
+      case ATTACK_SMALLEST:
+         return KB_BTN_ATTACK_SMALLEST;
+      case ATTACK_MOST_ARMORED:
+         return KB_BTN_ATTACK_MOST_ARMORED;
+      case ATTACK_LEAST_ARMORED:
+         return KB_BTN_ATTACK_LEAST_ARMORED;
+      case START_BLOCK:
+         return KB_BTN_START_BLOCK;
+      case END_BLOCK:
+         return KB_BTN_END_BLOCK;
+      case REPEAT:
+         return KB_BTN_REPEAT;
+      case WAIT:
+         return KB_BTN_WAIT;
+      case MONSTER_GUARD:
+         return KB_BTN_MONSTER_GUARD;
+      case MONSTER_BURST:
+         return KB_BTN_MONSTER_BURST;
+      case SOLDIER_SWITCH_AXE:
+         return KB_BTN_SOLDIER_SWITCH_AXE;
+      case SOLDIER_SWITCH_SPEAR:
+         return KB_BTN_SOLDIER_SWITCH_SPEAR;
+      case SOLDIER_SWITCH_BOW:
+         return KB_BTN_SOLDIER_SWITCH_BOW;
+      case WORM_HIDE:
+         return KB_BTN_WORM_HIDE;
+      case WORM_TRAIL_START:
+         return KB_BTN_WORM_TRAIL_START;
+      case WORM_TRAIL_END:
+         return KB_BTN_WORM_TRAIL_END;
+      case BIRD_CMD_SHOUT:
+         return KB_BTN_BIRD_CMD_SHOUT;
+      case BIRD_CMD_QUIET:
+         return KB_BTN_BIRD_CMD_QUIET;
+      case BIRD_FLY:
+         return KB_BTN_BIRD_FLY;
+      case BUG_CAST_FIREBALL:
+         return KB_BTN_BUG_CAST_FIREBALL;
+      case BUG_CAST_SUNDER:
+         return KB_BTN_BUG_CAST_SUNDER;
+      case BUG_CAST_HEAL:
+         return KB_BTN_BUG_CAST_HEAL;
+      case BUG_OPEN_WORMHOLE:
+         return KB_BTN_BUG_OPEN_WORMHOLE;
+      case BUG_CLOSE_WORMHOLE:
+         return KB_BTN_BUG_CLOSE_WORMHOLE;
+      case BUG_MEDITATE:
+         return KB_BTN_BUG_MEDITATE;
+      case PL_ALERT_ALL:
+         return KB_BTN_PL_ALERT_ALL;
+      case PL_ALERT_MONSTERS:
+         return KB_BTN_PL_ALERT_MONSTERS;
+      case PL_ALERT_SOLDIERS:
+         return KB_BTN_PL_ALERT_SOLDIERS;
+      case PL_ALERT_WORMS:
+         return KB_BTN_PL_ALERT_WORMS;
+      case PL_ALERT_BIRDS:
+         return KB_BTN_PL_ALERT_BIRDS;
+      case PL_ALERT_BUGS:
+         return KB_BTN_PL_ALERT_BUGS;
+      case PL_CMD_GO:
+         return KB_BTN_PL_GO;
+      case PL_CMD_GO_ALL:
+         return KB_BTN_PL_GO_ALL;
+      case PL_CMD_GO_MONSTERS:
+         return KB_BTN_PL_GO_MONSTERS;
+      case PL_CMD_GO_SOLDIERS:
+         return KB_BTN_PL_GO_SOLDIERS;
+      case PL_CMD_GO_WORMS:
+         return KB_BTN_PL_GO_WORMS;
+      case PL_CMD_GO_BIRDS:
+         return KB_BTN_PL_GO_BIRDS;
+      case PL_CMD_GO_BUGS:
+         return KB_BTN_PL_GO_BUGS;
+      case PL_SET_GROUP:
+         return KB_BTN_PL_SET_GROUP;
+      case PL_DELAY:
+         return KB_BTN_PL_DELAY;
+      default:
+         return KB_NOTHING;
+   }
 }
 
 };

@@ -7,12 +7,14 @@
 #include <string>
 
 using namespace std;
+using namespace sf;
+using namespace sum;
 
 namespace config
 {
 
 ///////////////////////////////////////////////////////////////////////////////
-// Data
+// Window
 
 int w_width;
 int w_height;
@@ -57,9 +59,84 @@ int setWindow( int w, int h, int f )
    return 0;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Key Binding
+
+KeybindTarget keyToTarget[(int)Keyboard::KeyCount];
+Keyboard::Key targetToKey[(int)KB_COUNT];
+
+void clearKeybinds()
+{
+   int i;
+   for ( i = 0; i < (int)Keyboard::KeyCount; ++i )
+      keyToTarget[i] = KB_NOTHING;
+   for ( i = 0; i < (int)KB_COUNT; ++i )
+      targetToKey[i] = Keyboard::Unknown;
+}
+
+void setDefaultKeybindings()
+{
+   clearKeybinds();
+   bindKey( KB_MOVE_CAMERA_DOWN, Keyboard::Down );
+   bindKey( KB_MOVE_CAMERA_UP, Keyboard::Up );
+   bindKey( KB_MOVE_CAMERA_RIGHT, Keyboard::Right );
+   bindKey( KB_MOVE_CAMERA_LEFT, Keyboard::Left );
+   bindKey( KB_ZOOM_OUT_CAMERA, Keyboard::Subtract );
+   bindKey( KB_ZOOM_IN_CAMERA, Keyboard::Add );
+
+   bindKey( KB_BTN_COUNT_0, Keyboard::Num0 );
+   bindKey( KB_BTN_COUNT_1, Keyboard::Num1 );
+   bindKey( KB_BTN_COUNT_2, Keyboard::Num2 );
+   bindKey( KB_BTN_COUNT_3, Keyboard::Num3 );
+   bindKey( KB_BTN_COUNT_4, Keyboard::Num4 );
+   bindKey( KB_BTN_COUNT_5, Keyboard::Num5 );
+   bindKey( KB_BTN_COUNT_6, Keyboard::Num6 );
+   bindKey( KB_BTN_COUNT_7, Keyboard::Num7 );
+   bindKey( KB_BTN_COUNT_8, Keyboard::Num8 );
+   bindKey( KB_BTN_COUNT_9, Keyboard::Num9 );
+   bindKey( KB_BTN_COUNT_CLEAR, Keyboard::Dash );
+   bindKey( KB_BTN_COUNT_INFINITE, Keyboard::Equal );
+
+   bindKey( KB_PAUSE, Keyboard::Space );
+
+   bindKey( KB_TOGGLE_OPTIONS_MENU, Keyboard::Escape );
+
+   bindKey( KB_SHOW_KEYBINDINGS, Keyboard::K );
+
+   bindKey( KB_DEBUG_TOGGLE_FOG, Keyboard::V );
+   bindKey( KB_DEBUG_TOGGLE_FRAMERATE, Keyboard::F );
+
+   bindKey( KB_FORCE_QUIT, Keyboard::Q );
+}
+
+sf::Keyboard::Key getBoundKey( KeybindTarget target )
+{
+   return targetToKey[(int)target];
+}
+
+KeybindTarget getBoundTarget( sf::Keyboard::Key key )
+{
+   return keyToTarget[(int)key];
+}
+
+Keyboard::Key bindKey( KeybindTarget target, sf::Keyboard::Key key )
+{
+   Keyboard::Key ret = getBoundKey( target );
+
+   keyToTarget[(int)key] = target;
+   targetToKey[(int)target] = key;
+
+   keyToTarget[(int)ret] = KB_NOTHING;
+
+   return ret;
+}
+
+bool show_keybindings = false;
+
 void setDefaults()
 {
    setWindow( 800, 600, 0 );
+   setDefaultKeybindings();
 }
 
 int load()

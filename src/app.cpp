@@ -97,6 +97,7 @@ void closeMap()
 // OPTIONS MENUS
 
 int av_selected_resolution;
+KeybindTarget input_selected_kb;
 
 void openOptionsMenu()
 {
@@ -124,6 +125,9 @@ int applyAVOptions()
       h = 1024;
    }
 
+   if (w == config::width() && h == config::height())
+      return -1; // No change
+
    config::setWindow( w, h, f );
 
    config::save();
@@ -148,6 +152,7 @@ void openInputOptions()
 
 int applyInputOptions()
 {
+   config::save();
    return 0;
 }
 
@@ -170,7 +175,7 @@ void closeOptionsMenu()
 // Here's the actual buttons and shit
 
 
-// SPLASH
+// SPLASH --
 bool initSplashGui = false;
 IMEdgeTextButton *b_splash_to_map = NULL; 
 string s_splash_to_map = "Play!";
@@ -244,7 +249,7 @@ void splashMenu()
          loadLevelEditor(-1);
 
       if (b_splashToTestLevel->doWidget())
-         loadLevel(0);
+         loadLevel(-1);
 
       if (b_open_options->doWidget())
          openOptionsMenu();
@@ -256,7 +261,7 @@ void splashMenu()
 }
 
 
-// OPTIONS
+// OPTIONS --
 bool initOptionsMenu = false;
 IMButton* b_exit_options_menu = NULL;
 IMTextButton* b_av_options = NULL,
@@ -317,7 +322,7 @@ void optionsMenu()
    else
    {
       RenderWindow* r_wind = SFML_GlobalRenderWindow::get();
-      r_wind->clear(Color::Red);
+      r_wind->clear( Color( 155, 155, 155, 255 ) );
 
       if (b_exit_options_menu->doWidget())
          closeOptionsMenu();
@@ -329,7 +334,7 @@ void optionsMenu()
 }
 
 
-// AV OPTIONS
+// AV OPTIONS --
 bool initAVOptionsMenu = false;
 IMButton* b_exit_av_options_menu = NULL;
 IMEdgeTextButton* b_800x600 = NULL;
@@ -375,8 +380,8 @@ void fitGui_AVOptions()
          gui_tick_y = (float)height / 60.0;
    int gui_text_size = width / 50;
 
-   b_exit_av_options_menu->setPosition( gui_tick_x, gui_tick_y );
-   b_exit_av_options_menu->setSize( gui_tick_x * 4, gui_tick_y * 4 );
+   b_exit_av_options_menu->setPosition( 10, 10 );
+   b_exit_av_options_menu->setSize( 40, 40 );
 
    b_800x600->setPosition( 25 * gui_tick_x, 30 * gui_tick_y );
    b_800x600->setSize( 30 * gui_tick_x, 4 * gui_tick_y );
@@ -466,7 +471,7 @@ void AVOptionsMenu()
    else
    {
       RenderWindow* r_wind = SFML_GlobalRenderWindow::get();
-      r_wind->clear(Color::Red);
+      r_wind->clear( Color( 155, 155, 155, 255 ) );
 
       if (b_exit_av_options_menu->doWidget())
          closeAVOptions();
@@ -481,6 +486,115 @@ void AVOptionsMenu()
    }
 
 }
+
+// INPUT OPTIONS --
+bool initInputOptionsMenu = false;
+int inputOptionsMenuFontSize = 30;
+IMEdgeTextButton* b_input_options_bind_key = NULL;
+
+string s_input_options_bind_key = "Bind Key";
+
+void fitGui_InputOptions()
+{
+   if (!initInputOptionsMenu) return;
+
+   int width = config::width(),
+       height = config::height();
+
+   float gui_tick_x = (float)width / 80.0,
+         gui_tick_y = (float)height / 60.0;
+   int gui_text_size = width / 50;
+
+   b_input_options_bind_key->setSize( 150, gui_text_size + 14 );
+   b_input_options_bind_key->setPosition( 300, 400 );
+   b_input_options_bind_key->setTextSize( gui_text_size );
+   b_input_options_bind_key->centerText();
+
+   inputOptionsMenuFontSize = gui_text_size;
+}
+
+int initInputOptionsMenuGui()
+{
+   b_input_options_bind_key = new IMEdgeTextButton();
+   b_input_options_bind_key->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
+   b_input_options_bind_key->setCornerAllTextures( texture_manager->getTexture( "UICornerBrown3px.png" ) );
+   b_input_options_bind_key->setEdgeAllTextures( texture_manager->getTexture( "UIEdgeBrown3px.png" ) );
+   b_input_options_bind_key->setEdgeWidth( 3 );
+   b_input_options_bind_key->setText( &s_input_options_bind_key );
+   b_input_options_bind_key->setFont( menu_font );
+   b_input_options_bind_key->setTextColor( sf::Color::Black );
+   gui_manager->registerWidget( "Bind Key", b_input_options_bind_key);
+
+   initInputOptionsMenu = true;
+   fitGui_InputOptions();
+
+   return 0;
+}
+
+bool inputOptionsBindNextKey = false;
+
+void inputOptionsBindKey()
+{
+   inputOptionsBindNextKey = true;
+}
+
+void inputOptionsMenu()
+{
+   if (!initInputOptionsMenu) {
+      initInputOptionsMenuGui();
+   }
+   else
+   {
+      RenderWindow* r_wind = SFML_GlobalRenderWindow::get();
+      r_wind->clear( Color( 165, 165, 165, 255 ) );
+
+      if (b_exit_av_options_menu->doWidget() && inputOptionsBindNextKey == false)
+         closeInputOptions();
+
+      if (b_input_options_bind_key->doWidget() && inputOptionsBindNextKey == false)
+         inputOptionsBindKey();
+
+      KeybindTarget kb = drawKeybindButtons();
+      if (kb != KB_NOTHING && inputOptionsBindNextKey == false)
+         input_selected_kb = kb;
+
+      Text txt;
+      txt.setFont( *menu_font );
+      txt.setColor( Color::Black );
+      txt.setCharacterSize( inputOptionsMenuFontSize );
+
+      txt.setString( String( "Bound Action:" ) ); 
+      txt.setPosition( 100, 200 );
+      r_wind->draw( txt );
+
+      txt.setString( String( "Bound Key:" ) ); 
+      txt.setPosition( 100, 300 );
+      r_wind->draw( txt );
+
+      txt.setString( keyToString( config::getBoundKey( input_selected_kb )));
+      txt.setPosition( 300, 300 );
+
+      RectangleShape rect;
+      rect.setSize( Vector2f( 450, 50 ) );
+      rect.setPosition( 294, 294 );
+      rect.setFillColor( Color( 215, 215, 215, 255 ) );
+      rect.setOutlineColor( Color::Black );
+      rect.setOutlineThickness( 2 );
+      r_wind->draw( rect );
+      r_wind->draw( txt );
+
+      txt.setString( keybindTargetToString( input_selected_kb ));
+      txt.setPosition( 300, 200 );
+
+      rect.setPosition( 294, 194 );
+      r_wind->draw( rect );
+      r_wind->draw( txt );
+
+   }
+
+}
+
+// Init --
 
 int progressiveInitMenus()
 {
@@ -502,7 +616,7 @@ int progressiveInitMenus()
       initAVOptionsMenuGui();
       count = 4;
    } else if (count == 4) {
-      //initInputOptionsMenuGui();
+      initInputOptionsMenuGui();
 
       count = 5;
    } else if (count == 5) {
@@ -692,7 +806,7 @@ void refitGuis()
 
    fitGui_Options();
    fitGui_AVOptions();
-   //fitGui_InputOptions();
+   fitGui_InputOptions();
 
    fitGui_Map();
    fitGui_FocusMenu();
@@ -777,6 +891,12 @@ bool MainMouseListener::mouseWheelMoved( const Event::MouseWheelEvent &mouse_whe
 // Key
 bool MainKeyListener::keyPressed( const Event::KeyEvent &key_press )
 {
+   if (inputOptionsBindNextKey == true) {
+      config::bindKey( input_selected_kb, key_press.code );
+      inputOptionsBindNextKey = false;
+      return true;
+   }
+
    if (key_press.code == Keyboard::Q)
       shutdown(1,1);
 
@@ -810,7 +930,7 @@ int mainLoop( int dt )
    if (menu_state & MENU_SEC_AV_OPTIONS) {
       AVOptionsMenu();
    } else if (menu_state & MENU_SEC_INPUT_OPTIONS) {
-      //InputOptionsMenu();
+      inputOptionsMenu();
    } else if (menu_state & MENU_SEC_OPTIONS) {
       optionsMenu();
    } else if (menu_state & MENU_PRI_SPLASH) {
