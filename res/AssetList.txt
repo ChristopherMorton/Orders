@@ -144,6 +144,8 @@ IMAGE SplashScreen0.png
 IMAGE ClockFace.png
 IMAGE ClockHalfRed.png
 IMAGE ClockHalfWhite.png
+IMAGE PlusSign.png
+IMAGE MinusSign.png
 // Order Buttons
 IMAGE OrderButtonBase.png
 IMAGE OrderButtonHover.png

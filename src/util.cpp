@@ -92,7 +92,7 @@ String keybindTargetToString( sum::KeybindTarget target )
 {
    switch (target) {
       case KB_NOTHING:
-         return String( "-" );
+         return String( "N/A" );
       case KB_FORCE_QUIT:
          return String( "Force Quit" );
       case KB_PAUSE:
@@ -108,7 +108,7 @@ String keybindTargetToString( sum::KeybindTarget target )
       case KB_ZOOM_OUT_CAMERA:
          return String( "Camera: Zoom Out" );
       case KB_ZOOM_IN_CAMERA:
-         return String( "Camera: Zoom Int" );
+         return String( "Camera: Zoom In" );
       case KB_TOGGLE_OPTIONS_MENU:
          return String( "Options Menu" );
       case KB_SHOW_KEYBINDINGS:
@@ -340,7 +340,7 @@ String keyToString( Keyboard::Key key )
       case Keyboard::LControl:
          return String( "LCtrl" );
       case Keyboard::LShift:
-         return String( "LShft" );
+         return String( "LShift" );
       case Keyboard::LAlt:
          return String( "LAlt" );
       case Keyboard::LSystem:
@@ -348,7 +348,7 @@ String keyToString( Keyboard::Key key )
       case Keyboard::RControl:
          return String( "RCtrl" );
       case Keyboard::RShift:
-         return String( "RShft" );
+         return String( "RShift" );
       case Keyboard::RAlt:
          return String( "RAlt" );
       case Keyboard::RSystem:
@@ -378,7 +378,7 @@ String keyToString( Keyboard::Key key )
       case Keyboard::Dash:
          return String( "-" );
       case Keyboard::Space:
-         return String( "_" );
+         return String( "Space" );
       case Keyboard::Return:
          return String( "Ret" );
       case Keyboard::BackSpace:
@@ -414,25 +414,25 @@ String keyToString( Keyboard::Key key )
       case Keyboard::Down:
          return String( "Down" );
       case Keyboard::Numpad0:
-         return String( "NP0" );
+         return String( "Num0" );
       case Keyboard::Numpad1:
-         return String( "NP1" );
+         return String( "Num1" );
       case Keyboard::Numpad2:
-         return String( "NP2" );
+         return String( "Num2" );
       case Keyboard::Numpad3:
-         return String( "NP3" );
+         return String( "Num3" );
       case Keyboard::Numpad4:
-         return String( "NP4" );
+         return String( "Num4" );
       case Keyboard::Numpad5:
-         return String( "NP5" );
+         return String( "Num5" );
       case Keyboard::Numpad6:
-         return String( "NP6" );
+         return String( "Num6" );
       case Keyboard::Numpad7:
-         return String( "NP7" );
+         return String( "Num7" );
       case Keyboard::Numpad8:
-         return String( "NP8" );
+         return String( "Num8" );
       case Keyboard::Numpad9:
-         return String( "NP9" );
+         return String( "Num9" );
       case Keyboard::F1:
          return String( "F1" );
       case Keyboard::F2:

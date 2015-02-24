@@ -490,10 +490,28 @@ void AVOptionsMenu()
 // INPUT OPTIONS --
 bool initInputOptionsMenu = false;
 int inputOptionsMenuFontSize = 30;
-IMEdgeTextButton* b_input_options_bind_key = NULL;
+IMEdgeTextButton *b_io_bind_key = NULL,
+                 *b_io_clear_bind = NULL,
+                 *b_io_pause = NULL,
+                 *b_io_show_keybinds = NULL;
+IMButton *b_io_camera_left = NULL,
+         *b_io_camera_up = NULL,
+         *b_io_camera_right = NULL,
+         *b_io_camera_down = NULL,
+         *b_io_zoom_in = NULL,
+         *b_io_zoom_out = NULL;
+                 
 IMButton* b_overlay = NULL;
+float io_x_1 = 300, io_x_2 = 800, io_x_3 = 1000, io_x_4 = 200, io_x_5 = 900,
+      io_x_4_diff = 50,
+      io_y_1 = 150, io_y_2 = 200, io_y_3 = 300, io_y_4 = 400,
+      io_y_3_diff = 50, io_y_4_diff = 25,
+      io_button_size = 40, io_spacer = 10;
 
-string s_input_options_bind_key = "Bind Key";
+string s_io_bind_key = "Bind";
+string s_io_clear_bind = "Clear";
+string s_io_pause = "Pause";
+string s_io_show_keybinds = "Show Keybinds";
 
 void fitGui_InputOptions()
 {
@@ -504,12 +522,62 @@ void fitGui_InputOptions()
 
    float gui_tick_x = (float)width / 80.0,
          gui_tick_y = (float)height / 60.0;
-   int gui_text_size = width / 50;
+   int gui_text_size = width / 45;
 
-   b_input_options_bind_key->setSize( 150, gui_text_size + 14 );
-   b_input_options_bind_key->setPosition( 300, 400 );
-   b_input_options_bind_key->setTextSize( gui_text_size );
-   b_input_options_bind_key->centerText();
+   io_button_size = 4 * gui_tick_x;
+   io_spacer = gui_tick_x;
+
+   io_x_1 = (20 * gui_tick_x);
+   io_x_2 = (52 * gui_tick_x);
+   io_x_3 = (63 * gui_tick_x);
+   io_x_4 = (12 * gui_tick_x);
+   io_x_5 = (57 * gui_tick_x);
+   io_x_4_diff = io_button_size + io_spacer;
+
+   io_y_1 = (10 * gui_tick_y);
+   io_y_2 = io_y_1 + io_button_size + io_spacer;
+   io_y_3 = io_y_2 + (io_button_size * 2) + io_spacer;
+   io_y_4 = io_y_3 + io_button_size + io_spacer;
+   io_y_3_diff = io_button_size + io_spacer;
+   io_y_4_diff = (io_button_size + io_spacer) / 2;
+
+   b_io_bind_key->setSize( (io_x_3 - io_x_2) - io_spacer, (io_button_size * 2) - (io_spacer * 2) );
+   b_io_bind_key->setPosition( io_x_2, io_y_1 + io_spacer );
+   b_io_bind_key->setTextSize( gui_text_size );
+   b_io_bind_key->centerText();
+
+   b_io_clear_bind->setSize( (io_x_3 - io_x_2) - io_spacer, (io_button_size * 2) - (io_spacer * 2) );
+   b_io_clear_bind->setPosition( io_x_3, io_y_1 + io_spacer );
+   b_io_clear_bind->setTextSize( gui_text_size );
+   b_io_clear_bind->centerText();
+
+   b_io_pause->setSize( (width - io_x_5) - io_button_size, io_button_size );
+   b_io_pause->setPosition( io_x_5, io_y_3 );
+   b_io_pause->setTextSize( gui_text_size );
+   b_io_pause->centerText();
+
+   b_io_show_keybinds->setSize( (width - io_x_5) - io_button_size, io_button_size );
+   b_io_show_keybinds->setPosition( io_x_5, io_y_3 + io_y_3_diff );
+   b_io_show_keybinds->setTextSize( gui_text_size );
+   b_io_show_keybinds->centerText();
+
+   b_io_camera_left->setSize( io_button_size, io_button_size );
+   b_io_camera_left->setPosition( io_x_4, io_y_4 + io_y_4_diff );
+
+   b_io_camera_right->setSize( io_button_size, io_button_size );
+   b_io_camera_right->setPosition( io_x_4 + (2 * io_x_4_diff), io_y_4 + io_y_4_diff );
+
+   b_io_camera_up->setSize( io_button_size, io_button_size );
+   b_io_camera_up->setPosition( io_x_4 + io_x_4_diff, io_y_4 );
+
+   b_io_camera_down->setSize( io_button_size, io_button_size );
+   b_io_camera_down->setPosition( io_x_4 + io_x_4_diff, io_y_4 + (2 * io_y_4_diff) );
+
+   b_io_zoom_in->setSize( io_button_size, io_button_size );
+   b_io_zoom_in->setPosition( io_x_4 + (4 * io_x_4_diff), io_y_4 );
+
+   b_io_zoom_out->setSize( io_button_size, io_button_size );
+   b_io_zoom_out->setPosition( io_x_4 + (4 * io_x_4_diff), io_y_4 + (2 * io_y_4_diff) );
 
    b_overlay->setSize( width, height );
    b_overlay->setPosition( 0, 0 );
@@ -519,15 +587,69 @@ void fitGui_InputOptions()
 
 int initInputOptionsMenuGui()
 {
-   b_input_options_bind_key = new IMEdgeTextButton();
-   b_input_options_bind_key->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
-   b_input_options_bind_key->setCornerAllTextures( texture_manager->getTexture( "UICornerBrown3px.png" ) );
-   b_input_options_bind_key->setEdgeAllTextures( texture_manager->getTexture( "UIEdgeBrown3px.png" ) );
-   b_input_options_bind_key->setEdgeWidth( 3 );
-   b_input_options_bind_key->setText( &s_input_options_bind_key );
-   b_input_options_bind_key->setFont( menu_font );
-   b_input_options_bind_key->setTextColor( sf::Color::Black );
-   gui_manager->registerWidget( "Bind Key", b_input_options_bind_key);
+   b_io_bind_key = new IMEdgeTextButton();
+   b_io_bind_key->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
+   b_io_bind_key->setCornerAllTextures( texture_manager->getTexture( "UICornerBrown3px.png" ) );
+   b_io_bind_key->setEdgeAllTextures( texture_manager->getTexture( "UIEdgeBrown3px.png" ) );
+   b_io_bind_key->setEdgeWidth( 3 );
+   b_io_bind_key->setText( &s_io_bind_key );
+   b_io_bind_key->setFont( menu_font );
+   b_io_bind_key->setTextColor( sf::Color::Black );
+   gui_manager->registerWidget( "Bind Key", b_io_bind_key);
+
+   b_io_clear_bind = new IMEdgeTextButton();
+   b_io_clear_bind->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
+   b_io_clear_bind->setCornerAllTextures( texture_manager->getTexture( "UICornerBrown3px.png" ) );
+   b_io_clear_bind->setEdgeAllTextures( texture_manager->getTexture( "UIEdgeBrown3px.png" ) );
+   b_io_clear_bind->setEdgeWidth( 3 );
+   b_io_clear_bind->setText( &s_io_clear_bind );
+   b_io_clear_bind->setFont( menu_font );
+   b_io_clear_bind->setTextColor( sf::Color::Black );
+   gui_manager->registerWidget( "Clear Bind", b_io_clear_bind);
+
+   b_io_pause = new IMEdgeTextButton();
+   b_io_pause->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
+   b_io_pause->setCornerAllTextures( texture_manager->getTexture( "UICornerBrown3px.png" ) );
+   b_io_pause->setEdgeAllTextures( texture_manager->getTexture( "UIEdgeBrown3px.png" ) );
+   b_io_pause->setEdgeWidth( 3 );
+   b_io_pause->setText( &s_io_pause );
+   b_io_pause->setFont( menu_font );
+   b_io_pause->setTextColor( sf::Color::Black );
+   gui_manager->registerWidget( "Keybind: Pause", b_io_pause);
+
+   b_io_show_keybinds = new IMEdgeTextButton();
+   b_io_show_keybinds->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
+   b_io_show_keybinds->setCornerAllTextures( texture_manager->getTexture( "UICornerBrown3px.png" ) );
+   b_io_show_keybinds->setEdgeAllTextures( texture_manager->getTexture( "UIEdgeBrown3px.png" ) );
+   b_io_show_keybinds->setEdgeWidth( 3 );
+   b_io_show_keybinds->setText( &s_io_show_keybinds );
+   b_io_show_keybinds->setFont( menu_font );
+   b_io_show_keybinds->setTextColor( sf::Color::Black );
+   gui_manager->registerWidget( "Keybind: Show Keybinds", b_io_show_keybinds);
+
+   b_io_camera_left = new IMButton();
+   b_io_camera_left->setAllTextures( texture_manager->getTexture( "OrderTurnWest.png" ) );
+   gui_manager->registerWidget( "Keybind: Camera Left", b_io_camera_left);
+
+   b_io_camera_right = new IMButton();
+   b_io_camera_right->setAllTextures( texture_manager->getTexture( "OrderTurnEast.png" ) );
+   gui_manager->registerWidget( "Keybind: Camera Right", b_io_camera_right);
+
+   b_io_camera_up = new IMButton();
+   b_io_camera_up->setAllTextures( texture_manager->getTexture( "OrderTurnNorth.png" ) );
+   gui_manager->registerWidget( "Keybind: Camera Up", b_io_camera_up);
+
+   b_io_camera_down = new IMButton();
+   b_io_camera_down->setAllTextures( texture_manager->getTexture( "OrderTurnSouth.png" ) );
+   gui_manager->registerWidget( "Keybind: Camera Down", b_io_camera_down);
+
+   b_io_zoom_in = new IMButton();
+   b_io_zoom_in->setAllTextures( texture_manager->getTexture( "PlusSign.png" ) );
+   gui_manager->registerWidget( "Keybind: Zoom In", b_io_zoom_in);
+
+   b_io_zoom_out = new IMButton();
+   b_io_zoom_out->setAllTextures( texture_manager->getTexture( "MinusSign.png" ) );
+   gui_manager->registerWidget( "Keybind: Zoom Out", b_io_zoom_out);
 
    Image gray_image;
    gray_image.create( 1, 1, Color( 85, 85, 85, 115 ) );
@@ -558,8 +680,13 @@ void inputOptionsMenu()
       RenderWindow* r_wind = SFML_GlobalRenderWindow::get();
       r_wind->clear( Color( 165, 165, 165, 255 ) );
 
-      if (b_input_options_bind_key->doWidget())
+      if (b_io_bind_key->doWidget())
          inputOptionsBindNextKey = !inputOptionsBindNextKey;
+
+      if (b_io_clear_bind->doWidget()) {
+         inputOptionsBindNextKey = false;
+         config::bindKey( input_selected_kb, Keyboard::Unknown );
+      }
 
       if (inputOptionsBindNextKey)
          b_overlay->doWidget();
@@ -568,6 +695,39 @@ void inputOptionsMenu()
          closeInputOptions();
 
       KeybindTarget kb = drawKeybindButtons();
+
+      drawKeybind( KB_PAUSE, io_x_5, io_y_3, io_button_size, 14 );
+      if (b_io_pause->doWidget() && inputOptionsBindNextKey == false)
+         kb = KB_PAUSE;
+
+      drawKeybind( KB_SHOW_KEYBINDINGS, io_x_5, io_y_3 + io_y_3_diff, io_button_size, 14 );
+      if (b_io_show_keybinds->doWidget() && inputOptionsBindNextKey == false)
+         kb = KB_SHOW_KEYBINDINGS;
+
+      drawKeybind( KB_MOVE_CAMERA_LEFT, io_x_4, io_y_4 + io_y_4_diff, io_button_size, 14 );
+      if (b_io_camera_left->doWidget() && inputOptionsBindNextKey == false)
+         kb = KB_MOVE_CAMERA_LEFT;
+
+      drawKeybind( KB_MOVE_CAMERA_UP, io_x_4 + io_x_4_diff, io_y_4 , io_button_size, 14 );
+      if (b_io_camera_up->doWidget() && inputOptionsBindNextKey == false)
+         kb = KB_MOVE_CAMERA_UP;
+
+      drawKeybind( KB_MOVE_CAMERA_RIGHT, io_x_4 + (2 * io_x_4_diff), io_y_4 + io_y_4_diff, io_button_size, 14 );
+      if (b_io_camera_right->doWidget() && inputOptionsBindNextKey == false)
+         kb = KB_MOVE_CAMERA_RIGHT;
+
+      drawKeybind( KB_MOVE_CAMERA_DOWN, io_x_4 + io_x_4_diff, io_y_4 + (2 * io_y_4_diff), io_button_size, 14 );
+      if (b_io_camera_down->doWidget() && inputOptionsBindNextKey == false)
+         kb = KB_MOVE_CAMERA_DOWN;
+
+      drawKeybind( KB_ZOOM_IN_CAMERA, io_x_4 + (4 * io_x_4_diff), io_y_4, io_button_size, 14 );
+      if (b_io_zoom_in->doWidget() && inputOptionsBindNextKey == false)
+         kb = KB_ZOOM_IN_CAMERA;
+
+      drawKeybind( KB_ZOOM_OUT_CAMERA, io_x_4 + (4 * io_x_4_diff), io_y_4 + (2 * io_y_4_diff), io_button_size, 14 );
+      if (b_io_zoom_out->doWidget() && inputOptionsBindNextKey == false)
+         kb = KB_ZOOM_OUT_CAMERA;
+
       if (kb != KB_NOTHING && inputOptionsBindNextKey == false)
          input_selected_kb = kb;
 
@@ -577,30 +737,43 @@ void inputOptionsMenu()
       txt.setCharacterSize( inputOptionsMenuFontSize );
 
       txt.setString( String( "Bound Action:" ) ); 
-      txt.setPosition( 100, 200 );
+      FloatRect fr = txt.getGlobalBounds();
+      txt.setPosition( io_x_1 - io_spacer - fr.width, io_y_1 );
       r_wind->draw( txt );
 
       txt.setString( String( "Bound Key:" ) ); 
-      txt.setPosition( 100, 300 );
+      fr = txt.getGlobalBounds();
+      txt.setPosition( io_x_1 - io_spacer - fr.width, io_y_2 );
       r_wind->draw( txt );
 
-      txt.setString( keyToString( config::getBoundKey( input_selected_kb )));
-      txt.setPosition( 300, 300 );
-
       RectangleShape rect;
-      rect.setSize( Vector2f( 450, 50 ) );
-      rect.setPosition( 294, 294 );
+      rect.setSize( Vector2f( (io_x_2 - io_x_1) - io_spacer, io_button_size - io_spacer ) );
       rect.setFillColor( Color( 215, 215, 215, 255 ) );
       rect.setOutlineColor( Color::Black );
       rect.setOutlineThickness( 2 );
+
+      rect.setPosition( io_x_1, io_y_1 );
       r_wind->draw( rect );
+      txt.setString( keybindTargetToString( input_selected_kb ));
+      txt.setPosition( io_x_1 + 4, io_y_1 + 4 );
       r_wind->draw( txt );
 
-      txt.setString( keybindTargetToString( input_selected_kb ));
-      txt.setPosition( 300, 200 );
-
-      rect.setPosition( 294, 194 );
+      rect.setPosition( io_x_1, io_y_2 );
       r_wind->draw( rect );
+      txt.setString( keyToString( config::getBoundKey( input_selected_kb )));
+      txt.setPosition( io_x_1 + 4, io_y_2 + 4 );
+      r_wind->draw( txt );
+
+      // Text headers
+      txt.setCharacterSize( inputOptionsMenuFontSize * 2 );
+
+      txt.setString( String( "Keybindings" ) );
+      fr = txt.getGlobalBounds();
+      txt.setPosition( (config::width() - fr.width) / 2, io_spacer * 2 );
+      r_wind->draw( txt );
+      
+      txt.setString( String( "Camera Controls" ) );
+      txt.setPosition( io_x_4, io_y_3 - (io_spacer * 2) );
       r_wind->draw( txt );
    }
 

@@ -121,14 +121,21 @@ KeybindTarget getBoundTarget( sf::Keyboard::Key key )
 
 Keyboard::Key bindKey( KeybindTarget target, sf::Keyboard::Key key )
 {
-   Keyboard::Key ret = getBoundKey( target );
+   Keyboard::Key key_old = getBoundKey( target ); // This used to be bound to target
+   KeybindTarget kb_old = getBoundTarget( key ); // Key used to be bound to this
 
    keyToTarget[(int)key] = target;
    targetToKey[(int)target] = key;
 
-   keyToTarget[(int)ret] = KB_NOTHING;
+   // Clear old association
+   if (key_old != Keyboard::Unknown && key_old != key)
+      keyToTarget[(int)key_old] = KB_NOTHING;
 
-   return ret;
+   // Clear previous binding for this key
+   if (kb_old != KB_NOTHING && kb_old != target)
+      targetToKey[(int)kb_old] = Keyboard::Unknown;
+
+   return key_old;
 }
 
 bool show_keybindings = false;
@@ -164,6 +171,11 @@ int load()
             config_in >> w >> h >> f;
             setWindow( w, h, f );
          }
+         if (type == "KB") {
+            int key = -1, kb = 0;
+            config_in >> kb >> key;
+            bindKey( (KeybindTarget)kb, (Keyboard::Key)key );
+         }
       }
 
       config_in.close();
@@ -177,7 +189,13 @@ int save()
    ofstream config_out;
    config_out.open("res/config.txt"); 
 
-   config_out << "WINDOW " << w_width << " " << w_height << " " << w_flags;
+   config_out << "WINDOW " << w_width << " " << w_height << " " << w_flags << endl;
+
+   for (int kb = 1; kb < (int)KB_COUNT; ++kb) {
+      int key = targetToKey[kb];
+      if (key != (int)Keyboard::Unknown)
+         config_out << "KB " << kb << " " << key << endl;
+   }
 
    config_out.close();
 
