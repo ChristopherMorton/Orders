@@ -65,8 +65,8 @@ int Projectile::update( float dtf )
          if (type == PR_WIND_SLASH) {
             alt_data -= dtf;
             while (alt_data < 0) {
-               alt_data += 0.1;
-               nearest->takeDamage( damage * 0.1, DMG_HEAVY );
+               alt_data += 0.12;
+               nearest->takeDamage( damage * 0.12, DMG_HEAVY );
             }
             return 0;
          } else {
@@ -410,9 +410,11 @@ int DamageDisplay::draw()
    if (attached_unit == NULL)
       return -1;
 
-   if (duration < c_dmg_display_dur_half) {
+   if (duration < c_dmg_display_dur_half)
+      return 0;
+   else if (duration < 2 * c_dmg_display_dur_half) {
       Color new_c = damage_text->getColor();
-      new_c.a = (int) (255 * (duration / c_dmg_display_dur_half) );
+      new_c.a = (int) (255 * ((duration - c_dmg_display_dur_half) / c_dmg_display_dur_half) );
       damage_text->setColor( new_c );
    }
 
@@ -424,7 +426,7 @@ int DamageDisplay::draw()
 DamageDisplay::DamageDisplay( int damage, DamageType dmg_type, Unit *unit, int slot )
 {
    type = EF_DAMAGE_DISPLAY;
-   duration = 2 * c_dmg_display_dur_half;
+   duration = 3 * c_dmg_display_dur_half;
 
    // Setup offset
    attached_unit = unit;

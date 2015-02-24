@@ -1,5 +1,4 @@
 #include "log.h"
-#define INCONFIGCPP 1
 #include "config.h"
 
 #include <fstream>
@@ -12,6 +11,9 @@ using namespace sum;
 
 namespace config
 {
+
+bool show_keybindings = false;
+bool display_damage = true;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Window
@@ -138,8 +140,6 @@ Keyboard::Key bindKey( KeybindTarget target, sf::Keyboard::Key key )
    return key_old;
 }
 
-bool show_keybindings = false;
-
 void setDefaults()
 {
    setWindow( 800, 600, 0 );
@@ -176,6 +176,13 @@ int load()
             config_in >> kb >> key;
             bindKey( (KeybindTarget)kb, (Keyboard::Key)key );
          }
+         if (type == "OPTION") {
+            int result = 0;
+            config_in >> value;
+            config_in >> result;
+            if (value == "DisplayDamage")
+               display_damage = (result == 1);
+         }
       }
 
       config_in.close();
@@ -196,6 +203,8 @@ int save()
       if (key != (int)Keyboard::Unknown)
          config_out << "KB " << kb << " " << key << endl;
    }
+
+   config_out << "OPTION DisplayDamage " << (display_damage?1:0) << endl;
 
    config_out.close();
 

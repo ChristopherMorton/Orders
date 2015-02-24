@@ -6,6 +6,7 @@
 #include "animation.h"
 #include "clock.h"
 #include "log.h"
+#include "config.h"
 
 #include "SFML_GlobalRenderWindow.hpp"
 #include "SFML_TextureManager.hpp"
@@ -595,6 +596,9 @@ int Unit::completeTurn()
 
 int Unit::displayDamage( int damage, DamageType type )
 {
+   if (config::display_damage == false)
+      return -1;
+
    // Find empty slot
    int i;
    bool space = false;

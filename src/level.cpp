@@ -1162,7 +1162,7 @@ int completeSummon( Order o )
    if (NULL != u)
    {
       addUnit( u );
-      addEffect( SE_SUMMON_CLOUD, 5.5, x + 0.5, y + 0.5, 0, 2.2 );
+      addEffect( SE_SUMMON_CLOUD, 0.5, x + 0.5, y + 0.5, 0, 2.2 );
    }
 
    return 0;

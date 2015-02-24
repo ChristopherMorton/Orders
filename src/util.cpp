@@ -138,7 +138,7 @@ String keybindTargetToString( sum::KeybindTarget target )
       case KB_BTN_COUNT_9:
          return String( "Count: 9" );
       case KB_BTN_COUNT_CLEAR:
-         return String( "Count Clear" );
+         return String( "Clear Count" );
       case KB_BTN_COUNT_INFINITE:
          return String( "Count: Indefinitely" );
       case KB_BTN_COND_ENEMY_ADJACENT:
@@ -154,7 +154,7 @@ String keybindTargetToString( sum::KeybindTarget target )
       case KB_BTN_COND_BLOCKED_AHEAD:
          return String( "Condition: Path Blocked" );
       case KB_BTN_COND_CLEAR:
-         return String( "Condition Clear" );
+         return String( "Clear Condition" );
       case KB_BTN_MOVE_FORWARD:
          return String( "Order: Move Forward" );
       case KB_BTN_MOVE_BACK:

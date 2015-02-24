@@ -26,6 +26,7 @@ namespace config
    sf::Keyboard::Key bindKey( sum::KeybindTarget target, sf::Keyboard::Key key );
 
    extern bool show_keybindings;
+   extern bool display_damage;
 };
 
 #endif

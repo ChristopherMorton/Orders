@@ -24,6 +24,7 @@
 #include "IMCursorManager.hpp"
 #include "IMButton.hpp"
 #include "IMEdgeTextButton.hpp"
+#include "IMImageButton.hpp"
 
 // C includes
 #include <stdio.h>
@@ -169,8 +170,8 @@ void closeOptionsMenu()
    if (menu_state & MENU_SEC_INPUT_OPTIONS)
       applyInputOptions();
    menu_state = menu_state & (~(MENU_SEC_OPTIONS | MENU_SEC_AV_OPTIONS | MENU_SEC_INPUT_OPTIONS));
+   config::save();
 }
-
 
 // Here's the actual buttons and shit
 
@@ -264,8 +265,11 @@ void splashMenu()
 // OPTIONS --
 bool initOptionsMenu = false;
 IMButton* b_exit_options_menu = NULL;
-IMTextButton* b_av_options = NULL,
-            * b_input_options = NULL;
+IMEdgeTextButton* b_av_options = NULL,
+                * b_input_options = NULL;
+IMImageButton* b_option_display_damage = NULL;
+Vector2f v_option_display_damage_txt;
+int optionsMenuFontSize = 18;
 
 string s_av_options = "AV Options";
 string s_input_options = "Input Options";
@@ -274,18 +278,34 @@ void fitGui_Options()
 {
    if (!initOptionsMenu) return;
 
+   int width = config::width(),
+       height = config::height();
+
+   float gui_tick_x = (float)width / 80.0,
+         gui_tick_y = (float)height / 60.0;
+   optionsMenuFontSize = width / 45;
+
    b_exit_options_menu->setPosition( 10, 10 );
    b_exit_options_menu->setSize( 40, 40 );
 
-   b_av_options->setPosition( 300, 400 );
-   b_av_options->setSize( 80, 80 );
-   b_av_options->setTextSize( 16 );
+   b_av_options->setPosition( gui_tick_x * 20, gui_tick_y * 42 );
+   b_av_options->setSize( gui_tick_x * 16, gui_tick_y * 10 );
+   b_av_options->setTextSize( optionsMenuFontSize );
    b_av_options->centerText();
 
-   b_input_options->setPosition( 500, 400 );
-   b_input_options->setSize( 80, 80 );
-   b_input_options->setTextSize( 16 );
+   b_input_options->setPosition( gui_tick_x * 44, gui_tick_y * 42 );
+   b_input_options->setSize( gui_tick_x * 16, gui_tick_y * 10 );
+   b_input_options->setTextSize( optionsMenuFontSize );
    b_input_options->centerText();
+
+   b_option_display_damage->setPosition( gui_tick_x * 18, gui_tick_y * 10 );
+   b_option_display_damage->setSize( gui_tick_x * 3, gui_tick_y * 3 );
+   b_option_display_damage->setImageSize( gui_tick_x * 3, gui_tick_y * 3 );
+   v_option_display_damage_txt = Vector2f( gui_tick_x * 22, gui_tick_y * 10 );
+   if (config::display_damage == true)
+      b_option_display_damage->setImage( texture_manager->getTexture( "GuiExitX.png" ) );
+   else
+      b_option_display_damage->setImage( NULL );
 }
 
 int initOptionsMenuGui()
@@ -294,19 +314,33 @@ int initOptionsMenuGui()
    b_exit_options_menu->setAllTextures( texture_manager->getTexture( "GuiExitX.png" ) );
    gui_manager->registerWidget( "Close Options Menu", b_exit_options_menu);
 
-   b_av_options = new IMTextButton();
-   b_av_options->setAllTextures( texture_manager->getTexture( "BasicTree1.png" ) );
+   b_av_options = new IMEdgeTextButton();
+   b_av_options->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
+   b_av_options->setCornerAllTextures( texture_manager->getTexture( "UICornerBrown3px.png" ) );
+   b_av_options->setEdgeAllTextures( texture_manager->getTexture( "UIEdgeBrown3px.png" ) );
+   b_av_options->setEdgeWidth( 3 );
    b_av_options->setText( &s_av_options );
    b_av_options->setFont( menu_font );
-   b_av_options->setTextColor( sf::Color::White );
+   b_av_options->setTextColor( Color::Black );
    gui_manager->registerWidget( "Open AV Option", b_av_options);
 
-   b_input_options = new IMTextButton();
-   b_input_options->setAllTextures( texture_manager->getTexture( "BasicTree2.png" ) );
+   b_input_options = new IMEdgeTextButton();
+   b_input_options->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
+   b_input_options->setCornerAllTextures( texture_manager->getTexture( "UICornerBrown3px.png" ) );
+   b_input_options->setEdgeAllTextures( texture_manager->getTexture( "UIEdgeBrown3px.png" ) );
+   b_input_options->setEdgeWidth( 3 );
    b_input_options->setText( &s_input_options );
    b_input_options->setFont( menu_font );
-   b_input_options->setTextColor( sf::Color::White );
+   b_input_options->setTextColor( Color::Black );
    gui_manager->registerWidget( "Open Input Options", b_input_options);
+
+   b_option_display_damage = new IMImageButton();
+   b_option_display_damage->setNormalTexture( texture_manager->getTexture( "CountButtonBase.png" ) );
+   b_option_display_damage->setHoverTexture( texture_manager->getTexture( "CountButtonHover.png" ) );
+   b_option_display_damage->setPressedTexture( texture_manager->getTexture( "CountButtonPressed.png" ) );
+   b_option_display_damage->setImage( texture_manager->getTexture( "GuiExitX.png" ) );
+   b_option_display_damage->setImageOffset( 0, 0 );
+   gui_manager->registerWidget( "Toggle Display Damage", b_option_display_damage);
 
    initOptionsMenu = true;
    fitGui_Options();
@@ -330,13 +364,28 @@ void optionsMenu()
          openAVOptions();
       if (b_input_options->doWidget())
          openInputOptions();
+      if (b_option_display_damage->doWidget()) {
+         config::display_damage = !config::display_damage;
+         if (config::display_damage == true)
+            b_option_display_damage->setImage( texture_manager->getTexture( "GuiExitX.png" ) );
+         else
+            b_option_display_damage->setImage( NULL );
+      }
+
+      Text txt;
+      txt.setFont( *menu_font );
+      txt.setColor( Color::Black );
+      txt.setCharacterSize( optionsMenuFontSize );
+
+      txt.setString( String( "Display Damage Numbers" ) ); 
+      txt.setPosition( v_option_display_damage_txt );
+      r_wind->draw( txt );
    }
 }
 
 
 // AV OPTIONS --
 bool initAVOptionsMenu = false;
-IMButton* b_exit_av_options_menu = NULL;
 IMEdgeTextButton* b_800x600 = NULL;
 IMEdgeTextButton* b_1200x900 = NULL;
 IMEdgeTextButton* b_1280x1024 = NULL;
@@ -378,38 +427,30 @@ void fitGui_AVOptions()
 
    float gui_tick_x = (float)width / 80.0,
          gui_tick_y = (float)height / 60.0;
-   int gui_text_size = width / 50;
-
-   b_exit_av_options_menu->setPosition( 10, 10 );
-   b_exit_av_options_menu->setSize( 40, 40 );
 
    b_800x600->setPosition( 25 * gui_tick_x, 30 * gui_tick_y );
    b_800x600->setSize( 30 * gui_tick_x, 4 * gui_tick_y );
-   b_800x600->setTextSize( gui_text_size );
+   b_800x600->setTextSize( optionsMenuFontSize );
    b_800x600->centerText();
 
    b_1200x900->setPosition( 25 * gui_tick_x, 35 * gui_tick_y );
    b_1200x900->setSize( 30 * gui_tick_x, 4 * gui_tick_y );
-   b_1200x900->setTextSize( gui_text_size );
+   b_1200x900->setTextSize( optionsMenuFontSize );
    b_1200x900->centerText();
 
    b_1280x1024->setPosition( 25 * gui_tick_x, 40 * gui_tick_y );
    b_1280x1024->setSize( 30 * gui_tick_x, 4 * gui_tick_y );
-   b_1280x1024->setTextSize( gui_text_size );
+   b_1280x1024->setTextSize( optionsMenuFontSize );
    b_1280x1024->centerText();
 
    b_av_apply->setPosition( 30 * gui_tick_x, 45 * gui_tick_y );
    b_av_apply->setSize( 20 * gui_tick_x, 4 * gui_tick_y );
-   b_av_apply->setTextSize( gui_text_size );
+   b_av_apply->setTextSize( optionsMenuFontSize );
    b_av_apply->centerText();
 }
 
 int initAVOptionsMenuGui()
 {
-   b_exit_av_options_menu = new IMButton();
-   b_exit_av_options_menu->setAllTextures( texture_manager->getTexture( "GuiExitX.png" ) );
-   gui_manager->registerWidget( "Close AV Options Menu", b_exit_av_options_menu);
-
    b_800x600 = new IMEdgeTextButton();
    b_800x600->setAllTextures( texture_manager->getTexture( "UICenterBrown.png" ) );
    b_800x600->setCornerAllTextures( texture_manager->getTexture( "UICornerBrown3px.png" ) );
@@ -473,7 +514,7 @@ void AVOptionsMenu()
       RenderWindow* r_wind = SFML_GlobalRenderWindow::get();
       r_wind->clear( Color( 155, 155, 155, 255 ) );
 
-      if (b_exit_av_options_menu->doWidget())
+      if (b_exit_options_menu->doWidget())
          closeAVOptions();
       if (b_800x600->doWidget())
          selectResolution( 0 );
@@ -489,7 +530,6 @@ void AVOptionsMenu()
 
 // INPUT OPTIONS --
 bool initInputOptionsMenu = false;
-int inputOptionsMenuFontSize = 30;
 IMEdgeTextButton *b_io_bind_key = NULL,
                  *b_io_clear_bind = NULL,
                  *b_io_pause = NULL,
@@ -522,7 +562,6 @@ void fitGui_InputOptions()
 
    float gui_tick_x = (float)width / 80.0,
          gui_tick_y = (float)height / 60.0;
-   int gui_text_size = width / 45;
 
    io_button_size = 4 * gui_tick_x;
    io_spacer = gui_tick_x;
@@ -543,22 +582,21 @@ void fitGui_InputOptions()
 
    b_io_bind_key->setSize( (io_x_3 - io_x_2) - io_spacer, (io_button_size * 2) - (io_spacer * 2) );
    b_io_bind_key->setPosition( io_x_2, io_y_1 + io_spacer );
-   b_io_bind_key->setTextSize( gui_text_size );
    b_io_bind_key->centerText();
 
    b_io_clear_bind->setSize( (io_x_3 - io_x_2) - io_spacer, (io_button_size * 2) - (io_spacer * 2) );
    b_io_clear_bind->setPosition( io_x_3, io_y_1 + io_spacer );
-   b_io_clear_bind->setTextSize( gui_text_size );
+   b_io_clear_bind->setTextSize( optionsMenuFontSize );
    b_io_clear_bind->centerText();
 
    b_io_pause->setSize( (width - io_x_5) - io_button_size, io_button_size );
    b_io_pause->setPosition( io_x_5, io_y_3 );
-   b_io_pause->setTextSize( gui_text_size );
+   b_io_pause->setTextSize( optionsMenuFontSize );
    b_io_pause->centerText();
 
    b_io_show_keybinds->setSize( (width - io_x_5) - io_button_size, io_button_size );
    b_io_show_keybinds->setPosition( io_x_5, io_y_3 + io_y_3_diff );
-   b_io_show_keybinds->setTextSize( gui_text_size );
+   b_io_show_keybinds->setTextSize( optionsMenuFontSize );
    b_io_show_keybinds->centerText();
 
    b_io_camera_left->setSize( io_button_size, io_button_size );
@@ -581,8 +619,6 @@ void fitGui_InputOptions()
 
    b_overlay->setSize( width, height );
    b_overlay->setPosition( 0, 0 );
-
-   inputOptionsMenuFontSize = gui_text_size;
 }
 
 int initInputOptionsMenuGui()
@@ -691,7 +727,7 @@ void inputOptionsMenu()
       if (inputOptionsBindNextKey)
          b_overlay->doWidget();
 
-      if (b_exit_av_options_menu->doWidget() && inputOptionsBindNextKey == false)
+      if (b_exit_options_menu->doWidget() && inputOptionsBindNextKey == false)
          closeInputOptions();
 
       KeybindTarget kb = drawKeybindButtons();
@@ -734,7 +770,7 @@ void inputOptionsMenu()
       Text txt;
       txt.setFont( *menu_font );
       txt.setColor( Color::Black );
-      txt.setCharacterSize( inputOptionsMenuFontSize );
+      txt.setCharacterSize( optionsMenuFontSize );
 
       txt.setString( String( "Bound Action:" ) ); 
       FloatRect fr = txt.getGlobalBounds();
@@ -765,7 +801,7 @@ void inputOptionsMenu()
       r_wind->draw( txt );
 
       // Text headers
-      txt.setCharacterSize( inputOptionsMenuFontSize * 2 );
+      txt.setCharacterSize( optionsMenuFontSize * 2 );
 
       txt.setString( String( "Keybindings" ) );
       fr = txt.getGlobalBounds();
