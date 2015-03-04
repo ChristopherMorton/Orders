@@ -85,6 +85,7 @@ public:
    int completeBasicOrder( Order &o );
 
    bool evaluateConditional( Order_Conditional oc );
+   bool testInvis();
 
    void activate();
    void clearOrders();
@@ -301,7 +302,7 @@ public:
    virtual std::string descriptor();
 
    virtual int prepareTurn();
-   //virtual int startTurn();
+   virtual int startTurn();
    virtual int completeTurn();
    //virtual int update( float dtf );
    virtual sf::Texture* getTexture();
@@ -326,7 +327,7 @@ public:
    virtual std::string descriptor();
 
    virtual int startTurn();
-   //virtual int completeTurn();
+   virtual int completeTurn();
    virtual int update( float dtf );
    virtual sf::Texture* getTexture();
    virtual int draw();

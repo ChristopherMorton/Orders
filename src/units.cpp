@@ -402,20 +402,6 @@ bool Unit::evaluateConditional( Order_Conditional oc )
          s = false;
       case ENEMY_IN_RANGE:
          return s != !(getEnemy( x_grid, y_grid, vision_range, facing, this, SELECT_CLOSEST, false ) != NULL);
-         /*
-      case ALLY_NOT_ADJACENT:
-         s = false;
-      case ALLY_ADJACENT:
-         return s != !(getEnemyAdjacent( x_grid, y_grid, this, SELECT_CLOSEST, true ) != NULL);
-      case ALLY_NOT_AHEAD:
-         s = false;
-      case ALLY_AHEAD:
-         return s != !(getEnemyLine( x_grid, y_grid, vision_range, facing, this, SELECT_CLOSEST, true ) != NULL);
-      case ALLY_NOT_IN_RANGE:
-         s = false;
-      case ALLY_IN_RANGE:
-         return s != !(getEnemy( x_grid, y_grid, vision_range, facing, this, SELECT_CLOSEST, true ) != NULL);
-         */
       case HEALTH_UNDER_50:
          return (health / max_health) < 50.0;
       case HEALTH_OVER_50:
@@ -431,6 +417,18 @@ bool Unit::evaluateConditional( Order_Conditional oc )
       default:
          return true;
    }
+}
+
+bool Unit::testInvis()
+{
+   if (invis) {
+      Unit *u = getEnemyAdjacent( x_grid, y_grid, this, SELECT_CLOSEST, false );
+      if (u != NULL) {
+         invis = false;
+         addEffect( SE_GO_MARKER, 0.3, u->x_real, u->y_real, 0, 0.1 );
+      }
+   }
+   return invis;
 }
 
 void Unit::activate()
@@ -2250,6 +2248,7 @@ string Soldier::descriptor()
 // Worm ---
 
 Animation worm_anim_idle;
+Animation worm_anim_idle_invis;
 Animation worm_anim_move;
 Animation worm_anim_attack_start;
 Animation worm_anim_attack_end;
@@ -2259,6 +2258,9 @@ void initWormAnimations()
 {
    Texture *t = SFML_TextureManager::getSingleton().getTexture( "WormAnimIdle.png" );
    worm_anim_idle.load( t, 128, 128, 8, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "WormAnimIdleInvis.png" );
+   worm_anim_idle_invis.load( t, 128, 128, 8, 1000 );
 
    t = SFML_TextureManager::getSingleton().getTexture( "WormAnimMove.png" );
    worm_anim_move.load( t, 128, 128, 11, 1000 );
@@ -2387,10 +2389,18 @@ int Worm::prepareTurn()
    if (current_order == final_order)
       this_turn_order = Order( WAIT );
 
+   progress = 0;
+   return 0;
+}
+
+int Worm::startTurn()
+{
+   if (alive != 1) return 0;
+
    if (this_turn_order.action != WORM_HIDE)
       invis = false;
 
-   progress = 0;
+   startBasicOrder();
    return 0;
 }
 
@@ -2402,6 +2412,7 @@ int Worm::completeTurn()
       int r = completeBasicOrder(this_turn_order);
       if (this_turn_order.action == WORM_HIDE)
          invis = true;
+      testInvis();
       Order &o = order_queue[current_order];
       o.iteration++;
       if (o.iteration >= o.count && o.count != -1) { 
@@ -2489,7 +2500,8 @@ sf::Texture* Worm::getTexture()
 int Worm::draw()
 {
    // Select sprite
-   Sprite *sp_worm = NULL;
+   Sprite *sp_worm = NULL,
+          *sp_worm_invis = NULL;
    if (alive < 0) {
       // Death animation
       int t = alive + DEATH_TIME + DEATH_FADE_TIME;
@@ -2519,10 +2531,14 @@ int Worm::draw()
       if (invis) {
          sp_worm = worm_anim_idle.getSprite( (int)(progress * 1000) );
          sp_worm->setColor( Color( 255, 255, 255, 127 ) );
+         sp_worm_invis = worm_anim_idle_invis.getSprite( (int)(progress * 1000) );
+         sp_worm_invis->setColor( Color::White );
       } else {
-         int alpha = 255 - (progress * 128);
+         int alpha = 255 - (progress * 192);
          sp_worm = worm_anim_idle.getSprite( (int)(progress * 1000) );
          sp_worm->setColor( Color( 255, 255, 255, alpha ) );
+         sp_worm_invis = worm_anim_idle_invis.getSprite( (int)(progress * 1000) );
+         sp_worm_invis->setColor( Color( 255, 255, 255, 255 - alpha ) );
       }
    } else {
       sp_worm = worm_anim_idle.getSprite( (int)(progress * 1000) );
@@ -2546,6 +2562,22 @@ int Worm::draw()
 
    SFML_GlobalRenderWindow::get()->draw( *sp_worm );
 
+   if (sp_worm_invis != NULL) {
+      sp_worm_invis->setOrigin( dim.x / 2.0, dim.y / 2.0 );
+      sp_worm_invis->setScale( 0.3 / dim.x, 0.3 / dim.y );
+
+      sp_worm_invis->setPosition( x_real, y_real );
+
+      int rotation;
+      if (facing == EAST) rotation = 0;
+      if (facing == SOUTH) rotation = 90;
+      if (facing == WEST) rotation = 180;
+      if (facing == NORTH) rotation = 270;
+      sp_worm_invis->setRotation( rotation );
+
+      SFML_GlobalRenderWindow::get()->draw( *sp_worm_invis );
+   }
+
    return 0;
 }
 
@@ -2562,8 +2594,10 @@ Animation bird_anim_idle2;
 Animation bird_anim_idle3;
 Animation bird_anim_move;
 Animation bird_anim_attack_start;
-Animation bird_anim_attack_end;
 Animation bird_anim_death;
+Animation bird_anim_take_off;
+Animation bird_anim_land;
+Animation bird_anim_fly;
 
 void initBirdAnimations()
 {
@@ -2582,8 +2616,14 @@ void initBirdAnimations()
    t = SFML_TextureManager::getSingleton().getTexture( "BirdAnimAttack.png" );
    bird_anim_attack_start.load( t, 128, 128, 14, 1000 );
 
-   t = SFML_TextureManager::getSingleton().getTexture( "BirdStatic.png" );
-   bird_anim_attack_end.load( t, 128, 128, 1, 1000 );
+   t = SFML_TextureManager::getSingleton().getTexture( "BirdAnimTakeOff.png" );
+   bird_anim_take_off.load( t, 128, 128, 12, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "BirdAnimLand.png" );
+   bird_anim_land.load( t, 128, 128, 10, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "BirdAnimFly.png" );
+   bird_anim_fly.load( t, 128, 128, 10, 500 );
 
    t = SFML_TextureManager::getSingleton().getTexture( "BirdAnimDeath.png" );
    bird_anim_death.load( t, 128, 128, 8, DEATH_TIME );
@@ -2606,7 +2646,7 @@ Bird::Bird( int x, int y, Direction face )
    aff_poison = 0;
    aff_confusion = 0;
 
-   flying = true;
+   flying = false;
    invis = false;
 
    radius = 0.2;
@@ -2725,13 +2765,27 @@ int Bird::startTurn()
    return 0;
 }
 
-/*
 int Bird::completeTurn()
 {
+   if (alive != 1) return 0;
+
+   if (active == 1 && current_order != final_order) {
+      int r = completeBasicOrder(this_turn_order);
+      if (this_turn_order.action == BIRD_FLY
+            && this_turn_order.iteration != this_turn_order.count - 1)
+         flying = true;
+      else flying = false;
+      Order &o = order_queue[current_order];
+      o.iteration++;
+      if (o.iteration >= o.count && o.count != -1) { 
+         current_order++;
+         o.iteration = 0;
+      }
+      return r;
+   }
 
    return 0;
 }
-*/
 
 int Bird::update( float dtf )
 {
@@ -2811,6 +2865,8 @@ int Bird::draw()
    if (facing == WEST) rotation = 180;
    if (facing == NORTH) rotation = 270;
 
+   float scale = 0.6; // affected by height (flying)
+
    if (alive < 0) {
       // Death animation
       int t = alive + DEATH_TIME + DEATH_FADE_TIME;
@@ -2835,6 +2891,26 @@ int Bird::draw()
          if (d_anim >= 1000) d_anim = 999;
          sp_bird = bird_anim_attack_start.getSprite( d_anim );
       }
+   } else if (this_turn_order.action == BIRD_FLY) {
+      if (this_turn_order.iteration == 0) {
+         sp_bird = bird_anim_take_off.getSprite( (int)(progress * 1000) );
+         if (progress > 0.5)
+            scale = 0.6 + ((progress - 0.5) * 0.4);
+      } else if (this_turn_order.iteration == this_turn_order.count - 1) {
+         sp_bird = bird_anim_land.getSprite( (int)(progress * 1000) );
+         if (progress < 0.5)
+            scale = 0.6 + ((0.5 - progress) * 0.4);
+      } else {
+         sp_bird = bird_anim_fly.getSprite( (int)(progress * 1000) );
+         if (progress < 0.25)
+            scale = 0.7 + ((0.25 - progress) * 0.4);
+         else if (progress < 0.5)
+            scale = 0.7 + ((progress - 0.25) * 0.4);
+         else if (progress < 0.75)
+            scale = 0.7 + ((0.75 - progress) * 0.4);
+         else
+            scale = 0.7 + ((progress - 0.75) * 0.4);
+      }
    } else {
       if (anim_data >= 6) sp_bird = bird_anim_idle3.getSprite( (int)(progress * 1000) );
       else if (anim_data == 3) sp_bird = bird_anim_idle2.getSprite( (int)(progress * 1000) );
@@ -2846,7 +2922,7 @@ int Bird::draw()
    sp_bird->setPosition( x_real, y_real );
    Vector2u dim (bird_anim_idle1.image_size_x, bird_anim_idle1.image_size_y);
    sp_bird->setOrigin( dim.x / 2.0, dim.y / 2.0 );
-   sp_bird->setScale( 0.6 / dim.x, 0.6 / dim.y );
+   sp_bird->setScale( scale / dim.x, scale / dim.y );
 
    if (anim_data % 2 == 1)
       sp_bird->scale( 1, -1 );

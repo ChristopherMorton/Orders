@@ -802,13 +802,13 @@ Unit* getEnemyBox( int x, int y, int min_x, int max_x, int min_y, int max_y, flo
    for (int j = min_y; j <= max_y; ++j) {
       for (int i = min_x; i <= max_x; ++i) {
          Unit *u = GRID_AT(unit_grid,i,j);
-         if (u && (u->alive == 1) &&
+         if (u && (u->alive == 1) && (u->invis == false || u->team == team) &&
                ((ally == false && (u->team != team)) || (ally == true && (u->team == team)))) {
             // Can I see it?
             if ((team == -1) || (GRID_AT(ai_vision_grid,i,j) == VIS_VISIBLE)) {
                float u_x = u->x_grid - x, u_y = u->y_grid - y;
                float u_squared = (u_x * u_x) + (u_y * u_y);
-               // Is it really in range?
+               // Is it really in range? And not invisible?
                if (u_squared <= range_squared) {
                   // Compare based on selector
                   if (result != enemySelector( selector, result, u, result_r_squared, u_squared )) {
@@ -1162,7 +1162,7 @@ int completeSummon( Order o )
    if (NULL != u)
    {
       addUnit( u );
-      addEffect( SE_SUMMON_CLOUD, 0.5, x + 0.5, y + 0.5, 0, 2.2 );
+      addEffect( SE_SUMMON_CLOUD, 0.8, x + 0.5, y + 0.5, 0, 0.6 );
    }
 
    return 0;
@@ -1550,7 +1550,6 @@ void initTextures()
    terrain_sprites[TER_EDGE_CLIFF_CORNER_NE_270]->setRotation( 270 );
    terrain_sprites[TER_EDGE_CLIFF_CORNER_NE_270]->setOrigin( dim.x, 0 );
 
-
    // Path
    dim = t_manager.getTexture( "DirtPathEW.png" )->getSize();
    terrain_sprites[TER_PATH_EW] = new Sprite( *(t_manager.getTexture( "DirtPathEW.png" )));
@@ -1589,7 +1588,6 @@ void initTextures()
    normalizeTo1x1( terrain_sprites[TER_PATH_SW] );
    terrain_sprites[TER_PATH_SW]->setRotation( 270 );
    terrain_sprites[TER_PATH_SW]->setOrigin( dim.x, 0 );
-
 
    // Atelier
 
@@ -1637,6 +1635,44 @@ void initTextures()
    for (i = 0; i < NUM_TERRAIN_MODS; ++i)
       terrain_mod_sprites[i] = NULL;
 
+   // Path
+   dim = t_manager.getTexture( "TrailEW.png" )->getSize();
+   terrain_mod_sprites[TM_TRAIL_EW] = new Sprite( *(t_manager.getTexture( "TrailEW.png" )));
+   normalizeTo1x1( terrain_mod_sprites[TM_TRAIL_EW] );
+   terrain_mod_sprites[TM_TRAIL_NS] = new Sprite( *(t_manager.getTexture( "TrailEW.png" )));
+   normalizeTo1x1( terrain_mod_sprites[TM_TRAIL_NS] );
+   terrain_mod_sprites[TM_TRAIL_NS]->setRotation( 90 );
+   terrain_mod_sprites[TM_TRAIL_NS]->setOrigin( 0, dim.y );
+
+   terrain_mod_sprites[TM_TRAIL_W_END] = new Sprite( *(t_manager.getTexture( "TrailEndW.png" )));
+   normalizeTo1x1( terrain_mod_sprites[TM_TRAIL_W_END] );
+   terrain_mod_sprites[TM_TRAIL_N_END] = new Sprite( *(t_manager.getTexture( "TrailEndW.png" )));
+   normalizeTo1x1( terrain_mod_sprites[TM_TRAIL_N_END] );
+   terrain_mod_sprites[TM_TRAIL_N_END]->setRotation( 90 );
+   terrain_mod_sprites[TM_TRAIL_N_END]->setOrigin( 0, dim.y );
+   terrain_mod_sprites[TM_TRAIL_E_END] = new Sprite( *(t_manager.getTexture( "TrailEndW.png" )));
+   normalizeTo1x1( terrain_mod_sprites[TM_TRAIL_E_END] );
+   terrain_mod_sprites[TM_TRAIL_E_END]->setRotation( 180 ); 
+   terrain_mod_sprites[TM_TRAIL_E_END]->setOrigin( dim.x, dim.y );
+   terrain_mod_sprites[TM_TRAIL_S_END] = new Sprite( *(t_manager.getTexture( "TrailEndW.png" )));
+   normalizeTo1x1( terrain_mod_sprites[TM_TRAIL_S_END] );
+   terrain_mod_sprites[TM_TRAIL_S_END]->setRotation( 270 );
+   terrain_mod_sprites[TM_TRAIL_S_END]->setOrigin( dim.x, 0 );
+
+   terrain_mod_sprites[TM_TRAIL_NW] = new Sprite( *(t_manager.getTexture( "TrailNW.png" )));
+   normalizeTo1x1( terrain_mod_sprites[TM_TRAIL_NW] );
+   terrain_mod_sprites[TM_TRAIL_NE] = new Sprite( *(t_manager.getTexture( "TrailNW.png" )));
+   normalizeTo1x1( terrain_mod_sprites[TM_TRAIL_NE] );
+   terrain_mod_sprites[TM_TRAIL_NE]->setRotation( 90 );
+   terrain_mod_sprites[TM_TRAIL_NE]->setOrigin( 0, dim.y );
+   terrain_mod_sprites[TM_TRAIL_SE] = new Sprite( *(t_manager.getTexture( "TrailNW.png" )));
+   normalizeTo1x1( terrain_mod_sprites[TM_TRAIL_SE] );
+   terrain_mod_sprites[TM_TRAIL_SE]->setRotation( 180 ); 
+   terrain_mod_sprites[TM_TRAIL_SE]->setOrigin( dim.x, dim.y );
+   terrain_mod_sprites[TM_TRAIL_SW] = new Sprite( *(t_manager.getTexture( "TrailNW.png" )));
+   normalizeTo1x1( terrain_mod_sprites[TM_TRAIL_SW] );
+   terrain_mod_sprites[TM_TRAIL_SW]->setRotation( 270 );
+   terrain_mod_sprites[TM_TRAIL_SW]->setOrigin( dim.x, 0 );
 
    // Base Terrain
    base_grass_sprite = new Sprite( *(t_manager.getTexture( "GreenGrass.png" )));
@@ -2933,26 +2969,6 @@ void fitGui_Level()
    b_con_enemy_in_range_pos = Vector2f( sec_start_conditionals + spacer,
                                       height - ((spacer * 1) + (button_size * 1)));
    b_con_enemy_in_range->setPosition( b_con_enemy_in_range_pos.x, b_con_enemy_in_range_pos.y );
-
-   /*
-   b_con_ally_adjacent->setSize( button_size, button_size );
-   b_con_ally_adjacent->setImageSize( button_size, button_size );
-   b_con_ally_adjacent_pos = Vector2f( sec_start_conditionals + (spacer * 2) + button_size,
-                                      height - ((spacer * 3) + (button_size * 3)));
-   b_con_ally_adjacent->setPosition( b_con_ally_adjacent_pos.x, b_con_ally_adjacent_pos.y );
-
-   b_con_ally_ahead->setSize( button_size, button_size );
-   b_con_ally_ahead->setImageSize( button_size, button_size );
-   b_con_ally_ahead_pos = Vector2f( sec_start_conditionals + (spacer * 2) + button_size,
-                                      height - ((spacer * 2) + (button_size * 2)));
-   b_con_ally_ahead->setPosition( b_con_ally_ahead_pos.x, b_con_ally_ahead_pos.y );
-
-   b_con_ally_in_range->setSize( button_size, button_size );
-   b_con_ally_in_range->setImageSize( button_size, button_size );
-   b_con_ally_in_range_pos = Vector2f( sec_start_conditionals + (spacer * 2) + button_size,
-                                      height - ((spacer * 1) + (button_size * 1)));
-   b_con_ally_in_range->setPosition( b_con_ally_in_range_pos.x, b_con_ally_in_range_pos.y );
-                                      */
 
    b_con_blocked_ahead->setSize( button_size, button_size );
    b_con_blocked_ahead->setImageSize( button_size, button_size );
@@ -5603,8 +5619,9 @@ void drawUnits()
    for (list<Unit*>::iterator it=unit_list.begin(); it != unit_list.end(); ++it)
    {
       Unit* unit = (*it);
-      if (unit && 
-            (!vision_enabled || GRID_AT(vision_grid,unit->x_grid,unit->y_grid) == VIS_VISIBLE)) {
+      if (unit && (!vision_enabled || // Don't draw units I can't see
+                     (!(unit->invis && unit->team != 0) && 
+                     GRID_AT(vision_grid,unit->x_grid,unit->y_grid) == VIS_VISIBLE))) {
          unit->draw();
       }
    }

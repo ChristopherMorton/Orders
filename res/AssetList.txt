@@ -15,6 +15,12 @@ IMAGE CliffCorner270.png
 IMAGE EdgeCliffStraight.png
 IMAGE EdgeCliffCorner90.png
 IMAGE EdgeCliffCorner270.png
+IMAGE DirtPathEW.png
+IMAGE DirtPathNW.png
+IMAGE DirtPathEndW.png
+IMAGE TrailEW.png
+IMAGE TrailNW.png
+IMAGE TrailEndW.png
 IMAGE AtelierCenter.png
 IMAGE AtelierEdge.png
 IMAGE AtelierCorner.png

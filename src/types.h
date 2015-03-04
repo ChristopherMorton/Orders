@@ -246,6 +246,7 @@ typedef unsigned char Terrain;
 // Terrain Mod ---
 
 typedef enum {
+   TM_NONE,
    TM_TRAIL_W_END,
    TM_TRAIL_S_END,
    TM_TRAIL_E_END,
@@ -256,7 +257,6 @@ typedef enum {
    TM_TRAIL_SE,
    TM_TRAIL_SW,
    TM_TRAIL_NW,
-   TM_NONE,
    NUM_TERRAIN_MODS
 } TerrainMod;
 

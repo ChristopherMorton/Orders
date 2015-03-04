@@ -24,4 +24,4 @@ KB 22 35
 KB 23 56
 KB 24 55
 KB 41 0
-OPTION DisplayDamage 0
+OPTION DisplayDamage 1

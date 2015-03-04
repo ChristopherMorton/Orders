@@ -582,6 +582,7 @@ void fitGui_InputOptions()
 
    b_io_bind_key->setSize( (io_x_3 - io_x_2) - io_spacer, (io_button_size * 2) - (io_spacer * 2) );
    b_io_bind_key->setPosition( io_x_2, io_y_1 + io_spacer );
+   b_io_bind_key->setTextSize( optionsMenuFontSize );
    b_io_bind_key->centerText();
 
    b_io_clear_bind->setSize( (io_x_3 - io_x_2) - io_spacer, (io_button_size * 2) - (io_spacer * 2) );
