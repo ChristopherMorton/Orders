@@ -1566,7 +1566,7 @@ int Monster::takeDamage( float damage, DamageType type )
 
 int Monster::addOrder( Order o )
 {
-   if ((o.action <= SKIP) || (o.action >= MONSTER_GUARD && o.action <= MONSTER_BURST)) {
+   if ((o.action <= WAIT) || (o.action >= MONSTER_GUARD && o.action <= MONSTER_BURST)) {
       if (order_count >= max_orders) // No more memory
          return -2;
 
@@ -1623,7 +1623,7 @@ int Monster::prepareTurn()
       bool decision = evaluateConditional(this_turn_order.condition);
       // MONSTER UNIQUE CODE
       int r = 1;
-      if (this_turn_order.action <= SKIP)
+      if (this_turn_order.action <= WAIT)
          r = prepareBasicOrder(order_queue[current_order], decision);
       else if (this_turn_order.action == MONSTER_BURST) {
          if (decision)
@@ -1955,7 +1955,7 @@ Soldier::~Soldier()
 
 int Soldier::addOrder( Order o )
 {
-   if ((o.action <= SKIP) || (o.action >= SOLDIER_SWITCH_AXE && o.action <= SOLDIER_SWITCH_BOW)) {
+   if ((o.action <= WAIT) || (o.action >= SOLDIER_SWITCH_AXE && o.action <= SOLDIER_SWITCH_BOW)) {
       if (order_count >= max_orders) // No more memory
          return -2;
 
@@ -2101,7 +2101,7 @@ int Soldier::prepareTurn()
       bool decision = evaluateConditional(this_turn_order.condition);
       // SOLDIER UNIQUE CODE
       int r = 1;
-      if (this_turn_order.action <= SKIP)
+      if (this_turn_order.action <= WAIT)
          r = prepareBasicOrder(order_queue[current_order], decision);
       else if (decision == false) {
          r = 0;
@@ -2250,6 +2250,7 @@ string Soldier::descriptor()
 Animation worm_anim_idle;
 Animation worm_anim_idle_invis;
 Animation worm_anim_move;
+Animation worm_anim_move_trail;
 Animation worm_anim_attack_start;
 Animation worm_anim_attack_end;
 Animation worm_anim_death;
@@ -2264,6 +2265,9 @@ void initWormAnimations()
 
    t = SFML_TextureManager::getSingleton().getTexture( "WormAnimMove.png" );
    worm_anim_move.load( t, 128, 128, 11, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "WormAnimMoveTrail.png" );
+   worm_anim_move_trail.load( t, 128, 128, 12, 333 );
 
    t = SFML_TextureManager::getSingleton().getTexture( "WormAnimAttackStart.png" );
    worm_anim_attack_start.load( t, 128, 128, 8, 1000 );
@@ -2365,14 +2369,16 @@ int Worm::prepareTurn()
       bool decision = evaluateConditional(this_turn_order.condition);
       // WORM UNIQUE CODE
       int r = 1;
-      if (this_turn_order.action <= SKIP)
+      log("Worm unique code - prepareTurn");
+      if (this_turn_order.action <= WAIT)
          r = prepareBasicOrder(order_queue[current_order], decision);
       else if (decision == false)
          r = 0;
       else if (this_turn_order.action == WORM_TRAIL_START) {
          r = 0;
          trail = true;
-      } else if (this_turn_order.action == WORM_TRAIL_START) {
+         log( "Trail on" );
+      } else if (this_turn_order.action == WORM_TRAIL_END) {
          r = 0;
          trail = false;
       }
@@ -2404,15 +2410,67 @@ int Worm::startTurn()
    return 0;
 }
 
+TerrainMod combineIntoTrail( Direction d, TerrainMod original )
+{
+   if (original == TM_NONE) {
+      if (d == NORTH) return TM_TRAIL_S_END;
+      else if (d == SOUTH) return TM_TRAIL_N_END;
+      else if (d == EAST) return TM_TRAIL_W_END;
+      else if (d == WEST) return TM_TRAIL_E_END;
+   }
+
+   if ((d == NORTH && original == TM_TRAIL_S_END)
+         || (d == SOUTH && original == TM_TRAIL_N_END)
+         || (d == EAST && original == TM_TRAIL_W_END)
+         || (d == WEST && original == TM_TRAIL_E_END)) 
+      return original; //overwrite self
+
+   if (original >= TM_TRAIL_W_END && original <= TM_TRAIL_N_END) {
+      // S_END
+      if (original == TM_TRAIL_S_END && d == SOUTH) return TM_TRAIL_NS;
+      if (original == TM_TRAIL_S_END && d == EAST) return TM_TRAIL_NE;
+      if (original == TM_TRAIL_S_END && d == WEST) return TM_TRAIL_NW;
+      // N_END
+      if (original == TM_TRAIL_N_END && d == NORTH) return TM_TRAIL_NS;
+      if (original == TM_TRAIL_N_END && d == EAST) return TM_TRAIL_SE;
+      if (original == TM_TRAIL_N_END && d == WEST) return TM_TRAIL_SW;
+      // W_END
+      if (original == TM_TRAIL_W_END && d == NORTH) return TM_TRAIL_NE;
+      if (original == TM_TRAIL_W_END && d == SOUTH) return TM_TRAIL_SE;
+      if (original == TM_TRAIL_W_END && d == WEST) return TM_TRAIL_EW;
+      // E_END
+      if (original == TM_TRAIL_E_END && d == NORTH) return TM_TRAIL_NW;
+      if (original == TM_TRAIL_E_END && d == SOUTH) return TM_TRAIL_SW;
+      if (original == TM_TRAIL_E_END && d == EAST) return TM_TRAIL_EW;
+   }
+   
+   return TM_NONE;
+}
+
 int Worm::completeTurn()
 {
    if (alive != 1) return 0;
 
    if (active == 1 && current_order != final_order) {
-      int r = completeBasicOrder(this_turn_order);
+      // Worm stuff
       if (this_turn_order.action == WORM_HIDE)
          invis = true;
       testInvis();
+      // Trail section -- 
+      if (trail && (this_turn_order.action == MOVE_FORWARD || this_turn_order.action == FOLLOW_PATH)) {
+         Direction d = facing;
+         TerrainMod tm_from = GRID_AT(terrain_mod_grid,x_grid,y_grid);
+         TerrainMod tm_to = GRID_AT(terrain_mod_grid,x_next,y_next);
+         // From
+         GRID_AT(terrain_mod_grid,x_grid,y_grid) = combineIntoTrail( d, tm_from );
+         TerrainMod result = combineIntoTrail( reverseDirection( d ), tm_to );
+         GRID_AT(terrain_mod_grid,x_next,y_next) = result;
+
+         if (result >= TM_TRAIL_EW && result < NUM_TERRAIN_MODS)
+            trail = false; // Turn off when loop is completed, so you don't overwrite + destroy it
+      }
+      // end --
+      int r = completeBasicOrder(this_turn_order);
       Order &o = order_queue[current_order];
       o.iteration++;
       if (o.iteration >= o.count && o.count != -1) { 
@@ -2460,7 +2518,7 @@ int Worm::takeDamage( float damage, DamageType type )
 
 int Worm::addOrder( Order o )
 {
-   if ((o.action <= SKIP) || (o.action >= WORM_HIDE && o.action <= WORM_TRAIL_END)) {
+   if ((o.action <= WAIT) || (o.action >= WORM_HIDE && o.action <= WORM_TRAIL_END)) {
       if (order_count >= max_orders) // No more memory
          return -2;
 
@@ -2513,10 +2571,13 @@ int Worm::draw()
          alpha = 255 - ((DEATH_FADE_TIME + alive) * 256 / DEATH_FADE_TIME);
       sp_worm->setColor( Color( 255, 255, 255, alpha ) );
    } else if (this_turn_order.action == MOVE_FORWARD || this_turn_order.action == FOLLOW_PATH) {
-      sp_worm = worm_anim_move.getSprite( (int)(progress * 1000) );
+      if (trail) {
+         sp_worm = worm_anim_move_trail.getSprite( (int)(progress * 1000) );
+      } else
+         sp_worm = worm_anim_move.getSprite( (int)(progress * 1000) );
    } else if (this_turn_order.action == MOVE_BACK) {
       // TODO: Worm should have different retreat animation
-      sp_worm = worm_anim_move.getSprite( 999 - (int)(progress * 1000) );
+      sp_worm = worm_anim_move_trail.getSprite( 999 - (int)(progress * 1000) );
    } else if (this_turn_order.action >= ATTACK_CLOSEST && this_turn_order.action <= ATTACK_LEAST_ARMORED) {
       if (done_attack) {
          int d_anim = (int)( ((progress - speed) / (1-speed)) * 1000);
@@ -2693,7 +2754,7 @@ Bird::~Bird()
 
 int Bird::addOrder( Order o )
 {
-   if ((o.action <= SKIP) || (o.action >= BIRD_CMD_SHOUT && o.action <= BIRD_FLY)) {
+   if ((o.action <= WAIT) || (o.action >= BIRD_CMD_SHOUT && o.action <= BIRD_FLY)) {
       if (order_count >= max_orders) // No more memory
          return -2;
 
@@ -3101,7 +3162,7 @@ int Bug::setStarCount( int count )
 
 int Bug::addOrder( Order o )
 {
-   if ((o.action <= SKIP) || (o.action >= BUG_CAST_FIREBALL && o.action <= BUG_MEDITATE)) {
+   if ((o.action <= WAIT) || (o.action >= BUG_CAST_FIREBALL && o.action <= BUG_MEDITATE)) {
       if (order_count >= max_orders) // No more memory
          return -2;
 
