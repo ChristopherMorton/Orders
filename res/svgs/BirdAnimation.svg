@@ -193,9 +193,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.35355339"
-     inkscape:cx="671.59801"
-     inkscape:cy="703.42437"
+     inkscape:zoom="1.0488169"
+     inkscape:cx="672.7215"
+     inkscape:cy="33.634082"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
@@ -206,7 +206,8 @@
      inkscape:window-maximized="1"
      showguides="true"
      inkscape:guide-bbox="true"
-     inkscape:snap-grids="false">
+     inkscape:snap-grids="true"
+     inkscape:snap-global="false">
     <inkscape:grid
        type="xygrid"
        id="grid17067"
@@ -12490,5 +12491,22 @@
        id="path6409"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="czczc" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:Sans;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="264"
+       y="992.36218"
+       id="text6411"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan6413"
+         x="264"
+         y="992.36218">Whirlwind:</tspan></text>
+    <path
+       id="path6421"
+       style="fill:#99eeff;fill-opacity:1;fill-rule:nonzero;stroke:#0f7fff;stroke-width:5;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 547.07737,995.51467 c 1.60494,7.10833 -3.62756,12.48473 -10.03583,12.60973 -10.80664,0.2107 -18.15465,-10.37803 -17.49925,-20.47466 0.93718,-14.43755 15.16137,-23.91297 28.91339,-22.38881 18.06124,2.00177 29.70868,19.9553 27.27837,37.35217 -3.02936,21.685 -24.754,35.5238 -45.79095,32.1679 -25.30969,-4.0375 -41.34409,-29.5543 -37.05749,-54.22969 1.9906,-11.45867 13.63224,-33.71278 33.24446,-26.29778 m 7.76656,35.9508 c -1.60495,-7.10833 3.62756,-12.48469 10.03583,-12.60969 10.80664,-0.21079 18.15465,10.37798 17.49925,20.47461 -0.93718,14.43755 -15.16137,23.91295 -28.91339,22.38885 -18.06124,-2.0018 -29.70869,-19.9553 -27.27837,-37.3522 3.02935,-21.68496 24.75399,-35.52383 45.79094,-32.16794 25.3097,4.03748 41.35034,29.55538 37.05751,54.22974 -2.09001,12.0129 -15.08848,33.955 -31.41399,25.7031"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cssssssccssssssc" />
   </g>
 </svg>

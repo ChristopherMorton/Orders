@@ -105,8 +105,8 @@ void initProjectiles()
       normalizeTo1x1( sp_magic_projectile );
    }
 
-   t = SFML_TextureManager::getSingleton().getTexture( "ProjAnimWindSlash.png" );
-   anim_wind_slash.load( t, 100, 100, 1, 500 );
+   t = SFML_TextureManager::getSingleton().getTexture( "BirdWhirlwind.png" );
+   anim_wind_slash.load( t, 128, 128, 1, 500 );
 
    init_projectiles = true;
 }
@@ -124,8 +124,9 @@ int Projectile::draw( )
    else if (type == PR_HOMING_ORB) sp_pr = sp_magic_projectile;
    else if (type == PR_WIND_SLASH) {
       sp_pr = anim_wind_slash.getSprite( 0 );
-      sp_pr->setOrigin( 50, 50 );
-      sp_pr->setScale( 0.01, 0.01 );
+      sp_pr->setOrigin( 64, 64 );
+      sp_pr->setScale( 0.003, 0.003 );
+      rotation = range * 720.0;
    }
 
    if (NULL == sp_pr) return -2;
