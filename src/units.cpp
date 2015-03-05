@@ -1239,6 +1239,8 @@ int Player::init( int x, int y, Direction face )
 {
    alive = 1;
 
+   bird_shout_level = 0;
+
    aff_poison = 0;
    aff_confusion = 0;
     
@@ -1316,11 +1318,18 @@ int Player::prepareTurn()
    if (o.action == PL_DELAY)
       return 0;
 
-   if (o.action < PL_ALERT_ALL)
+   if (o.action < PL_ALERT_ALL || bird_shout_level > 0)
       broadcastOrder( o );
    else {
       if (startPlayerCommand( o ) == -2)
          order_queue[current_order].action = FAILED_SUMMON;
+   }
+
+   if (o.action == BIRD_CMD_SHOUT)
+      bird_shout_level++;
+   if (o.action == BIRD_CMD_QUIET) {
+      bird_shout_level--;
+      if (bird_shout_level < 0) bird_shout_level = 0;
    }
 
    progress = 0;
@@ -1346,7 +1355,7 @@ int Player::completeTurn()
             return 0;
       }
 
-      if (o.action >= PL_ALERT_ALL)
+      if (o.action >= PL_ALERT_ALL && bird_shout_level == 0)
          completePlayerCommand(o);
 
       do {
@@ -2659,6 +2668,7 @@ Animation bird_anim_death;
 Animation bird_anim_take_off;
 Animation bird_anim_land;
 Animation bird_anim_fly;
+Animation bird_anim_shout;
 
 void initBirdAnimations()
 {
@@ -2688,6 +2698,9 @@ void initBirdAnimations()
 
    t = SFML_TextureManager::getSingleton().getTexture( "BirdAnimDeath.png" );
    bird_anim_death.load( t, 128, 128, 8, DEATH_TIME );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "BirdAnimShout1.png" );
+   bird_anim_shout.load( t, 128, 128, 13, 1000 );
 }
 
 // *tors
@@ -2742,6 +2755,8 @@ Bird::Bird( int x, int y, Direction face )
 
    for (int i = 0; i < 12; ++i)
       dmg_display[i] = NULL;
+
+   shout_nesting = 0;
 }
 
 Bird::~Bird()
@@ -2754,7 +2769,7 @@ Bird::~Bird()
 
 int Bird::addOrder( Order o )
 {
-   if ((o.action <= WAIT) || (o.action >= BIRD_CMD_SHOUT && o.action <= BIRD_FLY)) {
+   //if ((o.action <= WAIT) || (o.action >= BIRD_CMD_SHOUT && o.action <= BIRD_FLY)) {
       if (order_count >= max_orders) // No more memory
          return -2;
 
@@ -2763,7 +2778,7 @@ int Bird::addOrder( Order o )
       final_order = order_count;
 
       return 0;
-   } else return -1;
+   //} else return -1;
 }
 
 int Bird::doAttack( Order o )
@@ -2806,6 +2821,77 @@ int Bird::doAttack( Order o )
    return 0;
 }
 
+int Bird::prepareTurn()
+{
+   if (alive != 1) return 0;
+
+   if (active == 2) active = 1; // Start an active turn
+
+   this_turn_order = Order( WAIT );
+
+   if (aff_poison) {
+      aff_poison--;
+      takeDamage( MONSTER_CLAW_DAMAGE, DMG_POISON );
+   }
+   if (aff_confusion) {
+      aff_confusion--;
+      if (aff_confusion %= 2)
+         return 0;
+   }
+
+   set<int> visited_orders;
+   while (active == 1 && current_order != final_order 
+         && visited_orders.find( current_order ) == visited_orders.end()) {
+      this_turn_order = order_queue[current_order];
+      visited_orders.insert( current_order );
+      bool decision = evaluateConditional(this_turn_order.condition);
+      int r = 1;
+      // BIRD UNIQUE CODE
+      if (shout_nesting > 0 && this_turn_order.action != BIRD_CMD_QUIET) {
+         if (this_turn_order.action < PL_ALERT_ALL || shout_nesting > 1)
+            broadcastOrder( this_turn_order, shout_listeners );
+         else
+            startPlayerCommandRange( this_turn_order, x_grid, y_grid, vision_range, shout_listeners );
+
+         return 1;
+      }
+
+      if (this_turn_order.action <= WAIT)
+         r = prepareBasicOrder(order_queue[current_order], decision);
+      else if (this_turn_order.action == BIRD_CMD_SHOUT) {
+         if (decision) {
+            shout_nesting++;
+            r = 0;
+         }
+      } else if (this_turn_order.action == BIRD_CMD_QUIET) {
+         if (decision) {
+            shout_nesting--;
+            if (shout_nesting < 0) shout_nesting = 0;
+            r = 0;
+         }
+      }
+      // END
+      // if prepareBasicOrder returns 0, it's a 0-length instruction (e.g. turn)
+      if (r == 0) {
+         current_order++;
+         continue;
+      }
+      else 
+         break;
+   }
+
+   if (current_order == final_order) {
+      this_turn_order = Order( WAIT );
+      if (flying) {
+         this_turn_order = Order( BIRD_FLY, 2 );
+         this_turn_order.iteration = 1;
+      }
+   }
+
+   progress = 0;
+   return 0;
+}
+
 int Bird::startTurn()
 {
    if (alive != 1) return 0;
@@ -2830,19 +2916,37 @@ int Bird::completeTurn()
 {
    if (alive != 1) return 0;
 
-   if (active == 1 && current_order != final_order) {
-      int r = completeBasicOrder(this_turn_order);
-      if (this_turn_order.action == BIRD_FLY
-            && this_turn_order.iteration != this_turn_order.count - 1)
-         flying = true;
-      else flying = false;
-      Order &o = order_queue[current_order];
-      o.iteration++;
-      if (o.iteration >= o.count && o.count != -1) { 
+   if (active == 1 && current_order != final_order) { 
+      Order &o = order_queue[current_order]; 
+
+      if (shout_nesting == 0) {
+         int r = completeBasicOrder(this_turn_order);
+         if (this_turn_order.action == BIRD_FLY
+               && this_turn_order.iteration != this_turn_order.count - 1)
+            flying = true;
+         else flying = false;
+         o.iteration++;
+         if (o.iteration >= o.count && o.count != -1) { 
+            current_order++;
+            o.iteration = 0;
+         }
+         return r;
+      }
+      if (shout_nesting == 1 && o.action == PL_DELAY) {
+         o.iteration++;
+         if (o.iteration < o.count || o.count == -1)
+            return 0;
+
          current_order++;
          o.iteration = 0;
+         return 0;
       }
-      return r;
+      if (shout_nesting > 0) {
+         if (o.action >= PL_ALERT_ALL)
+            completePlayerCommandRange( o, x_grid, y_grid, vision_range, shout_listeners );
+         current_order++;
+         return 0;
+      }
    }
 
    return 0;
@@ -2862,6 +2966,8 @@ int Bird::update( float dtf )
    if (active == 1 && current_order != final_order) {
       Order &o = this_turn_order;
       // Bird Specific
+      if (shout_nesting > 0) return 0;
+
       if (o.action == MOVE_FORWARD || o.action == MOVE_BACK || this_turn_order.action == FOLLOW_PATH) {
          float d_real = 0.0, d_offset = 0.0;
          if (progress < .1) return 0;
@@ -2938,6 +3044,8 @@ int Bird::draw()
       if (alive > -DEATH_FADE_TIME)
          alpha = 255 - ((DEATH_FADE_TIME + alive) * 256 / DEATH_FADE_TIME);
       sp_bird->setColor( Color( 255, 255, 255, alpha ) );
+   } else if (shout_nesting > 0) {
+      sp_bird = bird_anim_shout.getSprite( (int)(progress * 1000) );
    } else if (this_turn_order.action == MOVE_FORWARD || this_turn_order.action == FOLLOW_PATH) {
       sp_bird = bird_anim_move.getSprite( (int)(progress * 1000) );
    } else if (this_turn_order.action == MOVE_BACK) {

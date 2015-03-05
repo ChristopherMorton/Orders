@@ -7,6 +7,7 @@
 
 #include <string>
 #include <deque>
+#include <list>
 
 #include <SFML/System/Vector2.hpp>
 
@@ -187,6 +188,7 @@ private:
    Player();
    int init( int grid_x, int grid_y, Direction facing );
 
+   int bird_shout_level;
 public:
    static Player* initPlayer( int grid_x, int grid_y, Direction facing );
 
@@ -318,6 +320,9 @@ private:
    Bird(); // Disallowed 
 
 public:
+   int shout_nesting;
+   std::list<Unit*> shout_listeners;
+
    Bird( int grid_x, int grid_y, Direction face );
 
    virtual int addOrder( Order o );
@@ -326,6 +331,7 @@ public:
 
    virtual std::string descriptor();
 
+   virtual int prepareTurn();
    virtual int startTurn();
    virtual int completeTurn();
    virtual int update( float dtf );

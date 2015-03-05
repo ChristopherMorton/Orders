@@ -5,8 +5,16 @@
 #include "units.h"
 #include "effects.h"
 
+#include <list>
+
 namespace sum
-{
+{ 
+   extern int level_dim_x, level_dim_y;
+   extern Unit **unit_grid;
+   extern Terrain *terrain_grid;
+   extern TerrainMod *terrain_mod_grid;
+   extern std::list<Unit*> listening_units;
+
    void setLevelListener( bool set = true );
    void setLevelEditorListener( bool set = true );
 
@@ -38,9 +46,13 @@ namespace sum
    int addEffect( Effect_Type t, float dur, float x, float y, float rot, float fade = 0.0 );
    int addEffectManual( Effect *e );
 
-   int broadcastOrder( Order o );
+   int broadcastOrder( Order o, std::list<Unit*> &listeners = listening_units );
    int startPlayerCommand( Order o );
    int completePlayerCommand( Order o );
+
+   // for birds
+   int startPlayerCommandRange( Order o, int x_middle, int y_middle, float range, std::list<Unit*> &listener_list );
+   int completePlayerCommandRange( Order o, int x_middle, int y_middle, float range, std::list<Unit*> &listener_list );
 
    void fitGui_Level();
    void fitGui_LevelEditor();
@@ -52,11 +64,6 @@ namespace sum
    int initLevelEditorGui();
 
    KeybindTarget drawKeybindButtons();
-
-   extern int level_dim_x, level_dim_y;
-   extern Unit **unit_grid;
-   extern Terrain *terrain_grid;
-   extern TerrainMod *terrain_mod_grid;
 };
 
 #endif

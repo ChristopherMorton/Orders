@@ -1168,9 +1168,9 @@ int completeSummon( Order o )
    return 0;
 }
 
-int alert( Unit *u )
+int alert( Unit *u, list<Unit*> &listeners = listening_units )
 {
-   listening_units.push_back(u);
+   listeners.push_back(u);
 
    u->active = 0;
    u->clearOrders();
@@ -1273,11 +1273,11 @@ int activateUnits( Order o )
    return 0;
 }
 
-int activateAlert( Order o )
+int activateAlert( Order o, list<Unit*> &listeners = listening_units )
 {
    log("Activating alert units");
 
-   for (list<Unit*>::iterator it=listening_units.begin(); it != listening_units.end(); ++it)
+   for (list<Unit*>::iterator it=listeners.begin(); it != listeners.end(); ++it)
    {
       Unit* unit = (*it);
       if (unit) {
@@ -1291,11 +1291,11 @@ int activateAlert( Order o )
    return 0;
 }
 
-int setUnitsGroup( Order o )
+int setUnitsGroup( Order o, list<Unit*> &listeners = listening_units )
 {
    log("Setting alert units' group");
 
-   for (list<Unit*>::iterator it=listening_units.begin(); it != listening_units.end(); ++it)
+   for (list<Unit*>::iterator it=listeners.begin(); it != listeners.end(); ++it)
    {
       Unit* unit = (*it);
       if (unit) {
@@ -1306,13 +1306,13 @@ int setUnitsGroup( Order o )
    return 0;
 }
 
-int broadcastOrder( Order o )
+int broadcastOrder( Order o, list<Unit*> &listeners )
 {
    log("Broadcasting order");
    if (NULL == player)
       return -1;
 
-   for (list<Unit*>::iterator it=listening_units.begin(); it != listening_units.end(); ++it)
+   for (list<Unit*>::iterator it=listeners.begin(); it != listeners.end(); ++it)
    {
       Unit* unit = (*it);
       if (unit) {
@@ -1387,6 +1387,165 @@ int completePlayerCommand( Order o )
    }
    return 0;
 }
+
+// Bird ones, based on range
+
+int alertUnitsRange( Order o, int x_middle, int y_middle, float range, list<Unit*> &listener_list )
+{
+   // Un-alert current listeners
+   for (list<Unit*>::iterator it=listener_list.begin(); it != listener_list.end(); ++it)
+   {
+      Unit* unit = (*it);
+      if (unit) {
+         unalert(unit);
+      }
+   }
+   listener_list.clear();
+
+   int x_min = x_middle - (int)range - 1,
+       y_min = y_middle - (int)range - 1,
+       x_max = x_middle + (int)range + 1,
+       y_max = y_middle + (int)range + 1;
+   if (x_min < 0) x_min = 0;
+   if (y_min < 0) y_min = 0;
+   if (x_max >= level_dim_x) x_max = level_dim_x - 1;
+   if (y_max >= level_dim_y) y_max = level_dim_y - 1;
+
+   float r_squared = range * range;
+
+   for (int x = x_min; x <= x_max; ++x) {
+      for (int y = y_min; y <= y_max; ++y) {
+         float u_r_squared = ((x_middle - x) * (x_middle - x)) + ((y_middle - y) * (y_middle - y));
+         if (u_r_squared > r_squared)
+            continue;
+         Unit *u = GRID_AT(unit_grid,x,y);
+         if (u == player) continue;
+
+         if (u && u->team == 0) { // On my team
+
+            if (o.count != 0 && u->group != o.count)
+               continue;
+
+            if (o.action == PL_ALERT_ALL) {
+               alert(u, listener_list);
+            } else if (o.action == PL_ALERT_MONSTERS && u->type == MONSTER_T) {
+               alert(u, listener_list);
+            } else if (o.action == PL_ALERT_SOLDIERS && u->type == SOLDIER_T) {
+               alert(u, listener_list);
+            } else if (o.action == PL_ALERT_WORMS && u->type == WORM_T) {
+               alert(u, listener_list);
+            } else if (o.action == PL_ALERT_BIRDS && u->type == BIRD_T) {
+               alert(u, listener_list);
+            } else if (o.action == PL_ALERT_BUGS && u->type == BUG_T) {
+               alert(u, listener_list);
+            }
+         }
+      }
+   }
+   
+   return 0;
+}
+
+int activateUnitsRange( Order o, int x_middle, int y_middle, float range, list<Unit*> &listener_list )
+{
+   int x_min = x_middle - (int)range - 1,
+       y_min = y_middle - (int)range - 1,
+       x_max = x_middle + (int)range + 1,
+       y_max = y_middle + (int)range + 1;
+   if (x_min < 0) x_min = 0;
+   if (y_min < 0) y_min = 0;
+   if (x_max >= level_dim_x) x_max = level_dim_x - 1;
+   if (y_max >= level_dim_y) y_max = level_dim_y - 1;
+
+   float r_squared = range * range;
+
+   for (int x = x_min; x <= x_max; ++x) {
+      for (int y = y_min; y <= y_max; ++y) {
+         float u_r_squared = ((x_middle - x) * (x_middle - x)) + ((y_middle - y) * (y_middle - y));
+         if (u_r_squared > r_squared)
+            continue;
+         Unit *u = GRID_AT(unit_grid,x,y);
+         if (u == player) continue;
+
+         if (u && u->team == 0) { // On my team
+
+            if (o.count != 0 && u->group != o.count)
+               continue;
+
+            if (o.action == PL_CMD_GO_ALL) {
+               u->activate();
+            } else if (o.action == PL_CMD_GO_MONSTERS && u->type == MONSTER_T) {
+               u->activate();
+            } else if (o.action == PL_CMD_GO_SOLDIERS && u->type == SOLDIER_T) {
+               u->activate();
+            } else if (o.action == PL_CMD_GO_WORMS && u->type == WORM_T) {
+               u->activate();
+            } else if (o.action == PL_CMD_GO_BIRDS && u->type == BIRD_T) {
+               u->activate();
+            } else if (o.action == PL_CMD_GO_BUGS && u->type == BUG_T) {
+               u->activate();
+            } else if (o.action == PL_CMD_GO && u->team == o.count) {
+               u->activate();
+            }
+         }
+      }
+   }
+   
+   return 0;
+}
+
+int startPlayerCommandRange( Order o, int x_middle, int y_middle, float range, list<Unit*> &listener_list )
+{
+   if (NULL == player)
+      return -1;
+
+   // These are the only things a bird can do
+   switch( o.action ) {
+      case PL_ALERT_ALL:
+      case PL_ALERT_MONSTERS:
+      case PL_ALERT_SOLDIERS:
+      case PL_ALERT_WORMS:
+      case PL_ALERT_BIRDS:
+      case PL_ALERT_BUGS:
+         alertUnitsRange( o, x_middle, y_middle, range, listener_list );
+         break;
+      case PL_SET_GROUP:
+         setUnitsGroup( o, listener_list );
+         break;
+      default:
+         break;
+   }
+
+   return 0;
+}
+
+int completePlayerCommandRange( Order o, int x_middle, int y_middle, float range, list<Unit*> &listener_list )
+{
+   switch( o.action ) {
+      case PL_CMD_GO_ALL:
+      case PL_CMD_GO_MONSTERS:
+      case PL_CMD_GO_SOLDIERS:
+      case PL_CMD_GO_WORMS:
+      case PL_CMD_GO_BIRDS:
+      case PL_CMD_GO_BUGS:
+         activateUnitsRange( o, x_middle, y_middle, range, listener_list );
+         break;
+      case PL_CMD_GO:
+         activateAlert( o, listening_units );
+         break;
+      case SUMMON_MONSTER:
+      case SUMMON_SOLDIER:
+      case SUMMON_WORM:
+      case SUMMON_BIRD:
+      case SUMMON_BUG:
+         completeSummon( o );
+         break;
+      default:
+         break;
+   }
+   return 0;
+}
+
 
 //////////////////////////////////////////////////////////////////////
 // Loading ---
