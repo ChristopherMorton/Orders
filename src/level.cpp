@@ -5065,6 +5065,10 @@ int drawSelectedUnit()
             for (int i = 0; i < selected_unit->order_count; ++i) {
                if (i == selected_unit->max_orders) i = 0;
 
+               if (i == selected_unit->current_order) {
+                  drawSquare( draw_x - 1, draw_y - 1 , dx, Color::White );
+               }
+
                Order &o = selected_unit->order_queue[i];
                if ( o.action != SKIP ) {
                   drawOrder( o, draw_x, draw_y, (dx - 2) );

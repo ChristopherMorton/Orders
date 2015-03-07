@@ -1639,6 +1639,9 @@ int Monster::prepareTurn()
             done_attack = 0;
          else
             r = 0;
+      } else if (this_turn_order.action == MONSTER_GUARD) { // take a turn to end it
+         if (!decision && this_turn_order.iteration > 0)
+            this_turn_order.iteration = this_turn_order.count - 1;
       }
       // END
       // if prepareBasicOrder returns 0, it's a 0-length instruction (e.g. turn)
@@ -2869,6 +2872,9 @@ int Bird::prepareTurn()
             if (shout_nesting < 0) shout_nesting = 0;
             r = 0;
          }
+      } else if (this_turn_order.action == BIRD_FLY) {
+         if (!decision && this_turn_order.iteration > 0)
+            this_turn_order.iteration = this_turn_order.count - 1;
       }
       // END
       // if prepareBasicOrder returns 0, it's a 0-length instruction (e.g. turn)
