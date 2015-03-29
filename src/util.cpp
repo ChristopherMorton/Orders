@@ -215,9 +215,9 @@ String keybindTargetToString( sum::KeybindTarget target )
          return String( "Order: Fly" );
       case KB_BTN_BUG_CAST_FIREBALL:
          return String( "Order: Cast Fireball" );
-      case KB_BTN_BUG_CAST_SUNDER:
+      case KB_BTN_BUG_CAST_SHOCK:
          return String( "Order: Cast Sunder" );
-      case KB_BTN_BUG_CAST_HEAL:
+      case KB_BTN_BUG_CAST_DUST:
          return String( "Order: Cast Heal" );
       case KB_BTN_BUG_OPEN_WORMHOLE:
          return String( "Order: Open Wormhole" );

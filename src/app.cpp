@@ -40,6 +40,7 @@ using namespace sf;
 // Data ---
 
 Font *menu_font;
+Font *ingame_font;
 
 MenuState menu_state;
 
@@ -826,7 +827,10 @@ int progressiveInitMenus()
    if (count == 0) { 
       menu_font = new Font();
       if (menu_font->loadFromFile("./res/LiberationSans-Regular.ttf"))
-         log("Successfully loaded font");
+         log("Successfully loaded menu font");
+      ingame_font = new Font();
+      if (ingame_font->loadFromFile("./res/FreeSansBold.ttf"))
+         log("Successfully loaded ingame font");
       count = 1;
    } else if (count == 1) {
       initSplashMenuGui();

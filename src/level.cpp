@@ -30,12 +30,6 @@
 #include <list>
 #include <set>
 
-#define TURN_LENGTH 1000
-
-#define MOUSE_DOWN_SELECT_TIME 150
-
-#define MAX_DIMENSION 253
-
 using namespace sf;
 using namespace std;
 
@@ -51,12 +45,15 @@ float view_rel_x_to_y;
 
 int turn, turn_progress;
 int pause_state = 0;
-#define FULLY_PAUSED 15
 
 //////////////////////////////////////////////////////////////////////
-// Some definitions ---
+// Constants ---
 
 const float c_min_zoom_x = 10;
+const int c_fully_paused = 15;
+const int c_turn_length = 1000;
+const int c_mouse_down_select_time = 150;
+const int c_max_dimension = 253;
 
 //////////////////////////////////////////////////////////////////////
 // Level Data ---
@@ -293,7 +290,7 @@ void removeUnitWinCondition( Unit *u )
 
 void addLocationWinCondition( int x, int y )
 {
-   if (x < 0 || x > MAX_DIMENSION || y < 0 || y > MAX_DIMENSION)
+   if (x < 0 || x > c_max_dimension || y < 0 || y > c_max_dimension)
       win_if_reached = Vector2i( -1, -1 );
    else
       win_if_reached = Vector2i( x, y );
@@ -933,7 +930,7 @@ Unit* unitIncoming( int to_x, int to_y, int from_x, int from_y )
 
 bool canMoveUnit( int x, int y, int from_x, int from_y, Unit *u )
 {
-   // Ignores terrain/buildings - do that stuff first
+   // Ignores terrain/buildings - do that stuff in canMove
    //
    // This only figures out:
    //
@@ -990,7 +987,7 @@ bool canMoveUnit( int x, int y, int from_x, int from_y, Unit *u )
 
    u_next = unitIncoming( x, y, x - 1, y );
    if (u_next && u_next != u) {
-      if (u_next->max_health > u_biggest->max_health) {
+      if (u_biggest == NULL || u_next->max_health > u_biggest->max_health) {
          u_biggest = u_next;
       } else {
          u_next->this_turn_order = Order(BUMP);
@@ -1001,7 +998,7 @@ bool canMoveUnit( int x, int y, int from_x, int from_y, Unit *u )
 
    u_next = unitIncoming( x, y, x + 1, y );
    if (u_next && u_next != u) {
-      if (u_next->max_health > u_biggest->max_health) {
+      if (u_biggest == NULL || u_next->max_health > u_biggest->max_health) {
          u_biggest = u_next;
       } else {
          u_next->this_turn_order = Order(BUMP);
@@ -1012,7 +1009,7 @@ bool canMoveUnit( int x, int y, int from_x, int from_y, Unit *u )
 
    u_next = unitIncoming( x, y, x, y - 1 );
    if (u_next && u_next != u) {
-      if (u_next->max_health > u_biggest->max_health) {
+      if (u_biggest == NULL || u_next->max_health > u_biggest->max_health) {
          u_biggest = u_next;
       } else {
          u_next->this_turn_order = Order(BUMP);
@@ -1023,7 +1020,7 @@ bool canMoveUnit( int x, int y, int from_x, int from_y, Unit *u )
 
    u_next = unitIncoming( x, y, x, y + 1 );
    if (u_next && u_next != u) {
-      if (u_next->max_health > u_biggest->max_health) {
+      if (u_biggest == NULL || u_next->max_health > u_biggest->max_health) {
          u_biggest = u_next;
       } else {
          u_next->this_turn_order = Order(BUMP);
@@ -1032,7 +1029,7 @@ bool canMoveUnit( int x, int y, int from_x, int from_y, Unit *u )
       }
    }
 
-   if (u_biggest != u)
+   if (u_biggest != NULL && u_biggest != u)
       return false;
 
    return true;
@@ -1127,10 +1124,12 @@ int startSummon( Order o )
    int x = o.count,
        y = o.iteration;
 
-   if (GRID_AT(unit_grid, x, y) != NULL) // Summon fails, obvi
-      return -1;
+   if (GRID_AT(unit_grid,x,y) != NULL) // Summon fails, obvi
+      return -2;
    if (!canMove( x, y, x, y ))
-      return -1;
+      return -2;
+   if (!canMoveUnit( x, y, x, y, NULL ))
+      return -2;
 
    summonMarker = SummonMarker::get( x, y );
    GRID_AT(unit_grid, x, y) = summonMarker;
@@ -1878,7 +1877,7 @@ void clearAll()
 
 int initGrids(int x, int y)
 {
-   if (x < 1 || x > MAX_DIMENSION || y < 1 || y > MAX_DIMENSION)
+   if (x < 1 || x > c_max_dimension || y < 1 || y > c_max_dimension)
       return -1;
 
    clearGrids();
@@ -1911,8 +1910,8 @@ int initGrids(int x, int y)
 
 int changeLevelDimensions( int new_x_dim, int new_y_dim )
 {
-   if (new_x_dim < 1 || new_x_dim > MAX_DIMENSION 
-         || new_y_dim < 1 || new_y_dim > MAX_DIMENSION) 
+   if (new_x_dim < 1 || new_x_dim > c_max_dimension 
+         || new_y_dim < 1 || new_y_dim > c_max_dimension) 
       return -2;
 
    // Copy old stuff
@@ -2252,14 +2251,14 @@ void pause()
 
 void unpause()
 {
-   pause_state = FULLY_PAUSED - 1;
+   pause_state = c_fully_paused - 1;
 }
 
 void togglePause()
 {
    if (pause_state == 0)
       pause();
-   else if (pause_state == FULLY_PAUSED)
+   else if (pause_state == c_fully_paused)
       unpause();
 }
 
@@ -2267,7 +2266,7 @@ void drawPause()
 {
    if (pause_state == 0) return;
 
-   int transparency = (128 * abs(pause_state)) / FULLY_PAUSED;
+   int transparency = (128 * abs(pause_state)) / c_fully_paused;
    Color c( 192, 192, 192, transparency );
    RectangleShape r( Vector2f(config::width(), config::height()) );
    r.setFillColor( c );
@@ -2277,18 +2276,18 @@ void drawPause()
 
 int updatePause( int dt )
 {
-   if (pause_state == FULLY_PAUSED)
+   if (pause_state == c_fully_paused)
       return 2;
    else if (pause_state < 0) {
-      float factor = (float)(FULLY_PAUSED + pause_state) / (float)FULLY_PAUSED;
+      float factor = (float)(c_fully_paused + pause_state) / (float)c_fully_paused;
       int d_pause = (dt / 10) + 1;
       dt *= factor;
       pause_state -= d_pause;
-      if (pause_state <= -FULLY_PAUSED)
-         pause_state = FULLY_PAUSED;
+      if (pause_state <= -c_fully_paused)
+         pause_state = c_fully_paused;
    }
    else if (pause_state > 0) {
-      float factor = (float)(FULLY_PAUSED + pause_state) / (float)FULLY_PAUSED;
+      float factor = (float)(c_fully_paused + pause_state) / (float)c_fully_paused;
       int d_pause = (dt / 10) + 1;
       dt *= factor;
       pause_state -= d_pause;
@@ -2335,7 +2334,7 @@ int startTurnAll( )
 
 int updateAll( int dt )
 {
-   float dtf = (float)dt / (float)TURN_LENGTH;
+   float dtf = (float)dt / (float)c_turn_length;
    int result;
 
    if (NULL != player)
@@ -2402,11 +2401,11 @@ int updateLevel( int dt )
    if (victory == true)
       return 3;
 
-   int til_end = TURN_LENGTH - turn_progress;
+   int til_end = c_turn_length - turn_progress;
    turn_progress += dt;
 
-   if (turn_progress > TURN_LENGTH) {
-      turn_progress -= TURN_LENGTH;
+   if (turn_progress > c_turn_length) {
+      turn_progress -= c_turn_length;
 
       updateAll( til_end );
 
@@ -4372,8 +4371,8 @@ void drawGuiButtonKeybinds()
    drawKeybind( KB_BTN_PL_GO_BUGS, b_pl_cmd_go_bug_pos.x, b_pl_cmd_go_bug_pos.y, button_size, txt_size );
    drawKeybind( KB_BTN_BUG_MEDITATE, b_o_bug_meditate_pos.x, b_o_bug_meditate_pos.y, button_size, txt_size );
    drawKeybind( KB_BTN_BUG_CAST_FIREBALL, b_o_bug_fireball_pos.x, b_o_bug_fireball_pos.y, button_size, txt_size );
-   drawKeybind( KB_BTN_BUG_CAST_SUNDER, b_o_bug_sunder_pos.x, b_o_bug_sunder_pos.y, button_size, txt_size );
-   drawKeybind( KB_BTN_BUG_CAST_HEAL, b_o_bug_heal_pos.x, b_o_bug_heal_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_BUG_CAST_SHOCK, b_o_bug_sunder_pos.x, b_o_bug_sunder_pos.y, button_size, txt_size );
+   drawKeybind( KB_BTN_BUG_CAST_DUST, b_o_bug_heal_pos.x, b_o_bug_heal_pos.y, button_size, txt_size );
    drawKeybind( KB_BTN_BUG_OPEN_WORMHOLE, b_o_bug_open_wormhole_pos.x, b_o_bug_open_wormhole_pos.y, button_size, txt_size );
    drawKeybind( KB_BTN_BUG_CLOSE_WORMHOLE, b_o_bug_close_wormhole_pos.x, b_o_bug_close_wormhole_pos.y, button_size, txt_size );
    drawKeybind( KB_BTN_COUNT_INFINITE, b_count_infinite_pos.x, b_count_infinite_pos.y, button_size, txt_size );
@@ -4570,10 +4569,10 @@ int drawOrderButtons()
       playerAddOrder( BUG_CAST_FIREBALL );
 
    if (b_o_bug_sunder->doWidget())
-      playerAddOrder( BUG_CAST_SUNDER );
+      playerAddOrder( BUG_CAST_SHOCK );
 
    if (b_o_bug_heal->doWidget())
-      playerAddOrder( BUG_CAST_HEAL );
+      playerAddOrder( BUG_CAST_DUST );
 
    if (b_o_bug_open_wormhole->doWidget())
       playerAddOrder( BUG_OPEN_WORMHOLE );
@@ -4832,10 +4831,10 @@ KeybindTarget drawKeybindButtons()
       kb = KB_BTN_BUG_CAST_FIREBALL;
 
    if (b_o_bug_sunder->doWidget())
-      kb = KB_BTN_BUG_CAST_SUNDER;
+      kb = KB_BTN_BUG_CAST_SHOCK;
 
    if (b_o_bug_heal->doWidget())
-      kb = KB_BTN_BUG_CAST_HEAL;
+      kb = KB_BTN_BUG_CAST_DUST;
 
    if (b_o_bug_open_wormhole->doWidget())
       kb = KB_BTN_BUG_OPEN_WORMHOLE;
@@ -4951,11 +4950,11 @@ int drawClock()
    gui_window->draw( *s_1 );
    s_2->setRotation( 180 );
    gui_window->draw( *s_2 );
-   if (turn_progress < (TURN_LENGTH / 2)) {
-      s_2->setRotation( 360 * ( (float)turn_progress / (float)TURN_LENGTH ) );
+   if (turn_progress < (c_turn_length / 2)) {
+      s_2->setRotation( 360 * ( (float)turn_progress / (float)c_turn_length ) );
       gui_window->draw( *s_2 );
    } else {
-      s_1->setRotation( 360 * ( ((float)turn_progress / (float)TURN_LENGTH ) - 0.5) );
+      s_1->setRotation( 360 * ( ((float)turn_progress / (float)c_turn_length ) - 0.5) );
       gui_window->draw( *s_1 );
    }
 
@@ -4979,7 +4978,7 @@ int drawOrderQueue()
             draw_x += 36;
 
             if (draw_x + 32 >= x_edge) {
-               if (pause_state == FULLY_PAUSED) {
+               if (pause_state == c_fully_paused) {
                   draw_x = 2;
                   draw_y += 36;
                } else {
@@ -5062,21 +5061,28 @@ int drawSelectedUnit()
             int draw_x = window_edge - selection_box_width + 1,
                 draw_y = selection_box_height + 2,
                 dx = selection_box_width / 6;
-            for (int i = 0; i < selected_unit->order_count; ++i) {
-               if (i == selected_unit->max_orders) i = 0;
+            //for (int i = 0; i < selected_unit->order_count; ++i) {
+               //if (i == selected_unit->max_orders) i = 0;
+            for (int i = 0; i < selected_unit->max_orders; ++i) {
 
-               if (i == selected_unit->current_order) {
-                  drawSquare( draw_x - 1, draw_y - 1 , dx, Color::White );
+               if (i >= selected_unit->order_count) {
+                  Order o( NUM_ACTIONS );
+                  drawOrder( o, draw_x, draw_y, (dx - 2) );
+               } else {
+                  if (i == selected_unit->current_order) {
+                     drawSquare( draw_x - 1, draw_y - 1 , dx, Color::White );
+                  }
+
+                  Order &o = selected_unit->order_queue[i];
+                  if ( o.action != SKIP ) {
+                     drawOrder( o, draw_x, draw_y, (dx - 2) );
+                  }
                }
 
-               Order &o = selected_unit->order_queue[i];
-               if ( o.action != SKIP ) {
-                  drawOrder( o, draw_x, draw_y, (dx - 2) );
-                  draw_x += dx;
-                  if (draw_x >= window_edge) {
-                     draw_x = window_edge - selection_box_width + 1;
-                     draw_y += dx;
-                  }
+               draw_x += dx;
+               if (draw_x >= window_edge) {
+                  draw_x = window_edge - selection_box_width + 1;
+                  draw_y += dx;
                }
             }
          }
@@ -6096,10 +6102,10 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
          playerAddOrder( BUG_MEDITATE );
       else if (kb == KB_BTN_BUG_CAST_FIREBALL)
          playerAddOrder( BUG_CAST_FIREBALL );
-      else if (kb == KB_BTN_BUG_CAST_SUNDER)
-         playerAddOrder( BUG_CAST_SUNDER );
-      else if (kb == KB_BTN_BUG_CAST_HEAL)
-         playerAddOrder( BUG_CAST_HEAL );
+      else if (kb == KB_BTN_BUG_CAST_SHOCK)
+         playerAddOrder( BUG_CAST_SHOCK );
+      else if (kb == KB_BTN_BUG_CAST_DUST)
+         playerAddOrder( BUG_CAST_DUST );
       else if (kb == KB_BTN_BUG_OPEN_WORMHOLE)
          playerAddOrder( BUG_OPEN_WORMHOLE );
       else if (kb == KB_BTN_BUG_CLOSE_WORMHOLE)
@@ -6182,7 +6188,7 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
          left_mouse_down = 0;
          int left_mouse_up_time = game_clock->getElapsedTime().asMilliseconds();
 
-         if (left_mouse_up_time - left_mouse_down_time < MOUSE_DOWN_SELECT_TIME
+         if (left_mouse_up_time - left_mouse_down_time < c_mouse_down_select_time
                && !isMouseOverGui( mbr.x, mbr.y ))
             selectUnit( coordsWindowToView( mbr.x, mbr.y ) );
 
@@ -6191,7 +6197,7 @@ struct LevelEventHandler : public My_SFML_MouseListener, public My_SFML_KeyListe
          right_mouse_down = 0;
          int right_mouse_up_time = game_clock->getElapsedTime().asMilliseconds();
 
-         if (right_mouse_up_time - right_mouse_down_time < MOUSE_DOWN_SELECT_TIME)
+         if (right_mouse_up_time - right_mouse_down_time < c_mouse_down_select_time)
             castMenuSolidify();
          else {
             castMenuSelect( mbr.x, mbr.y );
@@ -6307,7 +6313,7 @@ struct LevelEditorEventHandler : public My_SFML_MouseListener, public My_SFML_Ke
          left_mouse_down = 0;
          int left_mouse_up_time = game_clock->getElapsedTime().asMilliseconds();
 
-         if (left_mouse_up_time - left_mouse_down_time < MOUSE_DOWN_SELECT_TIME
+         if (left_mouse_up_time - left_mouse_down_time < c_mouse_down_select_time
                && !isMouseOverLevelGui( mbr.x, mbr.y ))
             levelEditorSelectGrid( coordsWindowToView( mbr.x, mbr.y ) );
 

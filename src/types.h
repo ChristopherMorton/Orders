@@ -18,6 +18,7 @@ typedef enum {
    DMG_HEAVY,
    DMG_LIGHT,
    DMG_POISON,
+   DMG_FIRE,
    DMG_HEAL
 } DamageType;
 
@@ -126,8 +127,8 @@ typedef enum
 
    // Bug Buttons
    KB_BTN_BUG_CAST_FIREBALL,
-   KB_BTN_BUG_CAST_SUNDER,
-   KB_BTN_BUG_CAST_HEAL,
+   KB_BTN_BUG_CAST_SHOCK,
+   KB_BTN_BUG_CAST_DUST,
    KB_BTN_BUG_OPEN_WORMHOLE,
    KB_BTN_BUG_CLOSE_WORMHOLE,
    KB_BTN_BUG_MEDITATE,
@@ -257,6 +258,18 @@ typedef enum {
    TM_TRAIL_SE,
    TM_TRAIL_SW,
    TM_TRAIL_NW,
+   TM_WH_OPEN_1,
+   TM_WH_CLOSE_1,
+   TM_WH_OPEN_2,
+   TM_WH_CLOSE_2,
+   TM_WH_OPEN_3,
+   TM_WH_CLOSE_3,
+   TM_WH_OPEN_4,
+   TM_WH_CLOSE_4,
+   TM_WH_OPEN_5,
+   TM_WH_CLOSE_5,
+   TM_WH_OPEN_6,
+   TM_WH_CLOSE_6,
    NUM_TERRAIN_MODS
 } TerrainMod;
 

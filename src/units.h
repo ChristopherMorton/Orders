@@ -25,6 +25,7 @@ enum UnitType {
    BIRD_T,
    BUG_T,
    TARGETPRACTICE_T,
+   TARGETTINGAID_T,
    // Ranged Units
    R_HUMAN_ARCHER_T,
    // Melee Units
@@ -49,7 +50,10 @@ public:
    int alive;
 
    int aff_poison;
+   int aff_burning;
    int aff_confusion;
+   int aff_sleep;
+   int aff_timelock;
 
    bool flying, invis;
 
@@ -361,9 +365,10 @@ public:
 
    virtual std::string descriptor();
 
+   virtual int prepareTurn();
    virtual int startTurn();
    virtual int completeTurn();
-   //virtual int update( float dtf );
+   virtual int update( float dtf );
    virtual sf::Texture* getTexture();
    virtual int draw();
 
@@ -384,6 +389,21 @@ public:
    virtual sf::Texture* getTexture();
    virtual int draw();
    virtual ~TargetPractice();
+};
+
+class TargettingAid : public Unit
+{
+public:
+   TargettingAid();
+   virtual std::string descriptor();
+   virtual int update( float dtf );
+   virtual int doAttack( Order o );
+   virtual sf::Texture* getTexture();
+   virtual int draw();
+
+   static TargettingAid* get( int x, int y );
+
+   virtual ~TargettingAid();
 };
 
 Unit *genBaseUnit( UnitType t, int grid_x, int grid_y, Direction face );

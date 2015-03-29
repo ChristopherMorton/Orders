@@ -16,54 +16,6 @@
 #include <set>
 #include <cmath>
 
-//////////////////////////////////////////////////////////////////////
-// Definitions ---
-
-#define DEATH_TIME 400
-#define DEATH_FADE_TIME 300
-
-#define PLAYER_MAX_HEALTH 100
-#define PLAYER_MAX_ORDERS 500
-
-#define MONSTER_BASE_HEALTH 400
-#define MONSTER_BASE_MEMORY 15
-#define MONSTER_BASE_VISION 3.5
-#define MONSTER_BASE_SPEED 0.5
-#define MONSTER_BASE_ARMOR 5.0
-
-#define MONSTER_CLAW_DAMAGE 15
-#define MONSTER_BURST_DAMAGE 35
-#define MONSTER_HARDEN_TIME 0.2
-#define MONSTER_MAX_HARNESS_REDUCTION 0.9
-
-#define SOLDIER_BASE_HEALTH 220
-#define SOLDIER_BASE_MEMORY 15
-#define SOLDIER_BASE_VISION 6.5
-#define SOLDIER_BASE_SPEED 0.6
-#define SOLDIER_BASE_ARMOR 3.0
-
-#define SOLDIER_AXE_DAMAGE 50
-#define SOLDIER_SPEAR_DAMAGE 35
-
-#define WORM_BASE_HEALTH 40
-#define WORM_BASE_MEMORY 15
-#define WORM_BASE_VISION 8.5
-#define WORM_BASE_SPEED 0.3
-#define WORM_BASE_ARMOR 1.0
-
-#define BIRD_BASE_HEALTH 180
-#define BIRD_BASE_MEMORY 24
-#define BIRD_BASE_VISION 6.5
-#define BIRD_BASE_SPEED 0.7
-#define BIRD_BASE_ARMOR 1.0
-
-#define BUG_BASE_HEALTH 100
-#define BUG_BASE_MEMORY 15
-#define BUG_BASE_VISION 5.5
-#define BUG_BASE_SPEED 0.8
-#define BUG_BASE_ARMOR 1.0
-#define BUG_ORB_SPEED 3.0
-
 using namespace sf;
 using namespace std;
 
@@ -73,6 +25,60 @@ namespace sum
 int rand_int = 12345;
 
 #define GRID_AT(GRID,X,Y) (GRID[((X) + ((Y) * level_dim_x))])
+
+//////////////////////////////////////////////////////////////////////
+// Constants ---
+
+const int c_death_time = 400;
+const int c_death_fade_time = 300;
+
+const int c_player_max_health = 100;
+const int c_player_max_orders = 500;
+
+const int c_monster_base_health = 400;
+const int c_monster_base_memory = 15;
+const float c_monster_base_vision = 3.5;
+const float c_monster_base_speed = 0.5;
+const float c_monster_base_armor = 5.0;
+
+const int c_monster_claw_damage = 15;
+const int c_monster_burst_damage = 35;
+const float c_monster_harden_time = 0.2;
+const float c_monster_max_hardness_reduction = 0.9;
+
+const int c_soldier_base_health = 220;
+const int c_soldier_base_memory = 15;
+const float c_soldier_base_vision = 6.5;
+const float c_soldier_base_speed = 0.6;
+const float c_soldier_base_armor = 3.0;
+
+const int c_soldier_axe_damage = 50;
+const int c_soldier_spear_damage = 35;
+
+const int c_worm_base_health = 40;
+const int c_worm_base_memory = 15;
+const float c_worm_base_vision = 8.5;
+const float c_worm_base_speed = 0.3;
+const float c_worm_base_armor = 1.0;
+
+const int c_worm_poison_duration = 10;
+
+const int c_bird_base_health = 180;
+const int c_bird_base_memory = 24;
+const float c_bird_base_vision = 6.5;
+const float c_bird_base_speed = 0.7;
+const float c_bird_base_armor = 1.0;
+
+const int c_bug_base_health = 100;
+const int c_bug_base_memory = 18;
+const float c_bug_base_vision = 5.5;
+const float c_bug_base_speed = 0.8;
+const float c_bug_base_armor = 1.0;
+const float c_bug_orb_speed = 3.0;
+
+const int c_shock_damage = 85;
+
+const int c_poison_damage = 10;
 
 //////////////////////////////////////////////////////////////////////
 // Base Unit ---
@@ -516,12 +522,22 @@ int Unit::prepareTurn()
 
    if (aff_poison) {
       aff_poison--;
-      takeDamage( 10, DMG_POISON );
+      takeDamage( c_poison_damage, DMG_POISON );
+   }
+   if (aff_burning) {
+      aff_burning--;
+      takeDamage( 10, DMG_FIRE );
    }
    if (aff_confusion) {
       aff_confusion--;
       if (aff_confusion %= 2)
          return 0;
+   }
+
+   if (aff_sleep > 0 || aff_timelock > 0) {
+      if (aff_sleep > 0) aff_sleep--;
+      if (aff_timelock > 0) aff_timelock--;
+      return 0;
    }
 
    set<int> visited_orders;
@@ -578,6 +594,12 @@ int Unit::completeTurn()
 {
    if (alive != 1) return 0;
 
+   if (aff_sleep == -1)
+      return aff_sleep = 0; // Just woke up
+
+   if (aff_sleep > 0 || aff_timelock > 0)
+      return 0;
+
    if (active == 1 && current_order != final_order) {
       int r = completeBasicOrder(this_turn_order);
       Order &o = order_queue[current_order];
@@ -625,13 +647,25 @@ int Unit::takeDamage( float damage, DamageType type )
 
    if (damage <= 0) return 0;
 
-   health -= damage;
+   if (type == DMG_HEAL)
+      health += damage;
+   else
+      health -= damage;
 
    if (health <= 0) {
       // Dead!
-      alive = -( DEATH_TIME + DEATH_FADE_TIME );
+      alive = -( c_death_time + c_death_fade_time );
       return -1;
    }
+
+   if (health >= max_health) {
+      damage -= (health - max_health);
+      health = max_health;
+   }
+
+   if (aff_sleep > 0 &&
+         !(type == DMG_POISON || type == DMG_FIRE))
+      aff_sleep = -1;
 
    displayDamage( damage, type );
 
@@ -660,7 +694,10 @@ AIUnit::AIUnit( UnitType t, int x, int y, Direction face, int my_team )
    alive = 1;
 
    aff_poison = 0;
+   aff_burning = 0;
    aff_confusion = 0;
+   aff_sleep = 0;
+   aff_timelock = 0;
     
    flying = false;
    invis = false;
@@ -778,15 +815,28 @@ int AIUnit::takeDamage( float damage, DamageType type )
 
    if (damage <= 0) return 0;
 
-   health -= damage;
+   if (type == DMG_HEAL)
+      health += damage;
+   else
+      health -= damage;
+
    if (health <= 0) {
       // Dead!
-      alive = -( DEATH_TIME + DEATH_FADE_TIME );
+      alive = -( c_death_time + c_death_fade_time );
       return -1;
+   }
+
+   if (health >= max_health) {
+      damage -= (health - max_health);
+      health = max_health;
    }
 
    if (ai_aggro == AGR_DEFEND_SELF)
       aggroed = 1;
+
+   if (aff_sleep > 0 &&
+         !(type == DMG_POISON || type == DMG_FIRE))
+      aff_sleep = -1;
 
    displayDamage( damage, type );
 
@@ -1118,7 +1168,11 @@ int AIUnit::prepareTurn()
 
    if (aff_poison) {
       aff_poison--;
-      takeDamage( 10, DMG_POISON );
+      takeDamage( c_poison_damage, DMG_POISON );
+   }
+   if (aff_burning) {
+      aff_burning--;
+      takeDamage( 10, DMG_FIRE );
    }
    if (aff_confusion) {
       aff_confusion--;
@@ -1130,6 +1184,12 @@ int AIUnit::prepareTurn()
       return 0; // Received orders from elsewhere
 
    this_turn_order = Order( WAIT );
+
+   if (aff_sleep > 0 || aff_timelock > 0) {
+      if (aff_sleep > 0) aff_sleep--;
+      if (aff_timelock > 0) aff_timelock--;
+      return 0;
+   }
    
    ai();
 
@@ -1154,6 +1214,12 @@ int AIUnit::update( float dtf )
 int AIUnit::completeTurn()
 {
    if (alive != 1) return 0;
+
+   if (aff_sleep == -1)
+      return aff_sleep = 0; // Just woke up
+
+   if (aff_sleep > 0 || aff_timelock > 0)
+      return 0;
 
    ai_overridden = false; // reset override
 
@@ -1242,7 +1308,10 @@ int Player::init( int x, int y, Direction face )
    bird_shout_level = 0;
 
    aff_poison = 0;
+   aff_burning = 0;
    aff_confusion = 0;
+   aff_sleep = 0;
+   aff_timelock = 0;
     
    flying = false;
    invis = false;
@@ -1255,7 +1324,7 @@ int Player::init( int x, int y, Direction face )
    y_real = y + 0.5;
    turnTo(face);
 
-   health = max_health = PLAYER_MAX_HEALTH;
+   health = max_health = c_player_max_health;
 
    vision_range = 0.5;
    attack_range = 3.5;
@@ -1263,7 +1332,7 @@ int Player::init( int x, int y, Direction face )
    speed = 0.99;
    armor = 0;
 
-   max_orders = PLAYER_MAX_ORDERS;
+   max_orders = c_player_max_orders;
    order_queue = new Order[max_orders];
    clearOrders();
 
@@ -1287,13 +1356,13 @@ int Player::init( int x, int y, Direction face )
 int Player::addOrder( Order o )
 {
    // Player uses a looping queue instead of a list
-   if (order_count >= PLAYER_MAX_ORDERS) // No more memory!!
+   if (order_count >= c_player_max_orders) // No more memory!!
       return -2;
 
    order_queue[final_order] = o;
    order_count++;
    final_order++;
-   if (final_order == PLAYER_MAX_ORDERS)
+   if (final_order == c_player_max_orders)
       final_order = 0;
 
    return 0;
@@ -1361,7 +1430,7 @@ int Player::completeTurn()
       do {
          current_order++;
          order_count--;
-         if (current_order == PLAYER_MAX_ORDERS)
+         if (current_order == c_player_max_orders)
             current_order = 0; // loop
       } while (order_queue[current_order].action == SKIP);
    }
@@ -1442,7 +1511,7 @@ void initMonsterAnimations()
    monster_anim_attack_end.load( t, 128, 128, 7, 1000 );
 
    t = SFML_TextureManager::getSingleton().getTexture( "MonsterAnimDeath.png" );
-   monster_anim_death.load( t, 128, 128, 7, DEATH_TIME );
+   monster_anim_death.load( t, 128, 128, 7, c_death_time );
 
    t = SFML_TextureManager::getSingleton().getTexture( "MonsterAnimBurstStart.png" );
    monster_anim_burst_start.load( t, 128, 128, 11, 1000 );
@@ -1475,7 +1544,10 @@ Monster::Monster( int x, int y, Direction face )
    alive = 1;
 
    aff_poison = 0;
+   aff_burning = 0;
    aff_confusion = 0;
+   aff_sleep = 0;
+   aff_timelock = 0;
     
    flying = false;
    invis = false;
@@ -1488,15 +1560,15 @@ Monster::Monster( int x, int y, Direction face )
    y_real = y + 0.5;
    turnTo(face);
 
-   health = max_health = MONSTER_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
+   health = max_health = c_monster_base_health * ( 1.0 + ( focus_toughness * 0.02 ) );
 
-   vision_range = MONSTER_BASE_VISION * (1.0 + ((float)focus_perception / 25.0));
+   vision_range = c_monster_base_vision * (1.0 + ((float)focus_perception / 25.0));
    attack_range = 1.3;
 
-   speed = MONSTER_BASE_SPEED * ( 1.0 - ( focus_speed * 0.02 ) );
-   armor = MONSTER_BASE_ARMOR + (focus_toughness * 0.2);
+   speed = c_monster_base_speed * ( 1.0 - ( focus_speed * 0.02 ) );
+   armor = c_monster_base_armor + (focus_toughness * 0.2);
 
-   max_orders = MONSTER_BASE_MEMORY * ( 1.0 + ( focus_memory * 0.08 ) );
+   max_orders = c_monster_base_memory * ( 1.0 + ( focus_memory * 0.08 ) );
    order_queue = new Order[max_orders];
    clearOrders();
 
@@ -1532,7 +1604,7 @@ void Monster::doBurst()
          if (y < 0 || y >= level_dim_y) continue;
          Unit *u = GRID_AT(unit_grid,x,y);
          if (u && u != this)
-            u->takeDamage( MONSTER_BURST_DAMAGE, DMG_LIGHT );
+            u->takeDamage( c_monster_burst_damage, DMG_LIGHT );
       }
    }
 
@@ -1552,7 +1624,7 @@ float Monster::setHardness( float hard )
 int Monster::takeDamage( float damage, DamageType type )
 {
    if (hardness > 0.01) {
-      float multiplier = 1.0 - (hardness * MONSTER_MAX_HARNESS_REDUCTION); 
+      float multiplier = 1.0 - (hardness * c_monster_max_hardness_reduction); 
       damage *= multiplier;
    }
 
@@ -1561,12 +1633,25 @@ int Monster::takeDamage( float damage, DamageType type )
 
    if (damage <= 0) return 0;
 
-   health -= damage;
+   if (type == DMG_HEAL)
+      health += damage;
+   else
+      health -= damage;
+
    if (health <= 0) {
       // Dead!
-      alive = -( DEATH_TIME + DEATH_FADE_TIME );
+      alive = -( c_death_time + c_death_fade_time );
       return -1;
    }
+
+   if (health >= max_health) {
+      damage -= (health - max_health);
+      health = max_health;
+   }
+
+   if (aff_sleep > 0 &&
+         !(type == DMG_POISON || type == DMG_FIRE))
+      aff_sleep = -1;
 
    displayDamage( damage, type );
 
@@ -1598,7 +1683,7 @@ int Monster::doAttack( Order o )
 
    if (target) {
       log("Monster attack");
-      target->takeDamage( MONSTER_CLAW_DAMAGE );
+      target->takeDamage( c_monster_claw_damage );
       // TODO: Animate
    }
 
@@ -1616,12 +1701,22 @@ int Monster::prepareTurn()
 
    if (aff_poison) {
       aff_poison--;
-      takeDamage( MONSTER_CLAW_DAMAGE, DMG_POISON );
+      takeDamage( c_poison_damage, DMG_POISON );
+   }
+   if (aff_burning) {
+      aff_burning--;
+      takeDamage( 10, DMG_FIRE );
    }
    if (aff_confusion) {
       aff_confusion--;
       if (aff_confusion %= 2)
          return 0;
+   }
+
+   if (aff_sleep > 0 || aff_timelock > 0) {
+      if (aff_sleep > 0) aff_sleep--;
+      if (aff_timelock > 0) aff_timelock--;
+      return 0;
    }
 
    set<int> visited_orders;
@@ -1707,14 +1802,14 @@ int Monster::update( float dtf )
       }
       if (this_turn_order.action == MONSTER_GUARD) {
          if (this_turn_order.iteration == 0) {
-            if (progress > speed && progress < speed + MONSTER_HARDEN_TIME) {
-               float new_hardness = (progress - speed) / MONSTER_HARDEN_TIME;
+            if (progress > speed && progress < speed + c_monster_harden_time) {
+               float new_hardness = (progress - speed) / c_monster_harden_time;
                if (new_hardness > 1.0) new_hardness = 1.0;
                setHardness( new_hardness );
             }
          } else if (this_turn_order.iteration == this_turn_order.count - 1) {
-            if (progress < (1.0 - speed) && progress > (1.0 - speed - MONSTER_HARDEN_TIME) ) {
-               float new_hardness = 1.0 - ( (progress - (1.0 - speed - MONSTER_HARDEN_TIME)) / MONSTER_HARDEN_TIME);
+            if (progress < (1.0 - speed) && progress > (1.0 - speed - c_monster_harden_time) ) {
+               float new_hardness = 1.0 - ( (progress - (1.0 - speed - c_monster_harden_time)) / c_monster_harden_time);
                if (new_hardness < 0.0) new_hardness = 0.0;
                setHardness( new_hardness );
             }
@@ -1745,16 +1840,18 @@ int Monster::draw()
 
    if (alive < 0) {
       // Death animation
-      int t = alive + DEATH_TIME + DEATH_FADE_TIME;
-      if (t >= DEATH_TIME) t = DEATH_TIME - 1;
+      int t = alive + c_death_time + c_death_fade_time;
+      if (t >= c_death_time) t = c_death_time - 1;
       sp_monster = monster_anim_death.getSprite( t );
 
       int alpha = 255;
-      if (alive > -DEATH_FADE_TIME)
-         alpha = 255 - ((DEATH_FADE_TIME + alive) * 256 / DEATH_FADE_TIME);
+      if (alive > -c_death_fade_time)
+         alpha = 255 - ((c_death_fade_time + alive) * 256 / c_death_fade_time);
       sp_monster->setColor( Color( 255, 255, 255, alpha ) );
-   } else 
-   if (this_turn_order.action == MOVE_FORWARD || this_turn_order.action == FOLLOW_PATH) {
+   } else if (aff_timelock > 0) {
+      sp_monster = monster_anim_idle.getSprite( 0 );
+      sp_monster->setColor( Color( 255, 126, 0 ) );
+   } else if (this_turn_order.action == MOVE_FORWARD || this_turn_order.action == FOLLOW_PATH) {
       sp_monster = monster_anim_move.getSprite( (int)(progress * 1000) );
    } else if (this_turn_order.action == MOVE_BACK) {
       sp_monster = monster_anim_move.getSprite( 999 - (int)(progress * 1000) );
@@ -1899,7 +1996,7 @@ void initSoldierAnimations()
    soldier_anim_attack_end_bow.load( t, 128, 128, 11, 1000 );
 
    t = SFML_TextureManager::getSingleton().getTexture( "SoldierAnimDeath.png" );
-   soldier_anim_death.load( t, 128, 128, 9, DEATH_TIME );
+   soldier_anim_death.load( t, 128, 128, 9, c_death_time );
 }
 
 // *tors
@@ -1917,7 +2014,10 @@ Soldier::Soldier( int x, int y, Direction face )
    alive = 1;
 
    aff_poison = 0;
+   aff_burning = 0;
    aff_confusion = 0;
+   aff_sleep = 0;
+   aff_timelock = 0;
     
    flying = false;
    invis = false;
@@ -1930,17 +2030,17 @@ Soldier::Soldier( int x, int y, Direction face )
    y_real = y + 0.5;
    turnTo(face);
 
-   health = max_health = SOLDIER_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
+   health = max_health = c_soldier_base_health * ( 1.0 + ( focus_toughness * 0.02 ) );
 
    stance = 0;
 
-   vision_range = SOLDIER_BASE_VISION * (1.0 + ((float)focus_perception / 25.0));
+   vision_range = c_soldier_base_vision * (1.0 + ((float)focus_perception / 25.0));
    attack_range = 1.3;
 
-   speed = SOLDIER_BASE_SPEED * ( 1.0 - ( focus_speed * 0.02 ) );
-   armor = SOLDIER_BASE_ARMOR + (focus_toughness * 0.1);
+   speed = c_soldier_base_speed * ( 1.0 - ( focus_speed * 0.02 ) );
+   armor = c_soldier_base_armor + (focus_toughness * 0.1);
 
-   max_orders = SOLDIER_BASE_MEMORY * ( 1.0 + ( focus_memory * 0.08 ) );
+   max_orders = c_soldier_base_memory * ( 1.0 + ( focus_memory * 0.08 ) );
    order_queue = new Order[max_orders];
    clearOrders();
 
@@ -2014,7 +2114,7 @@ int Soldier::doAttack( Order o )
 
       if (target) {
          log("Soldier axe attack");
-         target->takeDamage( SOLDIER_AXE_DAMAGE, DMG_HEAVY );
+         target->takeDamage( c_soldier_axe_damage, DMG_HEAVY );
          // TODO: Animate
       }
    }
@@ -2064,9 +2164,9 @@ int Soldier::doAttack( Order o )
          Unit *t1 = GRID_AT(unit_grid,t_x,t_y);
          Unit *t2 = GRID_AT(unit_grid,t_x2,t_y2);
          if (NULL != t1)
-            t1->takeDamage( SOLDIER_SPEAR_DAMAGE );
+            t1->takeDamage( c_soldier_spear_damage );
          if (NULL != t2)
-            t2->takeDamage( SOLDIER_SPEAR_DAMAGE );
+            t2->takeDamage( c_soldier_spear_damage );
 
          // Animate
          float rot = atan( (t_y - y_grid) / (t_x - x_grid + 0.0001) ) * 180 / 3.1415926;
@@ -2097,12 +2197,22 @@ int Soldier::prepareTurn()
 
    if (aff_poison) {
       aff_poison--;
-      takeDamage( MONSTER_CLAW_DAMAGE, DMG_POISON );
+      takeDamage( c_poison_damage, DMG_POISON );
+   }
+   if (aff_burning) {
+      aff_burning--;
+      takeDamage( 10, DMG_FIRE );
    }
    if (aff_confusion) {
       aff_confusion--;
       if (aff_confusion %= 2)
          return 0;
+   }
+
+   if (aff_sleep > 0 || aff_timelock > 0) {
+      if (aff_sleep > 0) aff_sleep--;
+      if (aff_timelock > 0) aff_timelock--;
+      return 0;
    }
 
    set<int> visited_orders;
@@ -2200,14 +2310,19 @@ int Soldier::draw()
 
    if (alive < 0) {
       // Death animation
-      int t = alive + DEATH_TIME + DEATH_FADE_TIME;
-      if (t >= DEATH_TIME) t = DEATH_TIME - 1;
+      int t = alive + c_death_time + c_death_fade_time;
+      if (t >= c_death_time) t = c_death_time - 1;
       sp_soldier = soldier_anim_death.getSprite( t );
 
       int alpha = 255;
-      if (alive > -DEATH_FADE_TIME)
-         alpha = 255 - ((DEATH_FADE_TIME + alive) * 256 / DEATH_FADE_TIME);
+      if (alive > -c_death_fade_time)
+         alpha = 255 - ((c_death_fade_time + alive) * 256 / c_death_fade_time);
       sp_soldier->setColor( Color( 255, 255, 255, alpha ) );
+   } else if (aff_timelock > 0) {
+      if (stance == 0) sp_soldier = soldier_anim_idle_axe.getSprite( 0 );
+      if (stance == 1) sp_soldier = soldier_anim_idle_spear.getSprite( 0 );
+      if (stance == 2) sp_soldier = soldier_anim_idle_bow.getSprite( 0 );
+      sp_soldier->setColor( Color( 255, 126, 0 ) );
    } else if (this_turn_order.action == MOVE_FORWARD || this_turn_order.action == FOLLOW_PATH) {
       if (stance == 0) sp_soldier = soldier_anim_move_axe.getSprite( (int)(progress * 1000) );
       if (stance == 1) sp_soldier = soldier_anim_move_spear.getSprite( (int)(progress * 1000) );
@@ -2288,7 +2403,7 @@ void initWormAnimations()
    worm_anim_attack_end.load( t, 128, 128, 8, 1000 );
 
    t = SFML_TextureManager::getSingleton().getTexture( "WormAnimDeath.png" );
-   worm_anim_death.load( t, 128, 128, 8, DEATH_TIME );
+   worm_anim_death.load( t, 128, 128, 8, c_death_time );
 }
 
 // *tors
@@ -2306,7 +2421,10 @@ Worm::Worm( int x, int y, Direction face )
    alive = 1;
 
    aff_poison = 0;
+   aff_burning = 0;
    aff_confusion = 0;
+   aff_sleep = 0;
+   aff_timelock = 0;
     
    flying = false;
    invis = false;
@@ -2319,15 +2437,15 @@ Worm::Worm( int x, int y, Direction face )
    y_real = y + 0.5;
    turnTo(face);
 
-   health = max_health = WORM_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
+   health = max_health = c_worm_base_health * ( 1.0 + ( focus_toughness * 0.02 ) );
 
-   vision_range = WORM_BASE_VISION * (1.0 + ((float)focus_perception / 25.0));
+   vision_range = c_worm_base_vision * (1.0 + ((float)focus_perception / 25.0));
    attack_range = 1.3;
 
-   speed = WORM_BASE_SPEED * ( 1.0 - ( focus_speed * 0.02 ) );
-   armor = WORM_BASE_ARMOR + (focus_toughness * 0.1);
+   speed = c_worm_base_speed * ( 1.0 - ( focus_speed * 0.02 ) );
+   armor = c_worm_base_armor + (focus_toughness * 0.1);
 
-   max_orders = WORM_BASE_MEMORY * ( 1.0 + ( focus_memory * 0.08 ) );
+   max_orders = c_worm_base_memory * ( 1.0 + ( focus_memory * 0.08 ) );
    order_queue = new Order[max_orders];
    clearOrders();
 
@@ -2365,12 +2483,22 @@ int Worm::prepareTurn()
 
    if (aff_poison) {
       aff_poison--;
-      takeDamage( MONSTER_CLAW_DAMAGE, DMG_POISON );
+      takeDamage( c_poison_damage, DMG_POISON );
+   }
+   if (aff_burning) {
+      aff_burning--;
+      takeDamage( 10, DMG_FIRE );
    }
    if (aff_confusion) {
       aff_confusion--;
       if (aff_confusion %= 2)
          return 0;
+   }
+
+   if (aff_sleep > 0 || aff_timelock > 0) {
+      if (aff_sleep > 0) aff_sleep--;
+      if (aff_timelock > 0) aff_timelock--;
+      return 0;
    }
 
    set<int> visited_orders;
@@ -2463,6 +2591,12 @@ int Worm::completeTurn()
 {
    if (alive != 1) return 0;
 
+   if (aff_sleep == -1)
+      return aff_sleep = 0; // Just woke up
+
+   if (aff_sleep > 0 || aff_timelock > 0)
+      return 0;
+
    if (active == 1 && current_order != final_order) {
       // Worm stuff
       if (this_turn_order.action == WORM_HIDE)
@@ -2514,7 +2648,7 @@ int Worm::takeDamage( float damage, DamageType type )
 
    if (health <= 0) {
       // Dead!
-      alive = -( DEATH_TIME + DEATH_FADE_TIME );
+      alive = -( c_death_time + c_death_fade_time );
       return -1;
    }
 
@@ -2522,6 +2656,10 @@ int Worm::takeDamage( float damage, DamageType type )
       damage -= (health - max_health);
       health = max_health;
    }
+
+   if (aff_sleep > 0 &&
+         !(type == DMG_POISON || type == DMG_FIRE))
+      aff_sleep = -1;
 
    displayDamage( damage, type );
 
@@ -2554,7 +2692,7 @@ int Worm::doAttack( Order o )
    if (target) {
       log("Worm attack");
       target->takeDamage( 10 );
-      target->aff_poison += 20;
+      target->aff_poison += c_worm_poison_duration;
       // TODO: Animate
    }
 
@@ -2574,14 +2712,17 @@ int Worm::draw()
           *sp_worm_invis = NULL;
    if (alive < 0) {
       // Death animation
-      int t = alive + DEATH_TIME + DEATH_FADE_TIME;
-      if (t >= DEATH_TIME) t = DEATH_TIME - 1;
+      int t = alive + c_death_time + c_death_fade_time;
+      if (t >= c_death_time) t = c_death_time - 1;
       sp_worm = worm_anim_death.getSprite( t );
 
       int alpha = 255;
-      if (alive > -DEATH_FADE_TIME)
-         alpha = 255 - ((DEATH_FADE_TIME + alive) * 256 / DEATH_FADE_TIME);
+      if (alive > -c_death_fade_time)
+         alpha = 255 - ((c_death_fade_time + alive) * 256 / c_death_fade_time);
       sp_worm->setColor( Color( 255, 255, 255, alpha ) );
+   } else if (aff_timelock > 0) {
+      sp_worm = worm_anim_idle.getSprite( 0 );
+      sp_worm->setColor( Color( 255, 126, 0 ) );
    } else if (this_turn_order.action == MOVE_FORWARD || this_turn_order.action == FOLLOW_PATH) {
       if (trail) {
          sp_worm = worm_anim_move_trail.getSprite( (int)(progress * 1000) );
@@ -2700,7 +2841,7 @@ void initBirdAnimations()
    bird_anim_fly.load( t, 128, 128, 10, 500 );
 
    t = SFML_TextureManager::getSingleton().getTexture( "BirdAnimDeath.png" );
-   bird_anim_death.load( t, 128, 128, 8, DEATH_TIME );
+   bird_anim_death.load( t, 128, 128, 8, c_death_time );
 
    t = SFML_TextureManager::getSingleton().getTexture( "BirdAnimShout1.png" );
    bird_anim_shout.load( t, 128, 128, 13, 1000 );
@@ -2721,7 +2862,10 @@ Bird::Bird( int x, int y, Direction face )
    alive = 1;
 
    aff_poison = 0;
+   aff_burning = 0;
    aff_confusion = 0;
+   aff_sleep = 0;
+   aff_timelock = 0;
 
    flying = false;
    invis = false;
@@ -2734,15 +2878,15 @@ Bird::Bird( int x, int y, Direction face )
    y_real = y + 0.5;
    turnTo(face);
 
-   health = max_health = BIRD_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
+   health = max_health = c_bird_base_health * ( 1.0 + ( focus_toughness * 0.02 ) );
 
-   vision_range = BIRD_BASE_VISION * (1.0 + ((float)focus_perception / 25.0));
+   vision_range = c_bird_base_vision * (1.0 + ((float)focus_perception / 25.0));
    attack_range = vision_range;
 
-   speed = BIRD_BASE_SPEED * ( 1.0 - ( focus_speed * 0.02 ) );
-   armor = BIRD_BASE_ARMOR + (focus_toughness * 0.1);
+   speed = c_bird_base_speed * ( 1.0 - ( focus_speed * 0.02 ) );
+   armor = c_bird_base_armor + (focus_toughness * 0.1);
 
-   max_orders = BIRD_BASE_MEMORY * ( 1.0 + ( focus_memory * 0.08 ) );
+   max_orders = c_bird_base_memory * ( 1.0 + ( focus_memory * 0.08 ) );
    order_queue = new Order[max_orders];
    clearOrders();
 
@@ -2834,12 +2978,22 @@ int Bird::prepareTurn()
 
    if (aff_poison) {
       aff_poison--;
-      takeDamage( MONSTER_CLAW_DAMAGE, DMG_POISON );
+      takeDamage( c_poison_damage, DMG_POISON );
+   }
+   if (aff_burning) {
+      aff_burning--;
+      takeDamage( 10, DMG_FIRE );
    }
    if (aff_confusion) {
       aff_confusion--;
       if (aff_confusion %= 2)
          return 0;
+   }
+
+   if (aff_sleep > 0 || aff_timelock > 0) {
+      if (aff_sleep > 0) aff_sleep--;
+      if (aff_timelock > 0) aff_timelock--;
+      return 0;
    }
 
    set<int> visited_orders;
@@ -2921,6 +3075,12 @@ int Bird::startTurn()
 int Bird::completeTurn()
 {
    if (alive != 1) return 0;
+
+   if (aff_sleep == -1)
+      return aff_sleep = 0; // Just woke up
+
+   if (aff_sleep > 0 || aff_timelock > 0)
+      return 0;
 
    if (active == 1 && current_order != final_order) { 
       Order &o = order_queue[current_order]; 
@@ -3042,14 +3202,17 @@ int Bird::draw()
 
    if (alive < 0) {
       // Death animation
-      int t = alive + DEATH_TIME + DEATH_FADE_TIME;
-      if (t >= DEATH_TIME) t = DEATH_TIME - 1;
+      int t = alive + c_death_time + c_death_fade_time;
+      if (t >= c_death_time) t = c_death_time - 1;
       sp_bird = bird_anim_death.getSprite( t );
 
       int alpha = 255;
-      if (alive > -DEATH_FADE_TIME)
-         alpha = 255 - ((DEATH_FADE_TIME + alive) * 256 / DEATH_FADE_TIME);
+      if (alive > -c_death_fade_time)
+         alpha = 255 - ((c_death_fade_time + alive) * 256 / c_death_fade_time);
       sp_bird->setColor( Color( 255, 255, 255, alpha ) );
+   } else if (aff_timelock > 0) {
+      sp_bird = bird_anim_idle1.getSprite( 0 );
+      sp_bird->setColor( Color( 255, 126, 0 ) );
    } else if (shout_nesting > 0) {
       sp_bird = bird_anim_shout.getSprite( (int)(progress * 1000) );
    } else if (this_turn_order.action == MOVE_FORWARD || this_turn_order.action == FOLLOW_PATH) {
@@ -3187,17 +3350,17 @@ void initBugAnimations()
    bug_anim_cast_start_stars[0].load( t, 128, 128, 12, 1000 );
 
    t = SFML_TextureManager::getSingleton().getTexture( "BugAnimDeath.png" );
-   bug_anim_death.load( t, 128, 128, 7, DEATH_TIME );
+   bug_anim_death.load( t, 128, 128, 7, c_death_time );
    t = SFML_TextureManager::getSingleton().getTexture( "BugAnimDeath_Stars4.png" );
-   bug_anim_death_stars[4].load( t, 128, 128, 7, DEATH_TIME );
+   bug_anim_death_stars[4].load( t, 128, 128, 7, c_death_time );
    t = SFML_TextureManager::getSingleton().getTexture( "BugAnimDeath_Stars3.png" );
-   bug_anim_death_stars[3].load( t, 128, 128, 7, DEATH_TIME );
+   bug_anim_death_stars[3].load( t, 128, 128, 7, c_death_time );
    t = SFML_TextureManager::getSingleton().getTexture( "BugAnimDeath_Stars2.png" );
-   bug_anim_death_stars[2].load( t, 128, 128, 7, DEATH_TIME );
+   bug_anim_death_stars[2].load( t, 128, 128, 7, c_death_time );
    t = SFML_TextureManager::getSingleton().getTexture( "BugAnimDeath_Stars1.png" );
-   bug_anim_death_stars[1].load( t, 128, 128, 7, DEATH_TIME );
+   bug_anim_death_stars[1].load( t, 128, 128, 7, c_death_time );
    t = SFML_TextureManager::getSingleton().getTexture( "BugAnimDeath_Stars0.png" );
-   bug_anim_death_stars[0].load( t, 128, 128, 7, DEATH_TIME );
+   bug_anim_death_stars[0].load( t, 128, 128, 7, c_death_time );
 }
 
 // *tors
@@ -3215,7 +3378,10 @@ Bug::Bug( int x, int y, Direction face )
    alive = 1;
 
    aff_poison = 0;
+   aff_burning = 0;
    aff_confusion = 0;
+   aff_sleep = 0;
+   aff_timelock = 0;
     
    flying = false;
    invis = false;
@@ -3228,17 +3394,17 @@ Bug::Bug( int x, int y, Direction face )
    y_real = y + 0.5;
    turnTo(face);
 
-   health = max_health = BUG_BASE_HEALTH * ( 1.0 + ( focus_toughness * 0.02 ) );
+   health = max_health = c_bug_base_health * ( 1.0 + ( focus_toughness * 0.02 ) );
 
-   vision_range = BUG_BASE_VISION * (1.0 + ((float)focus_perception / 25.0));
+   vision_range = c_bug_base_vision * (1.0 + ((float)focus_perception / 25.0));
 
-   attack_range = BUG_BASE_VISION;
-   orb_speed = BUG_ORB_SPEED * ( 1.0 + ( focus_speed * 0.01) );
+   attack_range = c_bug_base_vision;
+   orb_speed = c_bug_orb_speed * ( 1.0 + ( focus_speed * 0.01) );
 
-   speed = BUG_BASE_SPEED * ( 1.0 - ( focus_speed * 0.02 ) );
-   armor = BUG_BASE_ARMOR + (focus_toughness * 0.1);
+   speed = c_bug_base_speed * ( 1.0 - ( focus_speed * 0.02 ) );
+   armor = c_bug_base_armor + (focus_toughness * 0.1);
 
-   max_orders = BUG_BASE_MEMORY * ( 1.0 + ( focus_memory * 0.08 ) );
+   max_orders = c_bug_base_memory * ( 1.0 + ( focus_memory * 0.08 ) );
    order_queue = new Order[max_orders];
    clearOrders();
 
@@ -3333,6 +3499,77 @@ int Bug::doAttack( Order o )
    return 0;
 }
 
+int Bug::prepareTurn()
+{
+   if (alive != 1) return 0;
+
+   if (active == 2) active = 1; // Start an active turn
+
+   this_turn_order = Order( WAIT );
+
+   if (aff_poison) {
+      aff_poison--;
+      takeDamage( c_poison_damage, DMG_POISON );
+   }
+   if (aff_burning) {
+      aff_burning--;
+      takeDamage( 10, DMG_FIRE );
+   }
+   if (aff_confusion) {
+      aff_confusion--;
+      if (aff_confusion %= 2)
+         return 0;
+   }
+
+   if (aff_sleep > 0 || aff_timelock > 0) {
+      if (aff_sleep > 0) aff_sleep--;
+      if (aff_timelock > 0) aff_timelock--;
+      return 0;
+   }
+
+   set<int> visited_orders;
+   while (active == 1 && current_order != final_order 
+         && visited_orders.find( current_order ) == visited_orders.end()) {
+      this_turn_order = order_queue[current_order];
+      visited_orders.insert( current_order );
+      bool decision = evaluateConditional(this_turn_order.condition);
+      int r = 1;
+      // BUG UNIQUE CODE
+      if (this_turn_order.action <= WAIT)
+         r = prepareBasicOrder(order_queue[current_order], decision);
+      else if ((this_turn_order.action >= BUG_CAST_FIREBALL 
+             && this_turn_order.action <= BUG_CLOSE_WORMHOLE)
+             && star_count == 0)
+      {
+         r = 0;
+      }
+      else if (this_turn_order.action >= BUG_CAST_FIREBALL 
+              && this_turn_order.action <= BUG_CAST_DUST)
+      {
+         if (decision)
+            done_attack = false;
+         else
+            r = 0;
+      }
+      // END
+      // if prepareBasicOrder returns 0, it's a 0-length instruction (e.g. turn)
+      if (r == 0) {
+         current_order++;
+         continue;
+      }
+      else 
+         break;
+   }
+
+   if (current_order == final_order) {
+      this_turn_order = Order( WAIT );
+   }
+
+   progress = 0;
+   return 0;
+
+}
+
 int Bug::startTurn()
 {
    if (alive != 1) return 0;
@@ -3353,12 +3590,19 @@ int Bug::completeTurn()
 {
    if (alive != 1) return 0;
 
+   if (aff_sleep == -1)
+      return aff_sleep = 0; // Just woke up
+
+   if (aff_sleep > 0 || aff_timelock > 0)
+      return 0;
+
    if (active == 1 && current_order != final_order) {
       int r = completeBasicOrder(this_turn_order);
-      if (this_turn_order.action == BUG_MEDITATE)
+      if (this_turn_order.action == BUG_MEDITATE && this_turn_order.iteration % 10 == 9)
          setStarCount( star_count + 1 );
       else if (this_turn_order.action >= BUG_CAST_FIREBALL 
-            && this_turn_order.action <= BUG_CLOSE_WORMHOLE)
+            && this_turn_order.action <= BUG_CLOSE_WORMHOLE 
+            && this_turn_order.iteration % 2 == 1)
          setStarCount( star_count - 1 );
       Order &o = order_queue[current_order];
       o.iteration++;
@@ -3372,13 +3616,53 @@ int Bug::completeTurn()
    return 0;
 }
 
-/*
 int Bug::update( float dtf )
 {
+   if (alive < 0) {
+      alive += (int) (1000.0 * dtf);
+      if (alive >= 0) alive = 0;
+   }
 
+   if (alive == 0)
+      return 1;
+
+   progress += dtf;
+   if (active == 1 && current_order != final_order) {
+      Order &o = this_turn_order;
+      // Bug Specific
+      if (o.action == BUG_CAST_FIREBALL || o.action == BUG_CAST_SHOCK || o.action == BUG_CAST_DUST) {
+         if (!done_attack) {
+            if (progress >= speed) {
+               // Cast
+               if (o.action == BUG_CAST_FIREBALL) {
+                  float tgt_x = x_real, tgt_y = y_real;
+                  addDirectionF( facing, tgt_x, tgt_y, 20 );
+                  Unit* u = TargettingAid::get( tgt_x, tgt_y );
+                  addProjectile( PR_FIREBALL_TRACER, team, x_real, y_real, orb_speed / 2, attack_range, u, -1, 0.1 );
+               } else if (o.action == BUG_CAST_SHOCK) {
+                  ShockWave *sw = new ShockWave( x_real, y_real, facing, attack_range );
+                  addEffectManual( sw );
+                  int x = x_grid, y = y_grid;
+                  for (int i = 1; i < attack_range; ++i) {
+                     if (addDirection( facing, x, y ) == 0) {
+                        Unit *u = GRID_AT(unit_grid,x,y);
+                        if (u) u->takeDamage( c_shock_damage, DMG_HEAVY );
+                     }
+                  }
+               } else if (o.action == BUG_CAST_DUST) {
+                  addEffect( EF_DUST_BURST, 0.4, x_real, y_real, 0, 0.3 );
+               }
+
+               done_attack = true;
+            }
+         }
+         return 0;
+      }
+      // End
+      return updateBasicOrder( dtf, o );
+   }
    return 0;
 }
-*/
 
 sf::Texture* Bug::getTexture()
 {
@@ -3403,16 +3687,21 @@ int Bug::draw()
 
    if (alive < 0) {
       // Death animation
-      int t = alive + DEATH_TIME + DEATH_FADE_TIME;
-      if (t >= DEATH_TIME) t = DEATH_TIME - 1;
+      int t = alive + c_death_time + c_death_fade_time;
+      if (t >= c_death_time) t = c_death_time - 1;
       sp_bug = bug_anim_death.getSprite( t );
       sp_bug_stars = bug_anim_death_stars[star_count].getSprite( t );
 
       int alpha = 255;
-      if (alive > -DEATH_FADE_TIME)
-         alpha = 255 - ((DEATH_FADE_TIME + alive) * 256 / DEATH_FADE_TIME);
+      if (alive > -c_death_fade_time)
+         alpha = 255 - ((c_death_fade_time + alive) * 256 / c_death_fade_time);
       sp_bug->setColor( Color( 255, 255, 255, alpha ) );
       sp_bug_stars->setColor( Color( 255, 255, 255, alpha ) );
+   } else if (aff_timelock > 0) {
+      sp_bug = bug_anim_idle1.getSprite( 0 );
+      sp_bug_stars = bug_anim_idle1_stars[star_count].getSprite( 0 );
+      sp_bug->setColor( Color( 255, 126, 0 ) );
+      sp_bug_stars->setColor( Color( 255, 126, 0 ) );
    } else if (this_turn_order.action == MOVE_FORWARD || this_turn_order.action == FOLLOW_PATH) {
       sp_bug = bug_anim_move.getSprite( (int)(progress * 1000) );
       sp_bug_stars = bug_anim_move_stars[star_count].getSprite( (int)(progress * 1000) );
@@ -3420,6 +3709,18 @@ int Bug::draw()
       sp_bug = bug_anim_move.getSprite( 999 - (int)(progress * 1000) );
       sp_bug_stars = bug_anim_move_stars[star_count].getSprite( 999 - (int)(progress * 1000) );
    } else if (this_turn_order.action >= ATTACK_CLOSEST && this_turn_order.action <= ATTACK_LEAST_ARMORED) {
+      if (done_attack) {
+         int d_anim = (int)( ((progress - speed) / (1-speed)) * 1000);
+         if (d_anim >= 1000) d_anim = 999;
+         sp_bug = bug_anim_cast_start.getSprite( 999 - d_anim );
+         sp_bug_stars = bug_anim_cast_start_stars[star_count].getSprite( 999 - d_anim );
+      } else {
+         int d_anim = (int)( (progress / speed) * 1000);
+         if (d_anim >= 1000) d_anim = 999;
+         sp_bug = bug_anim_cast_start.getSprite( d_anim );
+         sp_bug_stars = bug_anim_cast_start_stars[star_count].getSprite( d_anim );
+      }
+   } else if (this_turn_order.action >= BUG_CAST_FIREBALL && this_turn_order.action <= BUG_CAST_DUST) {
       if (done_attack) {
          int d_anim = (int)( ((progress - speed) / (1-speed)) * 1000);
          if (d_anim >= 1000) d_anim = 999;
@@ -3487,7 +3788,10 @@ SummonMarker::SummonMarker( )
    alive = 0;
 
    aff_poison = 0;
+   aff_burning = 0;
    aff_confusion = 0;
+   aff_sleep = 0;
+   aff_timelock = 0;
     
    flying = false;
    invis = false;
@@ -3653,7 +3957,10 @@ TargetPractice::TargetPractice( int x, int y, Direction face )
    alive = 1;
 
    aff_poison = 0;
+   aff_burning = 0;
    aff_confusion = 0;
+   aff_sleep = 0;
+   aff_timelock = 0;
     
    flying = false;
    invis = false;
@@ -3727,6 +4034,61 @@ TargetPractice::~TargetPractice()
 string TargetPractice::descriptor()
 {
    return "Target";
+}
+
+//////////////////////////////////////////////////////////////////////
+// TargettingAid ---
+
+TargettingAid::TargettingAid( )
+{
+   type = TARGETTINGAID_T;
+
+   alive = 0;
+}
+
+int TargettingAid::doAttack( Order o )
+{
+   return 0;
+}
+
+int TargettingAid::update( float dtf )
+{
+   return 0;
+}
+
+sf::Texture* TargettingAid::getTexture()
+{
+   return NULL;
+}
+
+TargettingAid *theTargettingAid = NULL;
+
+TargettingAid* TargettingAid::get( int x, int y )
+{
+   if (NULL == theTargettingAid)
+      theTargettingAid = new TargettingAid();
+   
+   theTargettingAid->x_grid = x;
+   theTargettingAid->x_real = x + 0.5;
+
+   theTargettingAid->y_grid = y;
+   theTargettingAid->y_real = y + 0.5;
+
+   return theTargettingAid;
+}
+
+int TargettingAid::draw()
+{
+   return 0;
+}
+
+TargettingAid::~TargettingAid()
+{
+}
+
+string TargettingAid::descriptor()
+{
+   return "Targetting Aid";
 }
 
 //////////////////////////////////////////////////////////////////////

@@ -8,6 +8,7 @@ extern MenuState menu_state; // stored in app.cpp
 
 namespace sf { class Font; };
 extern sf::Font *menu_font; // stored in app.cpp
+extern sf::Font *ingame_font; // stored in app.cpp
 
 // MenuState masks:
 // startup:

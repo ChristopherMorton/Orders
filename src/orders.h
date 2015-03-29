@@ -60,8 +60,8 @@ namespace sum
 
       // Bug
       BUG_CAST_FIREBALL,
-      BUG_CAST_SUNDER,
-      BUG_CAST_HEAL,
+      BUG_CAST_SHOCK,
+      BUG_CAST_DUST,
       BUG_OPEN_WORMHOLE,
       BUG_CLOSE_WORMHOLE,
       BUG_MEDITATE,
@@ -135,6 +135,7 @@ namespace sum
       NUM_CONDITIONALS
    };
 
+#define CAST_DURATION 2
 #define MEDITATE_DURATION 10
 
    struct Order

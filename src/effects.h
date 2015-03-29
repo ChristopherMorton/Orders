@@ -18,6 +18,7 @@ enum Effect_Type
    PR_ARROW,
    PR_HOMING_ORB,
    PR_WIND_SLASH,
+   PR_FIREBALL_TRACER,
    // General Effects
    SE_SUMMON_CLOUD,
    SE_ALERT_MARKER,
@@ -25,6 +26,9 @@ enum Effect_Type
    // Combat Effects
    SE_SPEAR_ANIM,
    EF_MONSTER_BURST,
+   EF_FIREBALL_BURST,
+   EF_DUST_BURST,
+   EF_SHOCKWAVE,
    // Other Effects
    EF_DAMAGE_DISPLAY,
 
@@ -73,6 +77,19 @@ struct StaticEffect : public Effect
    virtual ~StaticEffect();
 };
 
+struct BurstEffect : public Effect
+{
+   sf::Vector2f pos;
+   float duration, min_expand, expand_dur, expand_time, fade_dur;
+
+   virtual int update( float dtf );
+   virtual int draw();
+
+   BurstEffect( Effect_Type t, float duration, float x, float y, float fade = 0.0, float expand = 0.0, float min_expand = 0.5 );
+
+   virtual ~BurstEffect();
+};
+
 struct MonsterBurst : public Effect
 {
    float _x, _y;
@@ -83,6 +100,20 @@ struct MonsterBurst : public Effect
 
    MonsterBurst( float x, float y );
    virtual ~MonsterBurst();
+};
+
+struct ShockWave : public Effect
+{
+   sf::Vector2f pos;
+   float duration;
+   Direction dir;
+   int num_waves, num_waves_total;
+
+   virtual int update( float dtf );
+   virtual int draw();
+
+   ShockWave( float x, float y, Direction d, float range );
+   virtual ~ShockWave();
 };
 
 struct DamageDisplay : public Effect
@@ -102,7 +133,7 @@ struct DamageDisplay : public Effect
 };
 
 Projectile *genProjectile( Effect_Type t, int team, float x, float y, float speed, float range, Unit* target, float homing = 0, float fastforward = 0 );
-StaticEffect *genEffect( Effect_Type t, float dur, float x, float y, float rotation, float fade = 0.0 );
+Effect *genEffect( Effect_Type t, float dur, float x, float y, float rotation, float fade = 0.0 );
 
 int initEffects();
 

@@ -167,11 +167,11 @@ void Order::logSelf()
       case BUG_CAST_FIREBALL:
          s << "BUG_CAST_FIREBALL";
          break;
-      case BUG_CAST_SUNDER:
-         s << "BUG_CAST_SUNDER";
+      case BUG_CAST_SHOCK:
+         s << "BUG_CAST_SHOCK";
          break;
-      case BUG_CAST_HEAL:
-         s << "BUG_CAST_HEAL";
+      case BUG_CAST_DUST:
+         s << "BUG_CAST_DUST";
          break;
       case BUG_OPEN_WORMHOLE:
          s << "BUG_OPEN_WORMHOLE";
@@ -445,10 +445,10 @@ Texture *getOrderTexture( Order o )
       case BUG_CAST_FIREBALL:
          base_tex = t_manager.getTexture( "BugOrderFireball.png" );
          break;
-      case BUG_CAST_SUNDER:
+      case BUG_CAST_SHOCK:
          base_tex = t_manager.getTexture( "BugOrderSunder.png" );
          break;
-      case BUG_CAST_HEAL:
+      case BUG_CAST_DUST:
          base_tex = t_manager.getTexture( "BugOrderHeal.png" );
          break;
       case BUG_OPEN_WORMHOLE:
@@ -534,8 +534,14 @@ Texture *getOrderTexture( Order o )
       case SUMMON_BUG:
          base_tex = t_manager.getTexture( "SummonBug.png" );
          break;
-
       case FAILED_SUMMON:
+         base_tex = t_manager.getTexture( "FailedSummon.png" );
+         break;
+
+      case NUM_ACTIONS:
+         base_tex = t_manager.getTexture( "EmptyMemory.png" );
+         break;
+
       case SKIP:
       default:
          base_tex = NULL;
@@ -598,8 +604,8 @@ Texture *getOrderButtonTexture( Order o )
 
       // Bug
       case BUG_CAST_FIREBALL:
-      case BUG_CAST_SUNDER:
-      case BUG_CAST_HEAL:
+      case BUG_CAST_SHOCK:
+      case BUG_CAST_DUST:
       case BUG_OPEN_WORMHOLE:
       case BUG_CLOSE_WORMHOLE:
       case BUG_MEDITATE:
@@ -900,10 +906,10 @@ sum::KeybindTarget orderToKeybindTarget( Order o )
          return KB_BTN_BIRD_FLY;
       case BUG_CAST_FIREBALL:
          return KB_BTN_BUG_CAST_FIREBALL;
-      case BUG_CAST_SUNDER:
-         return KB_BTN_BUG_CAST_SUNDER;
-      case BUG_CAST_HEAL:
-         return KB_BTN_BUG_CAST_HEAL;
+      case BUG_CAST_SHOCK:
+         return KB_BTN_BUG_CAST_SHOCK;
+      case BUG_CAST_DUST:
+         return KB_BTN_BUG_CAST_DUST;
       case BUG_OPEN_WORMHOLE:
          return KB_BTN_BUG_OPEN_WORMHOLE;
       case BUG_CLOSE_WORMHOLE:

@@ -173,6 +173,7 @@ IMAGE ControlStartBlock.png
 IMAGE ControlEndBlock.png
 IMAGE ControlRepeat.png
 IMAGE CastButtonBase.png
+IMAGE EmptyMemory.png
 // Unit Button Bases
 IMAGE MonsterOrderButtonBase.png
 IMAGE SoldierOrderButtonBase.png
@@ -224,6 +225,7 @@ IMAGE SummonSoldier.png
 IMAGE SummonWorm.png
 IMAGE SummonBird.png
 IMAGE SummonBug.png
+IMAGE FailedSummon.png
 // Unit Specific
 IMAGE MonsterAlertButton.png
 IMAGE SoldierAlertButton.png
