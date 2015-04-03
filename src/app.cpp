@@ -248,7 +248,7 @@ void splashMenu()
       SFML_GlobalRenderWindow::get()->draw(*splashScreen);
 
       if (b_splashToLevelEditor->doWidget())
-         loadLevelEditor(-1);
+         loadLevelEditor(0);
 
       if (b_splashToTestLevel->doWidget())
          loadLevel(-2);
@@ -1172,7 +1172,8 @@ int mainLoop( int dt )
 
    } else if (menu_state & MENU_PRI_INGAME) {
       updateLevel(dt);
-      drawLevel();
+      int result = drawLevel();
+      if (result == -3) openMap();
 
    } else if (menu_state & MENU_PRI_LEVEL_EDITOR) {
       drawLevel();

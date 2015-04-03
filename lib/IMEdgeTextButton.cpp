@@ -68,13 +68,14 @@ void IMEdgeTextButton::setTextColor( sf::Color color )
 }
 
 int IMEdgeTextButton::centerText()
-{
+{ 
     if (_text && _font) {
         Text t( *_text, *_font, _char_size );
         FloatRect f = t.getLocalBounds();
         _x_text_offset = (_x_dimension - f.width) / 2;
+        _y_text_offset = (_y_dimension - (_char_size * 5 / 4)) / 2;
 
-        _y_text_offset = (_y_dimension - _char_size) / 2;
+        //_y_text_offset = (_y_dimension - _char_size) / 2;
         return 0;
     } else
        return -1;

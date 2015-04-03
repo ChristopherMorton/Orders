@@ -9,6 +9,8 @@
 #include "config.h"
 #include "clock.h"
 
+#include "pugixml.hpp"
+
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 #include <SFML/System.hpp>
@@ -1974,6 +1976,139 @@ int terrainToCharData( Terrain t, char&c )
 #define FACING_BITS 0x3
 #define WIN_CONDITION_BIT 0x4
 
+int writeUnitNodeAI( AIUnit *ai, pugi::xml_node &base )
+{
+   if (NULL == ai)
+      return -1;
+
+   pugi::xml_node node = base.append_child("ai");
+
+   node.append_attribute("ai_move") = (int) ai->ai_move_style;
+
+   node.append_attribute("ai_aggro") = (int) ai->ai_aggro;
+   node.append_attribute("ai_chase") = ai->ai_chase_distance;
+   node.append_attribute("ai_attack") = ai->ai_attack_distance;
+
+   if (NULL == ai->ai_leader) {
+      node.append_attribute("ai_leader_x") = -1;
+      node.append_attribute("ai_leader_y") = -1;
+   }
+   else
+   {
+      node.append_attribute("ai_leader_x") = ai->ai_leader->x_grid;
+      node.append_attribute("ai_leader_y") = ai->ai_leader->y_grid;
+   }
+
+   if (!ai->ai_waypoints.empty()) {
+      pugi::xml_node waypoints = node.append_child("ai_wps");
+      for (std::deque< std::pair<sf::Vector2i,Direction> >::iterator it=ai->ai_waypoints.begin(); it != ai->ai_waypoints.end(); ++it) {
+         pugi::xml_node wp = waypoints.append_child("wp");
+         wp.append_attribute("x") = (*it).first.x;
+         wp.append_attribute("y") = (*it).first.y;
+         wp.append_attribute("f") = (*it).second;
+      }
+   }
+
+   return 0;
+}
+
+int writeUnitNodeXML( Unit *u, pugi::xml_node &node )
+{
+   if (NULL == u)
+      return -1;
+
+   node.append_attribute("t") = u->type;
+   node.append_attribute("x") = u->x_grid;
+   node.append_attribute("y") = u->y_grid;
+   node.append_attribute("f") = (int)u->facing;
+   node.append_attribute("win_c") = u->win_condition;
+
+   if (u->type >= R_HUMAN_ARCHER_T && u->type < SUMMONMARKER_T) {
+      AIUnit *ai = (AIUnit*)u;
+      if (ai)
+         writeUnitNodeAI( ai, node );
+   }
+
+   return 0;
+}
+
+int parseUnitNodeAI( AIUnit *u, pugi::xml_node &base )
+{
+   pugi::xml_node ai = base.first_child();
+
+   if (!ai)
+      return -1;
+
+   AI_Movement ai_move;
+   AI_Aggression ai_aggro;
+   float chase_dis, attack_dis;
+
+   ai_move = (AI_Movement) ai.attribute("ai_move").as_int();
+   ai_aggro = (AI_Aggression) ai.attribute("ai_aggro").as_int();
+   chase_dis = ai.attribute("ai_chase").as_float();
+   attack_dis = ai.attribute("ai_attack").as_float();
+
+   // Figure out leader
+   int leader_x, leader_y;
+   leader_x = ai.attribute("ai_leader_x").as_int();
+   leader_y = ai.attribute("ai_leader_y").as_int();
+   Unit *leader;
+   if (leader_x == -1 || leader_y == -1)
+      leader = NULL;
+   else
+      leader = GRID_AT(unit_grid,leader_x,leader_y);
+
+   u->setAI( ai_move, ai_aggro, chase_dis, attack_dis, leader );
+
+   // Waypoints
+   u->clearWaypoints();
+   pugi::xml_node waypoints = ai.first_child();
+   for (pugi::xml_node wp_node = waypoints.first_child(); wp_node; wp_node = wp_node.next_sibling()) {
+      int grid_x, grid_y;
+      Direction face;
+      grid_x = wp_node.attribute("x").as_int();
+      grid_y = wp_node.attribute("y").as_int();
+      face = (Direction) wp_node.attribute("f").as_int();
+
+      u->addWaypoint( grid_x, grid_y, face );
+   }
+
+   return 0;
+}
+
+int parseAndCreateUnitXML( pugi::xml_node &node )
+{
+   int x, y;
+   Direction face;
+   UnitType type;
+   bool win_c;
+
+   x = node.attribute("x").as_int();
+   y = node.attribute("y").as_int();
+   face = (Direction) node.attribute("f").as_int();
+   type = (UnitType) node.attribute("t").as_int();
+   win_c = node.attribute("win_c").as_bool();
+
+   if (type == PLAYER_T) {
+      if (NULL != player) return -1;
+      player = Player::initPlayer( x, y, face );
+      addPlayer();
+   }
+   else 
+   {
+      Unit *u = genBaseUnit( type, x, y, face );
+      addUnit( u );
+      if (win_c)
+         addUnitWinCondition( u );
+
+      // AI
+      if (type >= R_HUMAN_ARCHER_T && type < SUMMONMARKER_T)
+         parseUnitNodeAI( (AIUnit*) u, node );
+   }
+
+   return 0;
+}
+
 int parseAndCreateUnit( char c1, char c2, char x, char y )
 {
    Direction facing;
@@ -2048,6 +2183,59 @@ int unitToCharData( Unit *u, char &c1, char &c2, char &x, char &y )
 
 int createLevelFromFile( string filename )
 {
+   pugi::xml_document doc;
+
+   try {
+      pugi::xml_parse_result result = doc.load_file( filename.c_str() );
+      if (result.status != pugi::status_ok) {
+         log("EE - Level parsing failed");
+         return -1;
+      }
+   } catch ( const std::exception& e ) {
+      log( "EE - Exception caught when parsing level file" );
+      return -1;
+   }
+
+
+   pugi::xml_node level_node = doc.first_child();
+
+   // add parameters node
+   pugi::xml_node param = level_node.first_child();
+
+   // get attributes from param node
+   int dim_x = param.attribute("x_dim").as_int(),
+       dim_y = param.attribute("y_dim").as_int();
+   initGrids(dim_x,dim_y);
+   float view_size_x = param.attribute("v_s_x").as_float();
+   float view_pos_x = param.attribute("v_c_x").as_float();
+   float view_pos_y = param.attribute("v_c_y").as_float();
+   setView( view_size_x, Vector2f( view_pos_x, view_pos_y ) );
+
+   win_if_reached.x = param.attribute("win_loc_x").as_int();
+   win_if_reached.y = param.attribute("win_loc_y").as_int();
+
+   // terrain block
+   pugi::xml_node terrain = param.first_child();
+   stringstream ss( terrain.attribute("ter").as_string() );
+   for (int x = 0; x < level_dim_x; ++x) {
+      for (int y = 0; y < level_dim_y; ++y) {
+         int i;
+         ss >> i;
+         GRID_AT(terrain_grid,x,y) = i;
+      }
+   }
+
+   // Units
+   pugi::xml_node units_node = param.next_sibling();
+
+   for (pugi::xml_node unit_node = units_node.first_child(); unit_node; unit_node = unit_node.next_sibling())
+   {
+         parseAndCreateUnitXML( unit_node );
+   }
+
+   return 0;
+
+   // Old version
    ifstream level_file( filename.c_str(), ios::in | ios::binary | ios::ate );
    ifstream::pos_type fileSize;
    char* fileContents;
@@ -2110,6 +2298,61 @@ int createLevelFromFile( string filename )
 // Mirrors createLevelFromFile
 int writeLevelToFile( string filename )
 {
+   // The new XML version of
+   // writeLevelToFile
+
+   pugi::xml_document doc;
+   // add level node
+   pugi::xml_node level_node = doc.append_child("level");
+
+   // add parameters node
+   pugi::xml_node param = level_node.append_child("param");
+
+   // add attributes to param node
+   param.append_attribute("x_dim") = level_dim_x;
+   param.append_attribute("y_dim") = level_dim_y;
+   param.append_attribute("v_s_x") = level_view->getSize().x;
+   param.append_attribute("v_c_x") = level_view->getCenter().x;
+   param.append_attribute("v_c_y") = level_view->getCenter().y;
+   param.append_attribute("win_loc_x") = win_if_reached.x;
+   param.append_attribute("win_loc_y") = win_if_reached.y;
+   // terrain block
+   stringstream ss;
+   for (int x = 0; x < level_dim_x; ++x)
+      for (int y = 0; y < level_dim_y; ++y)
+         ss << ((int)GRID_AT(terrain_grid,x,y)) << " ";
+   
+   pugi::xml_node terrain = param.append_child("terrain");
+   terrain.append_attribute("ter") = ss.str().c_str();
+
+   pugi::xml_node units_node = level_node.append_child("units");
+   if (player)
+   {
+      pugi::xml_node player_node = units_node.append_child("player");
+      writeUnitNodeXML( player, player_node );
+   }
+   for (list<Unit*>::iterator it=unit_list.begin(); it != unit_list.end(); ++it)
+   {
+      Unit* unit = (*it);
+      if (unit) {
+         pugi::xml_node unit_node = units_node.append_child();
+         writeUnitNodeXML( unit, unit_node );
+      }
+   }
+
+   try {
+      doc.save_file( filename.c_str() );
+   } catch ( const std::exception& e ) {
+      log( "EE - Exception caught when writing level to file" );
+      return -1;
+   }
+
+   return 0;
+
+
+
+   // The old version
+
    ofstream level_file( filename.c_str(), ios::out | ios::binary | ios::ate );
    int unitcount = unit_list.size() + 1; // 1 = player
    int writesize = 2 // dimensions
@@ -2181,6 +2424,7 @@ int writeLevelToFile( string filename )
    log("Write level to file error: file failed to open");
    delete fileContents;
    return -1;
+   
 }
 
 int loadLevel( int level_id )
@@ -2194,35 +2438,20 @@ int loadLevel( int level_id )
    if (level_id == -1)
    {
       base_terrain = BASE_TER_GRASS;
-      if (createLevelFromFile( "res/level_editor_in.lvl" ) == -1)
+      if (createLevelFromFile( "res/new_level_-1.lvl" ) == -1)
          return -1;
-
    }
    else if (level_id == -2)
    {
       base_terrain = BASE_TER_GRASS;
-      if (createLevelFromFile( "res/testlevel2.lvl" ) == -1)
+      if (createLevelFromFile( "res/new_level_-2.lvl" ) == -1)
          return -1;
-
-      AIUnit *u = new AIUnit( R_HUMAN_ARCHER_T, 12, 1, WEST, 1 );
-      addUnit( u );
-      u->setAI( MV_PATROL_PATH, AGR_PURSUE_VISIBLE, 10, 4, NULL );
-      u->addWaypoint( 12, 1 );
    }
    else if (level_id == 0 || true)
    {
       base_terrain = BASE_TER_GRASS;
-      if (createLevelFromFile( "res/testlevel.txt" ) == -1)
+      if (createLevelFromFile( "res/testlevel0.lvl" ) == -1)
          return -1;
-
-      //player->x_grid = 1;
-      //player->y_grid = 4;
-      Unit *u = new AIUnit( R_HUMAN_ARCHER_T, 3, 2, EAST, 2 );
-      addUnit( u );
-      addUnitWinCondition( u );
-      addUnit( new TargetPractice( 3, 3, EAST ) );
-
-      //writeLevelToFile( "res/testlevel.txt" );
    }
 
 
@@ -2755,9 +2984,6 @@ bool init_level_gui = false;
 IMImageButton *b_con_enemy_adjacent,
               *b_con_enemy_ahead,
               *b_con_enemy_in_range,
-              //*b_con_ally_adjacent,
-              //*b_con_ally_ahead,
-              //*b_con_ally_in_range,
               *b_con_half_health,
               *b_con_20_health,
               *b_con_blocked_ahead,
@@ -2912,6 +3138,9 @@ Vector2f b_con_enemy_adjacent_pos,
          b_count_9_pos,
          b_count_0_pos,
          b_count_reset_pos;
+// Victory gui --
+IMEdgeTextButton *b_victory_back_to_map;
+string s_back_to_map = "Back to Map";
 
 const int border = 3;
 const int spacer = 2;
@@ -3499,6 +3728,12 @@ void fitGui_Level()
    b_bug_image->setSize( button_size, button_size );
    b_bug_image->setImageSize( button_size, button_size );
    b_bug_image->setPosition( width - button_size, height - button_size );
+
+   // Victory Gui --
+   b_victory_back_to_map->setSize( button_size_f * 5, button_size_f );
+   b_victory_back_to_map->setPosition( (width / 2) - (button_size_f * 2.5), (height / 2) + (button_size_f * 1.0 ));
+   b_victory_back_to_map->setTextSize( text_size );
+   b_victory_back_to_map->centerText();
 
    view_rel_x_to_y = ((float)height) / ((float)width);
 }
@@ -4177,6 +4412,18 @@ int initLevelGui()
    b_bug_area->setEdgeAllTextures( t_manager.getTexture( "UIEdgeBrown3px.png" ) );
    b_bug_area->setEdgeWidth( 3 );
    gui_manager.registerWidget( "Bug area", b_bug_area);
+
+   // Victory Gui --
+   b_victory_back_to_map = new IMEdgeTextButton();
+   b_victory_back_to_map->setAllTextures( t_manager.getTexture( "UICenterBrown.png" ) );
+   b_victory_back_to_map->setCornerAllTextures( t_manager.getTexture( "UICornerBrown3px.png" ) );
+   b_victory_back_to_map->setEdgeAllTextures( t_manager.getTexture( "UIEdgeBrown3px.png" ) );
+   b_victory_back_to_map->setEdgeWidth( 3 );
+   b_victory_back_to_map->setText( &s_back_to_map );
+   b_victory_back_to_map->setTextColor( Color::Black );
+   b_victory_back_to_map->setFont( menu_font );
+   gui_manager.registerWidget( "Victory - Back to Map", b_victory_back_to_map);
+
 
    init_level_gui = true;
    fitGui_Level();
@@ -5581,7 +5828,7 @@ int levelEditorDeleteUnit()
 
 int loadLevelEditor( int level )
 {
-   loadLevel( -1 );
+   loadLevel( level );
 
    menu_state = MENU_MAIN | MENU_PRI_LEVEL_EDITOR;
    setLevelListener(false);
@@ -5882,16 +6129,29 @@ int drawFog()
    return 0;
 }
 
-void drawVictory()
+int drawVictory()
 {
    Text victory_text;
    victory_text.setFont( *menu_font );
-   victory_text.setColor( Color::Red );
    victory_text.setCharacterSize( 120 );
-
    victory_text.setString( String("Victory") );
-   victory_text.setPosition( config::width() / 2 - 200, config::height() / 2 - 100 );
+
+   // Shadow
+   victory_text.setPosition( config::width() / 2 - 190, config::height() / 2 - 102 );
+   victory_text.setColor( Color( 75, 75, 75, 127 ) );
    SFML_GlobalRenderWindow::get()->draw( victory_text );
+
+   // Real
+   victory_text.setPosition( config::width() / 2 - 186, config::height() / 2 - 100 );
+   victory_text.setColor( Color( 215, 0, 0, 255 ) );
+   SFML_GlobalRenderWindow::get()->draw( victory_text );
+
+   if (b_victory_back_to_map->doWidget()) {
+      clearAll();
+      menu_state = MENU_MAIN | MENU_PRI_MAP;
+      return -3;
+   }
+   return 0;
 }
 
 int drawLevel()
@@ -5912,7 +6172,7 @@ int drawLevel()
    else {
       drawGui();
       if (victory)
-         drawVictory();
+         return drawVictory();
    }
 
    return 0;
