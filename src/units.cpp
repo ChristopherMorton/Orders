@@ -478,11 +478,7 @@ int Unit::turnTo( Direction face )
 }
 
 Unit::~Unit()
-{
-   if (order_queue)
-      delete order_queue;
-
-}
+{ }
 
 void Unit::logOrders()
 {

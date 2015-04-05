@@ -209,7 +209,7 @@ public:
    virtual sf::Texture* getTexture();
    virtual int draw();
 
-   virtual ~Player();
+   ~Player();
 };
 
 class SummonMarker : public Unit
@@ -228,7 +228,7 @@ public:
    virtual sf::Texture* getTexture();
    virtual int draw();
 
-   virtual ~SummonMarker();
+   ~SummonMarker();
 };
 
 class Monster : public Unit
@@ -258,7 +258,7 @@ public:
    virtual sf::Texture* getTexture();
    virtual int draw();
 
-   virtual ~Monster();
+   ~Monster();
 
 };
 
@@ -285,7 +285,7 @@ public:
    virtual sf::Texture* getTexture();
    virtual int draw();
 
-   virtual ~Soldier();
+   ~Soldier();
 
 };
 
@@ -314,7 +314,7 @@ public:
    virtual sf::Texture* getTexture();
    virtual int draw();
 
-   virtual ~Worm();
+   ~Worm();
 
 };
 
@@ -342,7 +342,7 @@ public:
    virtual sf::Texture* getTexture();
    virtual int draw();
 
-   virtual ~Bird();
+   ~Bird();
 
 };
 
@@ -372,7 +372,7 @@ public:
    virtual sf::Texture* getTexture();
    virtual int draw();
 
-   virtual ~Bug();
+   ~Bug();
 };
 
 class TargetPractice : public Unit
@@ -388,7 +388,7 @@ public:
    virtual int doAttack( Order o );
    virtual sf::Texture* getTexture();
    virtual int draw();
-   virtual ~TargetPractice();
+   ~TargetPractice();
 };
 
 class TargettingAid : public Unit
@@ -403,7 +403,7 @@ public:
 
    static TargettingAid* get( int x, int y );
 
-   virtual ~TargettingAid();
+   ~TargettingAid();
 };
 
 Unit *genBaseUnit( UnitType t, int grid_x, int grid_y, Direction face );

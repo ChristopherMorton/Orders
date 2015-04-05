@@ -267,6 +267,8 @@ Vector2i win_if_reached;
 
 void clearWinConditions()
 {
+   victory = false;
+
    win_if_killed.clear();
    win_if_reached = Vector2i( -1, -1 );
 }
@@ -1855,26 +1857,61 @@ void init()
 
 void clearGrids()
 {
-   if (terrain_grid)
+   if (terrain_grid) {
       delete[] terrain_grid;
-   if (terrain_mod_grid)
+      terrain_grid = NULL;
+   }
+   if (terrain_mod_grid) {
       delete[] terrain_mod_grid;
-   if (unit_grid)
+      terrain_mod_grid = NULL;
+   }
+   if (unit_grid) {
       delete[] unit_grid;
-   if (vision_grid)
+      unit_grid = NULL;
+   }
+   if (vision_grid) {
       delete[] vision_grid;
-   if (ai_vision_grid)
+      vision_grid = NULL;
+   }
+   if (ai_vision_grid) {
       delete[] ai_vision_grid;
+      ai_vision_grid = NULL;
+   }
+}
+
+void clearUnits()
+{
+   list<Unit*>::iterator it;
+   for (it = unit_list.begin(); it != unit_list.end(); ++it)
+   {
+      Unit *u = (*it);
+      if (u)
+         delete u;
+   }
+
+   unit_list.clear();
+   listening_units.clear();
+}
+
+void clearEffects()
+{
+   list<Effect*>::iterator it;
+   for (it = effect_list.begin(); it != effect_list.end(); ++it)
+   {
+      Effect *e = (*it);
+      if (e)
+         delete e;
+   }
+
+   effect_list.clear();
 }
 
 void clearAll()
 {
    clearGrids();
-   if (player) delete player;
 
-   unit_list.clear();
-   effect_list.clear();
-   listening_units.clear();
+   clearUnits();
+   clearEffects();
 }
 
 int initGrids(int x, int y)
@@ -2090,7 +2127,6 @@ int parseAndCreateUnitXML( pugi::xml_node &node )
    win_c = node.attribute("win_c").as_bool();
 
    if (type == PLAYER_T) {
-      if (NULL != player) return -1;
       player = Player::initPlayer( x, y, face );
       addPlayer();
    }
@@ -6149,6 +6185,7 @@ int drawVictory()
    if (b_victory_back_to_map->doWidget()) {
       clearAll();
       menu_state = MENU_MAIN | MENU_PRI_MAP;
+      setLevelListener( false );
       return -3;
    }
    return 0;
