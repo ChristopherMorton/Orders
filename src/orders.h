@@ -141,7 +141,7 @@ namespace sum
    struct Order
    {
       Order_Action action;
-      Order_Conditional condition; // Generally only attached to control flow
+      Order_Conditional condition;
       int count; // How many times to repeat/sustain action
       int iteration; // Local iteration count - needed for loops
 

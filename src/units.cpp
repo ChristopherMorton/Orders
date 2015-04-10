@@ -37,7 +37,7 @@ const int c_player_max_orders = 500;
 
 const int c_monster_base_health = 400;
 const int c_monster_base_memory = 15;
-const float c_monster_base_vision = 3.5;
+const float c_monster_base_vision = 4.5;
 const float c_monster_base_speed = 0.5;
 const float c_monster_base_armor = 5.0;
 
@@ -48,7 +48,7 @@ const float c_monster_max_hardness_reduction = 0.9;
 
 const int c_soldier_base_health = 220;
 const int c_soldier_base_memory = 15;
-const float c_soldier_base_vision = 6.5;
+const float c_soldier_base_vision = 5.5;
 const float c_soldier_base_speed = 0.6;
 const float c_soldier_base_armor = 3.0;
 
@@ -57,7 +57,7 @@ const int c_soldier_spear_damage = 35;
 
 const int c_worm_base_health = 40;
 const int c_worm_base_memory = 15;
-const float c_worm_base_vision = 8.5;
+const float c_worm_base_vision = 5.5;
 const float c_worm_base_speed = 0.3;
 const float c_worm_base_armor = 1.0;
 
@@ -65,7 +65,7 @@ const int c_worm_poison_duration = 10;
 
 const int c_bird_base_health = 180;
 const int c_bird_base_memory = 24;
-const float c_bird_base_vision = 6.5;
+const float c_bird_base_vision = 7.5;
 const float c_bird_base_speed = 0.7;
 const float c_bird_base_armor = 1.0;
 
@@ -3418,6 +3418,8 @@ Bug::Bug( int x, int y, Direction face )
       dmg_display[i] = NULL;
 
    setStarCount( 4 );
+
+   wormhole_number = -1;
 }
 
 Bug::~Bug()
@@ -3441,6 +3443,9 @@ int Bug::addOrder( Order o )
    if ((o.action <= WAIT) || (o.action >= BUG_CAST_FIREBALL && o.action <= BUG_MEDITATE)) {
       if (order_count >= max_orders) // No more memory
          return -2;
+
+      if (o.action == BUG_OPEN_WORMHOLE || o.action == BUG_CLOSE_WORMHOLE)
+         o.count = 3;
 
       order_queue[order_count] = o;
       order_count++;
@@ -3597,9 +3602,14 @@ int Bug::completeTurn()
       if (this_turn_order.action == BUG_MEDITATE && this_turn_order.iteration % 10 == 9)
          setStarCount( star_count + 1 );
       else if (this_turn_order.action >= BUG_CAST_FIREBALL 
-            && this_turn_order.action <= BUG_CLOSE_WORMHOLE 
-            && this_turn_order.iteration % 2 == 1)
+            && this_turn_order.action <= BUG_CAST_DUST)
          setStarCount( star_count - 1 );
+      else if (this_turn_order.action >= BUG_OPEN_WORMHOLE
+            && this_turn_order.action <= BUG_CLOSE_WORMHOLE 
+            && this_turn_order.iteration % 3 == 2) {
+         setStarCount( star_count - 1 );
+         addWormhole( x_grid, y_grid, wormhole_number, (this_turn_order.action == BUG_OPEN_WORMHOLE) );
+      }
       Order &o = order_queue[current_order];
       o.iteration++;
       if (o.iteration >= o.count && o.count != -1) { 
@@ -3727,6 +3737,50 @@ int Bug::draw()
          if (d_anim >= 1000) d_anim = 999;
          sp_bug = bug_anim_cast_start.getSprite( d_anim );
          sp_bug_stars = bug_anim_cast_start_stars[star_count].getSprite( d_anim );
+      }
+   } else if (this_turn_order.action == BUG_OPEN_WORMHOLE || this_turn_order.action == BUG_CLOSE_WORMHOLE) {
+      if (this_turn_order.iteration == 2) {
+         int d_anim = (int)(progress * 1000);
+         if (d_anim >= 1000) d_anim = 999;
+         sp_bug = bug_anim_cast_start.getSprite( 999 - d_anim );
+         sp_bug_stars = bug_anim_cast_start_stars[star_count].getSprite( 999 - d_anim );
+
+         // TODO: Draw wormhole
+         Sprite sp_wormhole( *SFML_TextureManager::getSingleton().getTexture( "WormholeColorless.png" ) );
+         normalizeTo1x1( &sp_wormhole );
+         sp_wormhole.setPosition( x_grid, y_grid );
+         int alpha = (int) ((d_anim * 255) / 1000);
+         if (alpha > 255) alpha = 255;
+         if (alpha < 0) alpha = 0;
+         sp_wormhole.setColor( Color( 255, 255, 255, alpha ) );
+         SFML_GlobalRenderWindow::get()->draw( sp_wormhole );
+
+         // Draw glow receding
+         Sprite sp_glow( *SFML_TextureManager::getSingleton().getTexture( "WormholeGlow.png" ) );
+         normalizeTo1x1( &sp_glow );
+         sp_glow.setPosition( x_grid, y_grid );
+         alpha = (int) (((199 - d_anim) * 255) / 200);
+         if (alpha > 255) alpha = 255;
+         if (alpha < 0) alpha = 0;
+         sp_glow.setColor( Color( 255, 255, 255, alpha ) );
+         SFML_GlobalRenderWindow::get()->draw( sp_glow );
+
+      } else {
+         int d_anim = (int)((progress + this_turn_order.iteration) * 500) ; // out of 1000
+         if (d_anim >= 1000) d_anim = 999;
+         sp_bug = bug_anim_cast_start.getSprite( d_anim );
+         sp_bug_stars = bug_anim_cast_start_stars[star_count].getSprite( d_anim );
+
+         // Draw glow
+         Sprite sp_glow( *SFML_TextureManager::getSingleton().getTexture( "WormholeGlow.png" ) );
+         normalizeTo1x1( &sp_glow );
+         sp_glow.setPosition( x_grid, y_grid );
+         int alpha = (int) ((d_anim * 255) / 1000);
+         if (alpha > 255) alpha = 255;
+         if (alpha < 0) alpha = 0;
+         sp_glow.setColor( Color( 255, 255, 255, alpha ) );
+         SFML_GlobalRenderWindow::get()->draw( sp_glow );
+         
       }
    } else {
       if (anim_data == 5) {

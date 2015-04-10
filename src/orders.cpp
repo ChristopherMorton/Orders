@@ -30,6 +30,9 @@ void Order::initOrder( Order_Action a, Order_Conditional c, int cnt )
    if ((a == MONSTER_GUARD || a == BIRD_FLY) && cnt == 1)
       cnt = 2;
 
+   if (a == BUG_OPEN_WORMHOLE || a == BUG_CLOSE_WORMHOLE)
+      cnt = 3;
+
    condition = c;
    count = cnt;
    iteration = 0;

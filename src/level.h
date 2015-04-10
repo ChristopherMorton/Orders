@@ -54,6 +54,9 @@ namespace sum
    int startPlayerCommandRange( Order o, int x_middle, int y_middle, float range, std::list<Unit*> &listener_list );
    int completePlayerCommandRange( Order o, int x_middle, int y_middle, float range, std::list<Unit*> &listener_list );
 
+   // for bugs
+   int addWormhole( int x, int y, int &number, bool open );
+
    void fitGui_Level();
    void fitGui_LevelEditor();
 

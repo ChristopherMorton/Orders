@@ -351,6 +351,7 @@ class Bug : public Unit
 private:
    Bug(); // Disallowed 
    int star_count;
+   int wormhole_number;
 
 public:
    float orb_speed;

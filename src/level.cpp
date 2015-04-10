@@ -56,6 +56,7 @@ const int c_fully_paused = 15;
 const int c_turn_length = 1000;
 const int c_mouse_down_select_time = 150;
 const int c_max_dimension = 253;
+const int c_wormhole_locations = 12;
 
 //////////////////////////////////////////////////////////////////////
 // Level Data ---
@@ -93,6 +94,9 @@ list<Unit*> listening_units;
 Unit *player = NULL;
 
 Unit *selected_unit;
+
+int num_wormholes;
+Vector2i* wormhole_v;
 
 // Debugging
 bool show_framerate;
@@ -416,6 +420,43 @@ int addEffectManual( Effect *e )
       return 0;
    }
    return -1;
+}
+
+int addWormhole( int x, int y, int &number, bool open )
+{
+   if (number == -1) {
+      if (num_wormholes <= 5) {
+         number = num_wormholes + 1;
+         num_wormholes++;
+      } else {
+         return -1;
+      }
+   }
+   if (number > 6)
+      return -1;
+
+   unsigned int index = ((number - 1) * 2) + (open?0:1);
+   if (index < c_wormhole_locations) {
+
+      // if there's one already, clear it
+      Vector2i &loc = wormhole_v[index];
+      if (loc.x >= 0 && loc.x < level_dim_x && loc.y >= 0 && loc.y < level_dim_y)
+         GRID_AT(terrain_mod_grid,loc.x,loc.y) = TM_NONE;
+
+      // Change stuff
+      GRID_AT(terrain_mod_grid,x,y) = (TerrainMod) (TM_WH_OPEN_1 + index);
+      loc.x = x;
+      loc.y = y;
+
+      // Check surrounding ter_mods for incoming paths, and cap them
+
+      // TODO
+
+
+   
+      return 0;
+   }
+   else return -1;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1836,6 +1877,20 @@ void initTextures()
    terrain_mod_sprites[TM_TRAIL_SW]->setRotation( 270 );
    terrain_mod_sprites[TM_TRAIL_SW]->setOrigin( dim.x, 0 );
 
+   // Wormholes
+   terrain_mod_sprites[TM_WH_OPEN_1] = terrain_mod_sprites[TM_WH_CLOSE_1] = new Sprite( *(t_manager.getTexture( "WormholeRed.png" )));
+   normalizeTo1x1( terrain_mod_sprites[TM_WH_OPEN_1] );
+   terrain_mod_sprites[TM_WH_OPEN_2] = terrain_mod_sprites[TM_WH_CLOSE_2] = new Sprite( *(t_manager.getTexture( "WormholeOrange.png" )));
+   normalizeTo1x1( terrain_mod_sprites[TM_WH_OPEN_2] );
+   terrain_mod_sprites[TM_WH_OPEN_3] = terrain_mod_sprites[TM_WH_CLOSE_3] = new Sprite( *(t_manager.getTexture( "WormholeYellow.png" )));
+   normalizeTo1x1( terrain_mod_sprites[TM_WH_OPEN_3] );
+   terrain_mod_sprites[TM_WH_OPEN_4] = terrain_mod_sprites[TM_WH_CLOSE_4] = new Sprite( *(t_manager.getTexture( "WormholeGreen.png" )));
+   normalizeTo1x1( terrain_mod_sprites[TM_WH_OPEN_4] );
+   terrain_mod_sprites[TM_WH_OPEN_5] = terrain_mod_sprites[TM_WH_CLOSE_5] = new Sprite( *(t_manager.getTexture( "WormholeBlue.png" )));
+   normalizeTo1x1( terrain_mod_sprites[TM_WH_OPEN_5] );
+   terrain_mod_sprites[TM_WH_OPEN_6] = terrain_mod_sprites[TM_WH_CLOSE_6] = new Sprite( *(t_manager.getTexture( "WormholePurple.png" )));
+   normalizeTo1x1( terrain_mod_sprites[TM_WH_OPEN_6] );
+
    // Base Terrain
    base_grass_sprite = new Sprite( *(t_manager.getTexture( "GreenGrass.png" )));
    base_mountain_sprite = new Sprite( *(t_manager.getTexture( "GrayRock.png" )));
@@ -1852,6 +1907,8 @@ void init()
 
    initTextures();
 
+   wormhole_v = new Vector2i[c_wormhole_locations];
+
    level_init = true;
 }
 
@@ -1864,6 +1921,7 @@ void clearGrids()
    if (terrain_mod_grid) {
       delete[] terrain_mod_grid;
       terrain_mod_grid = NULL;
+      num_wormholes = 0;
    }
    if (unit_grid) {
       delete[] unit_grid;
@@ -1877,6 +1935,14 @@ void clearGrids()
       delete[] ai_vision_grid;
       ai_vision_grid = NULL;
    }
+}
+
+void clearWormholes()
+{
+   num_wormholes = 0;
+
+   for (int i = 0; i < c_wormhole_locations; ++i)
+      wormhole_v[i] = Vector2i( -1, -1 );
 }
 
 void clearUnits()
@@ -1909,6 +1975,7 @@ void clearEffects()
 void clearAll()
 {
    clearGrids();
+   clearWormholes();
 
    clearUnits();
    clearEffects();
@@ -1920,6 +1987,7 @@ int initGrids(int x, int y)
       return -1;
 
    clearGrids();
+   clearWormholes();
 
    level_dim_x = x;
    level_dim_y = y;
@@ -2639,6 +2707,42 @@ int updateAll( int dt )
    return 0;
 }
 
+int swapWormholes()
+{
+   for (int i = 0; i < 6; ++i) {
+      Vector2i in = wormhole_v[2*i],
+               out = wormhole_v[2*i + 1];
+
+      if (in.x >= 0 && in.y >= 0 && in.x < level_dim_x && in.y < level_dim_y
+       && out.x >= 0 && out.y >= 0 && out.x < level_dim_x && out.y < level_dim_y) {
+         // Swap
+
+         Unit *u1 = GRID_AT(unit_grid,in.x,in.y),
+              *u2 = GRID_AT(unit_grid,out.x,out.y);
+
+         GRID_AT(unit_grid,in.x,in.y) = u2;
+         GRID_AT(unit_grid,out.x,out.y) = u1;
+
+         if (u1) {
+            u1->x_grid = in.x;
+            u1->y_grid = in.y;
+            u1->x_real = in.x + 0.5;
+            u1->y_real = in.y + 0.5;
+         }
+         if (u2) {
+            u2->x_grid = out.x;
+            u2->y_grid = out.y;
+            u2->x_real = out.x + 0.5;
+            u2->y_real = out.y + 0.5;
+         }
+
+         // TODO: Effects
+      }
+   }
+
+   return num_wormholes;
+}
+
 int completeTurnAll( )
 {
    if (NULL != player)
@@ -2651,6 +2755,8 @@ int completeTurnAll( )
          unit->completeTurn();
       }
    }
+
+   swapWormholes();
 
    return 0;
 }
