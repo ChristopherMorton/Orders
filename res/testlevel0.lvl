@@ -12,6 +12,14 @@
 				</ai_wps>
 			</ai>
 		</:anonymous>
+		<:anonymous x="4" y="4" f="2" t="10" win_c="true">
+			<ai ai_move="1" ai_aggro="3" ai_chase="0.5" ai_attack="0.5" ai_leader_x="-1" ai_leader_y="-1">
+				<ai_wps>
+					<wp x="4" y="4" f="2" />
+					<wp x="4" y="2" f="2" />
+				</ai_wps>
+			</ai>
+		</:anonymous>
 		<:anonymous x="2" y="2" f="1" t="2" win_c="false" />
 		<:anonymous x="9" y="7" f="2" t="6" win_c="false" />
 		<:anonymous x="9" y="5" f="2" t="6" win_c="false" />

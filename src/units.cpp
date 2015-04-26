@@ -676,6 +676,36 @@ string Unit::descriptor()
 //////////////////////////////////////////////////////////////////////
 // AIUnit ---
 
+// All the animations --
+
+
+// Dwarves
+Animation dwarf_spear_anim_idle;
+Animation dwarf_spear_anim_move;
+Animation dwarf_spear_anim_attack_start;
+Animation dwarf_spear_anim_attack_end;
+Animation dwarf_spear_anim_death;
+
+void initAIUnitAnimations()
+{
+   Texture *t = SFML_TextureManager::getSingleton().getTexture( "DwarfSpearAnimIdle.png" );
+   dwarf_spear_anim_idle.load( t, 128, 128, 10, 1000 );
+
+   t = SFML_TextureManager::getSingleton().getTexture( "DwarfSpearAnimMove.png" );
+   dwarf_spear_anim_move.load( t, 128, 128, 12, 1000 );
+
+   //t = SFML_TextureManager::getSingleton().getTexture( "DwarfSpearAnimAttackStart.png" );
+   //dwarf_spear_anim_attack_start.load( t, 128, 128, 10, 1000 );
+
+   //t = SFML_TextureManager::getSingleton().getTexture( "DwarfSpearAnimAttackEnd.png" );
+   //dwarf_spear_anim_attack_end.load( t, 128, 128, 10, 1000 );
+
+   //t = SFML_TextureManager::getSingleton().getTexture( "DwarfSpearAnimDeath.png" );
+   //dwarf_spear_anim_death.load( t, 128, 128, 10, c_death_time );
+}
+
+// The general stuff --
+
 // Private
 AIUnit::AIUnit()
 { }
@@ -738,6 +768,14 @@ AIUnit::AIUnit( UnitType t, int x, int y, Direction face, int my_team )
          speed = 0.5;
          armor = 5.0;
          break;
+      case M_DWARF_SPEAR_T:
+         radius = 0.4;
+         health = max_health = 240;
+         vision_range = 4.5;
+         attack_range = 2.9;
+         speed = 0.6;
+         armor = 8.0;
+         break;
       default:
          break;
    }
@@ -797,6 +835,63 @@ int AIUnit::doAttack( Order o )
       if (target) {
          if (type == M_HUMAN_SWORDSMAN_T)
             target->takeDamage( 35 );
+      }
+   }
+   
+   if (type >= M_DWARF_SPEAR_T && type <= M_DWARF_SPEAR_T) {
+      // 2-range spear-style Melee attacker
+
+      int min_x = x_grid - 2, max_x = x_grid + 2, min_y = y_grid - 2, max_y = y_grid + 2;
+      if (facing == NORTH) max_y = y_grid - 1;
+      else if (facing == SOUTH) min_y = y_grid + 1;
+      else if (facing == WEST) max_x = x_grid - 1;
+      else if (facing == EAST) min_x = x_grid + 1;
+
+      target = getEnemyBox( x_grid, y_grid, min_x, max_x, min_y, max_y, attack_range, this, selector );
+
+      if (target) {
+         // Get spear trajectory
+         int t_x = target->x_grid, t_y = target->y_grid;
+         if (t_x == x_grid + 1) {
+            if (t_y == y_grid + 1) {
+               t_x = x_grid + 2;
+               t_y = y_grid + 2;
+            } else if (t_y == y_grid - 1) {
+               t_x = x_grid + 2;
+               t_y = y_grid - 2;
+            } else if (t_y == y_grid)
+               t_x = x_grid + 2;
+         } else if (t_x == x_grid - 1) {
+            if (t_y == y_grid + 1) {
+               t_x = x_grid - 2;
+               t_y = y_grid + 2;
+            } else if (t_y == y_grid - 1) {
+               t_x = x_grid - 2;
+               t_y = y_grid - 2;
+            } else if (t_y == y_grid)
+               t_x = x_grid - 2;
+         } else if (t_x == x_grid) {
+            if (t_y == y_grid - 1) t_y = y_grid - 2;
+            else if (t_y == y_grid + 1) t_y = y_grid + 2;
+         }
+         // Get inner target
+         int t_x2 = t_x, t_y2 = t_y;
+         if (t_x2 == x_grid + 2) t_x2 = x_grid + 1;
+         if (t_x2 == x_grid - 2) t_x2 = x_grid - 1;
+         if (t_y2 == y_grid + 2) t_y2 = y_grid + 1;
+         if (t_y2 == y_grid - 2) t_y2 = y_grid - 1;
+
+         // Damage targets
+         Unit *t1 = GRID_AT(unit_grid,t_x,t_y);
+         Unit *t2 = GRID_AT(unit_grid,t_x2,t_y2);
+         if (NULL != t1)
+            t1->takeDamage( c_soldier_spear_damage );
+         if (NULL != t2)
+            t2->takeDamage( c_soldier_spear_damage );
+
+         // Animate
+         float rot = atan( (t_y - y_grid) / (t_x - x_grid + 0.0001) ) * 180 / 3.1415926;
+         addEffect( SE_SPEAR_ANIM, 0.15, x_real, y_real, rot, 0.15 );
       }
    }
 
@@ -1038,6 +1133,8 @@ std::string AIUnit::descriptor()
       return "Human Archer";
    if (type == M_HUMAN_SWORDSMAN_T)
       return "Human Swordsman";
+   if (type == M_DWARF_SPEAR_T)
+      return "Dwarf Spearman";
 
    return "I am Error";
 }
@@ -1231,34 +1328,91 @@ int AIUnit::completeTurn()
 
 sf::Texture* AIUnit::getTexture()
 {
-   return SFML_TextureManager::getSingleton().getTexture( "HumanArcher.png" );
+   if (type == M_DWARF_SPEAR_T)
+      return SFML_TextureManager::getSingleton().getTexture( "DwarfSpearStatic.png" );
 }
 
 Sprite *sp_human_archer = NULL;
 
 int AIUnit::draw()
 {
-   if (NULL == sp_human_archer) {
-      sp_human_archer = new Sprite(*getTexture());
-      Vector2u dim = getTexture()->getSize();
-      sp_human_archer->setOrigin( dim.x / 2.0, dim.y / 2.0 );
-      normalizeTo1x1( sp_human_archer );
-      //sp_human_archer->scale( 0.5, 0.5 );
-   }
-
-   sp_human_archer->setPosition( x_real, y_real );
+   // Select sprite
+   Sprite *sp_unit = NULL;
 
    int rotation;
    if (facing == EAST) rotation = 0;
    if (facing == SOUTH) rotation = 90;
    if (facing == WEST) rotation = 180;
    if (facing == NORTH) rotation = 270;
-   sp_human_archer->setRotation( rotation );
 
-   SFML_GlobalRenderWindow::get()->draw( *sp_human_archer );
+   if (type == M_DWARF_SPEAR_T)
+   {
+      if (alive < 0) {
+         // Death animation
+         int t = alive + c_death_time + c_death_fade_time;
+         if (t >= c_death_time) t = c_death_time - 1;
+         sp_unit = dwarf_spear_anim_death.getSprite( t );
+
+         int alpha = 255;
+         if (alive > -c_death_fade_time)
+            alpha = 255 - ((c_death_fade_time + alive) * 256 / c_death_fade_time);
+         sp_unit->setColor( Color( 255, 255, 255, alpha ) );
+      } else if (aff_timelock > 0) {
+         sp_unit = dwarf_spear_anim_idle.getSprite( 0 );
+         sp_unit->setColor( Color( 255, 126, 0 ) );
+      } else if (this_turn_order.action == MOVE_FORWARD || this_turn_order.action == FOLLOW_PATH) {
+         sp_unit = dwarf_spear_anim_move.getSprite( (int)(progress * 2000) );
+      } else if (this_turn_order.action == MOVE_BACK) {
+         sp_unit = dwarf_spear_anim_move.getSprite( 999 - (int)(progress * 2000) );
+      } else if (this_turn_order.action >= ATTACK_CLOSEST && this_turn_order.action <= ATTACK_LEAST_ARMORED) {
+         if (done_attack) {
+            int d_anim = (int)( ((progress - speed) / (1-speed)) * 1000);
+            if (d_anim >= 1000) d_anim = 999;
+            sp_unit = dwarf_spear_anim_attack_end.getSprite( d_anim );
+         } else {
+            int d_anim = (int)( (progress / speed) * 1000);
+            if (d_anim >= 1000) d_anim = 999;
+            sp_unit = dwarf_spear_anim_attack_start.getSprite( d_anim );
+         }
+      } else
+         sp_unit = dwarf_spear_anim_idle.getSprite( (int)(progress * 1000) );
+
+      // TODO: Generalize this part later
+      if (NULL == sp_unit) return -1;
+
+      // Move/scale sprite
+      sp_unit->setPosition( x_real, y_real );
+      Vector2u dim (dwarf_spear_anim_idle.image_size_x, dwarf_spear_anim_idle.image_size_y);
+      sp_unit->setOrigin( dim.x / 2.0, dim.y / 2.0 );
+      sp_unit->setScale( 1.0 / dim.x, 1.0 / dim.y );
+
+      sp_unit->setRotation( rotation );
+
+      SFML_GlobalRenderWindow::get()->draw( *sp_unit );
+   }
+   else if (type == R_HUMAN_ARCHER_T)
+   {
+      if (NULL == sp_human_archer) {
+         sp_human_archer = new Sprite(*getTexture());
+         Vector2u dim = getTexture()->getSize();
+         sp_human_archer->setOrigin( dim.x / 2.0, dim.y / 2.0 );
+         normalizeTo1x1( sp_human_archer );
+         //sp_human_archer->scale( 0.5, 0.5 );
+      }
+
+      sp_human_archer->setPosition( x_real, y_real );
+
+      int rotation;
+      if (facing == EAST) rotation = 0;
+      if (facing == SOUTH) rotation = 90;
+      if (facing == WEST) rotation = 180;
+      if (facing == NORTH) rotation = 270;
+      sp_human_archer->setRotation( rotation );
+
+      SFML_GlobalRenderWindow::get()->draw( *sp_human_archer );
+   }
 
    return 0;
-
 }
 
 AIUnit::~AIUnit()
@@ -2230,7 +2384,7 @@ int Soldier::prepareTurn()
       } else if (this_turn_order.action == SOLDIER_SWITCH_SPEAR) {
          r = 0;
          stance = 1;
-         attack_range = 3.0;
+         attack_range = 2.9;
       } else if (this_turn_order.action == SOLDIER_SWITCH_BOW) {
          r = 0;
          stance = 2;
@@ -4160,6 +4314,12 @@ Unit *genBaseUnit( UnitType t, int grid_x, int grid_y, Direction face )
       return u;
    }
    if (t == M_HUMAN_SWORDSMAN_T) return NULL;
+   if (t == M_DWARF_SPEAR_T) {
+      AIUnit *u = new AIUnit( t, grid_x, grid_y, face, 1 );
+      u->setAI( MV_HOLD_POSITION, AGR_PURSUE_VISIBLE, 10, 4, NULL );
+      u->addWaypoint( grid_x, grid_y, face );
+      return u;
+   }
    if (t == SUMMONMARKER_T) return NULL;
 
    return NULL;
@@ -4172,6 +4332,9 @@ int initUnits()
    initWormAnimations();
    initBirdAnimations();
    initBugAnimations();
+
+   initAIUnitAnimations();
+
    return 0;
 }
 

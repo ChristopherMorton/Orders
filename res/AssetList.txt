@@ -1,4 +1,4 @@
-// Ingame things
+// Misc
 IMAGE GreenGrass.png
 IMAGE BrownRock.png
 IMAGE GrayRock.png
@@ -33,13 +33,7 @@ IMAGE FogCloudTransparentBottom.png
 IMAGE FogCloudTransparentTop.png 
 IMAGE FogCloudTransparentLeft.png 
 IMAGE FogCloudTransparentRight.png 
-// Unit Scratch
-IMAGE MonsterScratch.png
-IMAGE SoldierScratch.png
-IMAGE WormScratch.png
-IMAGE BirdScratch.png
-IMAGE BugScratch.png
-IMAGE BugScratchWiggleAnimation.png
+// Unit Static
 IMAGE MonsterStatic.png
 IMAGE SoldierScratch.png
 IMAGE WormStatic.png
@@ -113,6 +107,10 @@ IMAGE BugAnimDeath_Stars3.png
 IMAGE BugAnimDeath_Stars2.png
 IMAGE BugAnimDeath_Stars1.png
 IMAGE BugAnimDeath_Stars0.png
+// Enemy Unit Animations
+IMAGE DwarfSpearAnimIdle.png
+IMAGE DwarfSpearAnimMove.png
+IMAGE DwarfSpearStatic.png
 // Map things
 IMAGE MapScratch.png
 IMAGE MapButtonScratch.png

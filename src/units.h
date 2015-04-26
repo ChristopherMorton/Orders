@@ -30,6 +30,7 @@ enum UnitType {
    R_HUMAN_ARCHER_T,
    // Melee Units
    M_HUMAN_SWORDSMAN_T,
+   M_DWARF_SPEAR_T,
    // Special
    SUMMONMARKER_T
 };

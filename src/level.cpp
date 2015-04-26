@@ -5944,7 +5944,7 @@ int levelEditorPreviousUnit()
    UnitType new_unit_type;
 
    if (cur_unit == NULL)
-      new_unit_type = R_HUMAN_ARCHER_T;
+      new_unit_type = M_DWARF_SPEAR_T;
    else
       new_unit_type = UnitType((int)cur_unit->type - 1);
 
